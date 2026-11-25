@@ -285,7 +285,7 @@ def test_failures_write_nothing(market, tmp_path):
         assert _snapshot(out) == snap, name
 
 
-def test_live_lock_waits_for_f2r_publication(market, tmp_path):
+def test_month_lock_waits_for_f2r_publication(market, tmp_path):
     daily, un, months = market
     f2r_late = H.f2r_state(months, official="2026-09", preview="2026-10")    # Oct F2R not official yet
     p, h, _ = H.run(NEW, "reference_only", NOV1, tmp_path, daily, un, f2r_late, wb(official=None))
@@ -485,7 +485,7 @@ def test_manual_release_needs_complete_official_data(dl_market, tmp_path):
     assert any(f.startswith("MANUAL_RELEASE_REJECTED 2026-09: not newer") for f in p["flags"])
 
 
-def test_live_lock_requires_the_authors_core(market, tmp_path):
+def test_month_lock_requires_the_authors_core(market, tmp_path):
     daily, un, months = market
     f2r = H.f2r_state(months, official="2026-10")
     p, h, _ = H.run(NEW, "reference_only", NOV1, tmp_path / "a", daily, un, f2r, wb(official=None))
@@ -616,7 +616,9 @@ def test_workflow_defaults_and_schedule():
 # ─────────────────────────────────────────────────────────────────────────────
 @pytest.mark.skipif(os.environ.get("PDS_LIVE_TEST") != "1", reason="set PDS_LIVE_TEST=1 (network)")
 def test_live_116_months_before_after(base, tmp_path):
+    assert NEW.fetch_prices.__module__ == "run_pipeline"   # the real fetchers, not a test stub
     daily = NEW.fetch_prices()                       # includes the new integrity check on real data
+    assert daily.index[-1] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=7)
     un, src = NEW.fetch_unrate()
     f2r = NEW.fetch_f2r_state()
     ref = NEW.fetch_reference_workbook()
@@ -645,7 +647,9 @@ def test_live_new_code_on_the_committed_lock(tmp_path):
     """Today's real run of the new code on top of the committed 116-month lock (what the first
     scheduled run after a merge would do), written to a temp dir."""
     real = json.loads((H.ROOT / "docs" / "data" / "official_history.json").read_text(encoding="utf-8"))
+    assert NEW.fetch_prices.__module__ == "run_pipeline"
     daily = NEW.fetch_prices()
+    assert daily.index[-1] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=7)
     un, _ = NEW.fetch_unrate()
     f2r = NEW.fetch_f2r_state()
     ref = NEW.fetch_reference_workbook()

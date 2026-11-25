@@ -64,7 +64,27 @@ jobs:
           PDS_BASE_REF: origin/main
           PDS_LIVE_TEST: "1"
           PDS_TEST_REPORT_DIR: test-report
-        run: python -m pytest tests/test_reference_only.py -q -k live
+        run: python -m pytest tests/test_reference_only.py -q -rA -k live
+      - name: Print the live report (also in the job summary)
+        if: always()
+        run: |
+          python - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, pathlib, pandas as pd
+          r = pathlib.Path("test-report")
+          c = r / "live_before_after.csv"
+          if c.exists():
+              d = pd.read_csv(c)
+              print(f"### live 116-month before/after: {len(d)} months, {d.signal_month.min()}..{d.signal_month.max()}")
+              print(f"- Core max |old-new| over all months: {d.core_max_abs_diff.max():.3g}; months with any Core diff: {(d.core_max_abs_diff > 0).sum()}")
+              ch = d[d.adaptive_max_abs_diff > 1e-12]
+              print(f"- months whose Adaptive target changes (old default -> reference_only): {len(ch)}")
+              for _, x in ch.iterrows():
+                  print(f"  - {x.signal_month}: {x.before_state} {x.before_rb:.4f} ({x.before_source}) -> {x.after_state} {x.after_rb:.4f} ({x.after_source}), one-way {x.adaptive_one_way_diff:.2%}")
+          j = r / "live_new_on_committed_lock.json"
+          if j.exists():
+              print("### new code on the committed lock (today, real data)")
+              print("```json"); print(j.read_text(encoding="utf-8")); print("```")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
