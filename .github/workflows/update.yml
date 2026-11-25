@@ -1,0 +1,123 @@
+name: update-portfolio
+
+on:
+  schedule:
+    # Times are UTC. 22:40 UTC = 07:40 KST next morning, after the US close (20:00/21:00 UTC).
+    - cron: "40 22 28-31 * *"   # month-end window: the run after the last session locks OFFICIAL
+    - cron: "40 22 1-3 * *"     # first days of the month: safety re-run (holidays, Yahoo delays)
+    - cron: "40 22 * * 5"       # weekly Friday monitoring (PREVIEW refresh)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "engine | reference"
+        default: "engine"
+      adaptive_mode:
+        description: "reference_then_proxy (운용) | proxy (대체 규칙 검증용)"
+        type: choice
+        options: [reference_then_proxy, proxy, reference_only]
+        default: reference_then_proxy
+      commit:
+        description: "결과를 저장소에 커밋 (proxy 검증 실행은 false 권장)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-portfolio
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline (fails closed; JSON is only written if every check passes)
+        id: run
+        env:
+          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_then_proxy' }}
+        run: python run_pipeline.py --mode "${{ github.event.inputs.mode || 'engine' }}"
+
+      - name: Validation summary
+        if: always()
+        env:
+          RUN_OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          p = "docs/data/portfolio_latest.json"
+          if os.environ["RUN_OUTCOME"] != "success" or not os.path.exists(p):
+              print("## 실행 실패: 새 JSON 미생성 (fail-closed). Run pipeline 단계 로그를 확인하세요."); raise SystemExit
+          d = json.load(open(p)); v = d.get("validation", {})
+          print(f"## PDS-Lite {d['mode']} · ADAPTIVE_MODE={d['config']['adaptive_mode']}")
+          if v.get("months_checked"):
+              print(f"- 원작자 Core 대조: **{v['exact_matches']}/{v['months_checked']}개월 일치**, 최대 오차 {v['max_abs_diff']:.2e}")
+              for m in v.get("mismatches", []):
+                  print(f"  - 불일치 {m['signal_month']}: {m['max_abs_diff']:.4f}")
+          o = d["official"]
+          print(f"- Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']:.2%}")
+          lock = "docs/data/official_history.json"
+          if os.path.exists(lock):
+              h = json.load(open(lock))
+              dfn = [f"{x['signal_month']}({x['risk_budget']:.2f}, {x['sources']['adaptive']})" for x in h if x["state"] == "DEFENSIVE"]
+              print(f"- DEFENSIVE {len(dfn)}개월: " + (", ".join(dfn) if dfn else "없음"))
+          print(f"- flags: {d['flags']}")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pds-lite-output
+          path: docs/data/
+          if-no-files-found: ignore
+
+      - name: Commit if changed
+        id: commit
+        if: github.event.inputs.commit != 'false'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "data: $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Optional phone alert. Add repo secrets TELEGRAM_TOKEN and TELEGRAM_CHAT_ID to enable.
+      - name: Telegram alert
+        if: steps.commit.outputs.changed == 'true' && env.TG_TOKEN != ''
+        env:
+          PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: |
+          MSG=$(python - <<'PY'
+          import json
+          p = json.load(open("docs/data/portfolio_latest.json"))
+          o = p["official"]; v = p.get("preview")
+          top = ", ".join(f"{r['ticker']} {r['adaptive']*100:.1f}%" for r in o["us"][:5])
+          s = f"[PDS-Lite] Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']*100:.0f}%\n{top}"
+          if v: s += f"\nPreview {v['signal_month']}: {v['state']} RB {v['risk_budget']*100:.0f}%"
+          if p["flags"]: s += "\n⚠ " + "; ".join(p["flags"])
+          print(s)
+          PY
+          )
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=${MSG}
+          ${PAGES_URL}" > /dev/null

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>PDS-Lite 리밸런싱</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0:#f4f5f7; --surface-1:#ffffff; --line:#e5e7eb;
+    --text-primary:#191919; --text-secondary:#666666;
+    --series-1:#257de0; --series-2:#f47230; --series-3:#00b894; --series-4:#f2a600;
+    --good:#0a7d2c; --good-bg:#e6f4ea; --warn:#9a5b00; --warn-bg:#fff4dc;
+    --up:#0a7d2c; --down:#c62828;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-0:#0f1115; --surface-1:#191919; --line:#2c2f36;
+      --text-primary:#efefef; --text-secondary:#9c9c9c;
+      --series-1:#338ced; --series-2:#e76624; --series-3:#00a888; --series-4:#d28e05;
+      --good:#5fd47c; --good-bg:#12301b; --warn:#ffc35c; --warn-bg:#3a2a08;
+      --up:#5fd47c; --down:#ff7b7b;
+    }
+  }
+  body { background:var(--surface-0); color:var(--text-primary);
+         font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;
+         -webkit-tap-highlight-color:transparent; }
+  .card { background:var(--surface-1); border:1px solid var(--line); border-radius:16px; }
+  .muted { color:var(--text-secondary); }
+  .hair { border-color:var(--line); }
+  .seg button { color:var(--text-secondary); }
+  .seg button[aria-pressed="true"] { background:var(--surface-1); color:var(--text-primary);
+         box-shadow:0 1px 2px rgba(0,0,0,.12); font-weight:600; }
+  .tab[aria-selected="true"] { color:var(--text-primary); border-color:var(--text-primary); font-weight:700; }
+  .tab { color:var(--text-secondary); border-color:transparent; }
+  .badge-normal { background:var(--good-bg); color:var(--good); }
+  .badge-def { background:var(--warn-bg); color:var(--warn); }
+  .num { font-variant-numeric: tabular-nums; }
+  .up { color:var(--up); } .down { color:var(--down); }
+  .bar { display:flex; gap:2px; height:10px; border-radius:6px; overflow:hidden; }
+  .bar > span { display:block; height:100%; }
+  .sw { width:10px; height:10px; border-radius:3px; display:inline-block; }
+  input.amt { background:var(--surface-0); border:1px solid var(--line); color:var(--text-primary); }
+</style>
+</head>
+<body class="min-h-screen pb-10">
+<div class="max-w-xl mx-auto px-4 pt-[max(16px,env(safe-area-inset-top))]">
+
+  <header class="flex items-end justify-between mb-3">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">PDS-Lite</h1>
+      <p class="text-xs muted" id="updated">불러오는 중…</p>
+    </div>
+    <span id="modeBadge" class="text-[11px] px-2 py-1 rounded-full hair border muted"></span>
+  </header>
+
+  <!-- status -->
+  <section class="card p-4 mb-3" aria-live="polite">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs muted" id="stLabel">공식 목표 (Official)</p>
+        <p class="text-sm mt-0.5 num" id="stMonths">–</p>
+      </div>
+      <span id="stBadge" class="text-sm font-bold px-3 py-1.5 rounded-full">–</span>
+    </div>
+    <div class="mt-3 flex items-baseline gap-2">
+      <span class="text-4xl font-bold num" id="stRB">–</span>
+      <span class="text-sm muted">Risk Budget</span>
+    </div>
+    <p class="text-xs muted mt-1" id="stNote"></p>
+    <div class="bar mt-3" id="stBar" aria-hidden="true"></div>
+    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs" id="stLegend"></div>
+    <div id="flags" class="mt-3 hidden text-xs rounded-lg px-3 py-2 badge-def"></div>
+  </section>
+
+  <!-- official / preview -->
+  <div class="seg flex rounded-xl p-1 mb-3" style="background:var(--line)" role="group" aria-label="기준">
+    <button class="flex-1 py-2 rounded-lg text-sm" data-view="official" aria-pressed="true">Official</button>
+    <button class="flex-1 py-2 rounded-lg text-sm" data-view="preview" aria-pressed="false">Preview (월중 추정)</button>
+  </div>
+
+  <!-- tabs -->
+  <nav class="flex border-b hair mb-3" role="tablist">
+    <button class="tab flex-1 py-2.5 text-sm border-b-2" role="tab" data-tab="us" aria-selected="true">미국 직투</button>
+    <button class="tab flex-1 py-2.5 text-sm border-b-2" role="tab" data-tab="irp" aria-selected="false">국내 IRP</button>
+    <button class="tab flex-1 py-2.5 text-sm border-b-2" role="tab" data-tab="trend" aria-selected="false">추이</button>
+  </nav>
+
+  <!-- US -->
+  <section id="tab-us" class="card p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <label for="usdAmt" class="text-xs muted shrink-0">총 평가액 USD</label>
+      <input id="usdAmt" inputmode="decimal" placeholder="예: 50000" class="amt flex-1 rounded-lg px-3 py-2 text-sm num">
+    </div>
+    <table class="w-full text-sm">
+      <thead><tr class="text-[11px] muted text-left">
+        <th class="font-normal pb-2">종목</th>
+        <th class="font-normal pb-2 text-right">Core</th>
+        <th class="font-normal pb-2 text-right">Adaptive</th>
+        <th class="font-normal pb-2 text-right">전월比</th>
+      </tr></thead>
+      <tbody id="usBody"></tbody>
+    </table>
+    <p class="text-[11px] muted mt-3">매매 기준: Adaptive 열. 한국투자증권 해외주식 계좌에서 월말 신호 후 첫 미국 거래일 종가 근처 체결 가정.</p>
+  </section>
+
+  <!-- IRP -->
+  <section id="tab-irp" class="card p-4 hidden">
+    <div class="flex items-center gap-2 mb-2">
+      <label for="krwAmt" class="text-xs muted shrink-0">IRP 평가액 KRW</label>
+      <input id="krwAmt" inputmode="numeric" placeholder="예: 30000000" class="amt flex-1 rounded-lg px-3 py-2 text-sm num">
+    </div>
+    <div class="grid grid-cols-2 gap-2 mb-3 text-center">
+      <div class="rounded-lg py-2" style="background:var(--surface-0)">
+        <p class="text-[11px] muted">위험자산 (상한 70%)</p><p class="font-bold num" id="irpRisk">–</p>
+      </div>
+      <div class="rounded-lg py-2" style="background:var(--surface-0)">
+        <p class="text-[11px] muted">상한 초과→안전자산 이동</p><p class="font-bold num" id="irpMoved">–</p>
+      </div>
+    </div>
+    <table class="w-full text-sm">
+      <thead><tr class="text-[11px] muted text-left">
+        <th class="font-normal pb-2">국내 ETF</th>
+        <th class="font-normal pb-2 text-right">비중</th>
+        <th class="font-normal pb-2 text-right" id="irpAmtHead">금액</th>
+      </tr></thead>
+      <tbody id="irpBody"></tbody>
+    </table>
+    <details class="mt-3 text-[11px] muted">
+      <summary class="cursor-pointer">대체 매핑 메모</summary>
+      <ul id="irpNotes" class="list-disc pl-4 mt-2 space-y-1"></ul>
+    </details>
+  </section>
+
+  <!-- trend -->
+  <section id="tab-trend" class="card p-4 hidden">
+    <div class="flex items-center justify-between mb-2 gap-2">
+      <div class="seg flex rounded-lg p-0.5 text-xs" style="background:var(--line)" role="group" aria-label="기준">
+        <button class="px-3 py-1.5 rounded-md" data-basis="adaptive" aria-pressed="true">Adaptive</button>
+        <button class="px-3 py-1.5 rounded-md" data-basis="core" aria-pressed="false">Core</button>
+      </div>
+      <div class="seg flex rounded-lg p-0.5 text-xs" style="background:var(--line)" role="group" aria-label="기간">
+        <button class="px-2.5 py-1.5 rounded-md" data-range="12">1Y</button>
+        <button class="px-2.5 py-1.5 rounded-md" data-range="36" aria-pressed="true">3Y</button>
+        <button class="px-2.5 py-1.5 rounded-md" data-range="60">5Y</button>
+        <button class="px-2.5 py-1.5 rounded-md" data-range="0">전체</button>
+      </div>
+    </div>
+    <h2 class="text-sm font-semibold mt-1">자산군 비중 (보유월 기준)</h2>
+    <div class="flex flex-wrap gap-x-3 gap-y-1 my-2 text-xs" id="trendLegend"></div>
+    <div class="relative h-64"><canvas id="acChart" aria-label="자산군 비중 추이"></canvas></div>
+    <h2 class="text-sm font-semibold mt-5">Risk Budget</h2>
+    <p class="text-[11px] muted">100% = NORMAL, 미만 = DEFENSIVE (잔여는 BIL)</p>
+    <div class="relative h-32 mt-1"><canvas id="rbChart" aria-label="Risk Budget 추이"></canvas></div>
+    <details class="mt-3 text-xs">
+      <summary class="cursor-pointer muted">표로 보기</summary>
+      <div class="overflow-x-auto mt-2"><table class="w-full num text-[11px]" id="trendTable"></table></div>
+    </details>
+  </section>
+
+  <footer class="mt-4 text-[11px] muted space-y-1" id="foot"></footer>
+</div>
+
+<script>
+const CLASSES = ["Equity","Fixed Income","Real Assets / Other","Cash"];
+const CLASS_KO = {"Equity":"주식","Fixed Income":"채권","Real Assets / Other":"실물/기타","Cash":"현금(BIL)"};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COL = () => ({"Equity":css("--series-1"),"Fixed Income":css("--series-2"),"Real Assets / Other":css("--series-3"),"Cash":css("--series-4")});
+const pct = (x,d=1) => x==null ? "–" : (100*x).toFixed(d)+"%";
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let D=null, view="official", basis="adaptive", range=36, acChart=null, rbChart=null;
+
+async function load(){
+  try{
+    const r = await fetch("data/portfolio_latest.json?ts="+Date.now(), {cache:"no-store"});
+    if(!r.ok) throw new Error(r.status);
+    D = await r.json();
+    if(!D.preview){ document.querySelector('[data-view="preview"]').disabled = true; }
+    renderAll();
+  }catch(e){
+    document.getElementById("updated").textContent = "데이터를 불러오지 못했습니다 ("+e.message+")";
+  }
+}
+const cur = () => (view==="preview" && D.preview) ? D.preview : D.official;
+
+function renderStatus(){
+  const b = cur();
+  document.getElementById("updated").textContent = `갱신 ${D.generated_at_kst} · 시장 기준 ${D.market_asof}`;
+  document.getElementById("modeBadge").textContent = D.mode==="engine" ? "자체 연산" : "원작자 공개값";
+  document.getElementById("stLabel").textContent = view==="preview" ? "월중 추정 (Preview · 실행 금지)" : "공식 목표 (Official)";
+  document.getElementById("stMonths").textContent = `신호 ${b.signal_month} → 보유 ${b.holding_month}`;
+  const def = b.state==="DEFENSIVE";
+  const badge = document.getElementById("stBadge");
+  badge.className = "text-sm font-bold px-3 py-1.5 rounded-full " + (def ? "badge-def":"badge-normal");
+  badge.textContent = (def ? "▼ " : "● ") + b.state;
+  document.getElementById("stRB").textContent = pct(b.risk_budget,0);
+  const src = (b.sources && b.sources.adaptive) || "";
+  document.getElementById("stNote").textContent =
+    (def ? `Core 비중 × ${pct(b.risk_budget,1)}, 나머지 ${pct(1-b.risk_budget,1)}는 BIL. ` : "Adaptive = Core 그대로. ")
+    + (src.startsWith("PROXY") ? "상태 출처: 자체 대체 규칙(원작자 RL 아님)" : src.startsWith("REFERENCE") ? "상태 출처: 원작자 공개 워크북" : "")
+    + (b.turnover_one_way!=null ? ` · 전월 대비 회전율 ${pct(b.turnover_one_way)}, 예상 비용 ${(b.est_cost*1e4).toFixed(1)}bp` : "");
+  const ac = b.asset_class[basis==="core"?"core":"adaptive"], C = COL();
+  document.getElementById("stBar").innerHTML = CLASSES.filter(k=>ac[k]>1e-6)
+     .map(k=>`<span style="width:${100*ac[k]}%;background:${C[k]}" title="${CLASS_KO[k]} ${pct(ac[k])}"></span>`).join("");
+  document.getElementById("stLegend").innerHTML = CLASSES.map(k=>
+     `<span class="inline-flex items-center gap-1"><i class="sw" style="background:${C[k]}"></i>${CLASS_KO[k]} <b class="num">${pct(ac[k])}</b></span>`).join("");
+  const fl = document.getElementById("flags");
+  const flags = (D.flags||[]).filter(f=>f!=="REFERENCE_MODE");
+  fl.classList.toggle("hidden", !flags.length);
+  fl.innerHTML = flags.length ? "⚠ 확인 필요: " + flags.map(esc).join(" · ") : "";
+}
+
+function renderUS(){
+  const b = cur(), usd = parseFloat(document.getElementById("usdAmt").value.replace(/,/g,""));
+  document.getElementById("usBody").innerHTML = b.us.map(r=>{
+    const d = r.delta, dc = d==null||Math.abs(d)<5e-4 ? "muted" : d>0 ? "up":"down";
+    const amt = isFinite(usd) && usd>0 ? `<div class="text-[11px] muted num">$${Math.round(usd*r.adaptive).toLocaleString()}</div>` : "";
+    return `<tr class="border-t hair">
+      <td class="py-2"><div class="font-semibold">${r.ticker}</div><div class="text-[11px] muted">${esc(r.name)}</div></td>
+      <td class="py-2 text-right num muted">${pct(r.core)}</td>
+      <td class="py-2 text-right num font-semibold">${pct(r.adaptive)}${amt}</td>
+      <td class="py-2 text-right num ${dc}">${d==null?"–":(d>0?"+":"")+(100*d).toFixed(1)}</td></tr>`;
+  }).join("");
+}
+
+function renderIRP(){
+  const b = cur(), irp = b.irp[basis==="core"?"core":"adaptive"];
+  const krw = parseFloat(document.getElementById("krwAmt").value.replace(/,/g,""));
+  document.getElementById("irpRisk").textContent = `${pct(irp.risk_after_cap)}`;
+  document.getElementById("irpMoved").textContent = irp.moved_to_safe>1e-6 ? pct(irp.moved_to_safe) : "없음";
+  document.getElementById("irpBody").innerHTML = irp.rows.map(r=>`<tr class="border-t hair">
+      <td class="py-2"><div class="font-semibold text-[13px]">${esc(r.name)}</div>
+        <div class="text-[11px] muted">${r.code} · ${r.class==="RISK"?"위험":"안전"} · ${r.from.map(esc).join("+")}</div></td>
+      <td class="py-2 pl-2 text-right num font-semibold whitespace-nowrap">${pct(r.weight)}</td>
+      <td class="py-2 pl-2 text-right num muted whitespace-nowrap">${isFinite(krw)&&krw>0 ? Math.round(krw*r.weight/1000).toLocaleString()+"천" : "–"}</td></tr>`).join("");
+  const notes = [...new Set(irp.rows.flatMap(r=>r.notes))];
+  document.getElementById("irpNotes").innerHTML = notes.map(n=>`<li>${esc(n)}</li>`).join("") +
+    `<li>위험자산 목표 ${pct(irp.cap_target,0)} (70% 한도 − 가격변동 버퍼). 초과분은 329750으로 이동.</li>`;
+}
+
+function trendRows(){ const h = D.history; return range ? h.slice(-range) : h; }
+
+function renderTrend(){
+  const rows = trendRows(), C = COL(), labels = rows.map(r=>r.holding_month);
+  const grid = css("--line"), txt = css("--text-secondary"), surf = css("--surface-1");
+  document.getElementById("trendLegend").innerHTML = CLASSES.map(k=>
+    `<span class="inline-flex items-center gap-1"><i class="sw" style="background:${C[k]}"></i>${CLASS_KO[k]}</span>`).join("");
+  const ds = CLASSES.map(k=>({label:CLASS_KO[k], data:rows.map(r=>100*r[basis][k]), fill:true,
+     backgroundColor:C[k]+"cc", borderColor:surf, borderWidth:1, pointRadius:0, pointHoverRadius:4, tension:0, stepped:"before"}));
+  const common = {responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:"index", intersect:false},
+    plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`}}},
+    scales:{x:{grid:{display:false}, ticks:{color:txt, maxTicksLimit:5, maxRotation:0, font:{size:10}}},
+            y:{grid:{color:grid}, border:{display:false}, ticks:{color:txt, font:{size:10}, callback:v=>v+"%"}}}};
+  acChart && acChart.destroy();
+  acChart = new Chart(document.getElementById("acChart"), {type:"line", data:{labels, datasets:ds},
+    options:{...common, scales:{...common.scales, y:{...common.scales.y, stacked:true, min:0, max:100}}}});
+  rbChart && rbChart.destroy();
+  rbChart = new Chart(document.getElementById("rbChart"), {type:"line",
+    data:{labels, datasets:[{label:"Risk Budget", data:rows.map(r=>100*r.risk_budget), borderColor:css("--text-primary"),
+      borderWidth:2, pointRadius:rows.map(r=>r.state==="DEFENSIVE"?4:0), pointBackgroundColor:css("--warn"), stepped:"before"}]},
+    options:{...common, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` RB ${c.parsed.y.toFixed(1)}% · ${rows[c.dataIndex].state}`}}},
+      scales:{...common.scales, y:{...common.scales.y, min:40, max:100}}}});
+  document.getElementById("trendTable").innerHTML =
+    `<tr class="muted text-left"><th class="pr-2">보유월</th><th>상태</th><th>RB</th>${CLASSES.map(k=>`<th class="text-right">${CLASS_KO[k]}</th>`).join("")}</tr>` +
+    rows.slice().reverse().map(r=>`<tr class="border-t hair"><td class="pr-2">${r.holding_month}</td><td>${r.state==="DEFENSIVE"?"DEF":"NOR"}</td><td>${pct(r.risk_budget,0)}</td>${CLASSES.map(k=>`<td class="text-right">${pct(r[basis][k])}</td>`).join("")}</tr>`).join("");
+}
+
+function renderFoot(){
+  const v = D.validation||{};
+  const val = v.months_checked ? `원작자 공개 Core와 대조: ${v.exact_matches}/${v.months_checked}개월 일치 (최대 오차 ${Number(v.max_abs_diff).toExponential(1)})` : (v.note||"");
+  document.getElementById("foot").innerHTML =
+    `<p>${esc(val)}</p><p>Core = 0.9×ADAA(HAA25·BAA15·ADM17.5·FAA17.5·LAA25) + 0.1×F2R Top-4 · Adaptive = RB×Core + (1−RB)×BIL</p><p>${esc(D.disclaimer)}</p>`;
+}
+
+function renderAll(){ renderStatus(); renderUS(); renderIRP(); if(!document.getElementById("tab-trend").classList.contains("hidden")) renderTrend(); renderFoot(); }
+
+document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{ if(b.disabled) return; view=b.dataset.view;
+  document.querySelectorAll("[data-view]").forEach(x=>x.setAttribute("aria-pressed", x===b)); renderAll(); });
+document.querySelectorAll("[data-basis]").forEach(b=>b.onclick=()=>{ basis=b.dataset.basis;
+  document.querySelectorAll("[data-basis]").forEach(x=>x.setAttribute("aria-pressed", x===b)); renderAll(); renderTrend(); });
+document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{ range=+b.dataset.range;
+  document.querySelectorAll("[data-range]").forEach(x=>x.setAttribute("aria-pressed", x===b)); renderTrend(); });
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-tab]").forEach(x=>x.setAttribute("aria-selected", x===b));
+  ["us","irp","trend"].forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden", t!==b.dataset.tab));
+  if(b.dataset.tab==="trend") renderTrend(); });
+["usdAmt","krwAmt"].forEach(id=>{ const el=document.getElementById(id);
+  try{ el.value = localStorage.getItem(id)||""; }catch(e){}
+  el.oninput=()=>{ try{ localStorage.setItem(id, el.value); }catch(e){} renderUS(); renderIRP(); }; });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>D && renderAll());
+load();
+</script>
+</body>
+</html>
