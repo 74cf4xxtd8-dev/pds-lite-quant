@@ -23,6 +23,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _harness as H  # noqa: E402
 
 NEW = H.NEW
+sys.path.insert(0, str(H.ROOT / "tools"))
+import notify_message as NOTIFY  # noqa: E402
+import record_run_status as RUNSTATUS  # noqa: E402
+import rollback_check as ROLLBACK  # noqa: E402
 NOV1 = datetime(2026, 11, 1, 0, 0, tzinfo=timezone.utc)      # Oct-2026 complete -> last_off = 2026-10
 DEC1 = datetime(2026, 12, 1, 0, 0, tzinfo=timezone.utc)
 
@@ -269,7 +273,7 @@ def test_failures_write_nothing(market, tmp_path):
     H.run(NEW, "reference_only", NOV1, tmp_path, daily, un, f2r, wbc(daily, un, f2r))   # a good first run
     snap = _snapshot(out)
     assert set(snap) == {"official_history.json", "reference_adaptive.json", "official_events.json",
-                         "portfolio_latest.json"}
+                         "manual_releases.json", "portfolio_latest.json"}
 
     def boom():
         raise RuntimeError("price download failed: HTTP 503")
@@ -386,13 +390,21 @@ def dl_market():
             "nov": H.f2r_state(months, official="2026-11")}
 
 
-def _run_at(dl, tmp, now, f2r, ref, release=None):
-    daily = dl["daily"].loc[:pd.Timestamp(now.date())]
+OK_REASON = "공식 F2R·원작자 Core 일치 직접 확인"
+
+
+def _run_at(dl, tmp, now, f2r, ref, release=None, reason=OK_REASON, px_until=None, after_feed=None):
+    daily = dl["daily"].loc[:pd.Timestamp(px_until or now.date())]
     NEW.MANUAL_RELEASE_MONTH = release or ""
+    NEW.MANUAL_RELEASE_REASON = reason if release else ""
     try:
-        return H.run(NEW, "reference_only", now, tmp, daily, dl["un"], f2r, ref)
+        return H.run(NEW, "reference_only", now, tmp, daily, dl["un"], f2r, ref, after_feed=after_feed)
     finally:
-        NEW.MANUAL_RELEASE_MONTH = ""
+        NEW.MANUAL_RELEASE_MONTH = NEW.MANUAL_RELEASE_REASON = ""
+
+
+def _releases():
+    return json.loads(NEW.RELEASES_JSON.read_text(encoding="utf-8"))
 
 
 def _core_wb(dl, f2r, months, official=None):
@@ -455,34 +467,180 @@ def test_no_automatic_lock_after_day_10_even_with_complete_data(dl_market, tmp_p
     assert [e["event"] for e in _events() if e["signal_month"] == "2026-10"] == ["PENDING", "BLOCKED"]
 
 
-def test_manual_release_needs_complete_official_data(dl_market, tmp_path):
+def test_manual_release_needs_complete_official_data(dl_market, tmp_path, monkeypatch):
     dl = dl_market
+    monkeypatch.setenv("GITHUB_ACTOR", "owner")
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42")
     lock0 = _start_with_october_pending(dl, tmp_path)
     _run_at(dl, tmp_path, _utc(11, 10), dl["sep"], wb(official=None))              # BLOCKED
     # release requested but F2R still not official -> rejected, still blocked
     p, _, _ = _run_at(dl, tmp_path, _utc(11, 11, 3, 0), dl["sep"], wb(official=None), release="2026-10")
     assert NEW.LOCK_JSON.read_bytes() == lock0 and p["action"]["code"] == "HALTED"
-    assert any(f.startswith("MANUAL_RELEASE_REJECTED 2026-10: F2R official not published") for f in p["flags"])
+    assert any(f.startswith("MANUAL_RELEASE_REJECTED 2026-10") and "F2R official not published" in f
+               for f in p["flags"])
     # release with official F2R but the author's Core disagrees -> rejected
     bad = wb(official=None, core_rows={("OFFICIAL", "2026-10"): {"BIL": 1.0}})
     p, _, _ = _run_at(dl, tmp_path, _utc(11, 12, 3, 0), dl["oct"], bad, release="2026-10")
     assert NEW.LOCK_JSON.read_bytes() == lock0
-    assert any(f.startswith("MANUAL_RELEASE_REJECTED 2026-10: Core differs") for f in p["flags"])
-    # complete and matching -> locked, marked as a manual release; the author's Adaptive row
-    # already published at this moment is applied (D3), later ones are not
+    assert any(f.startswith("MANUAL_RELEASE_REJECTED 2026-10") and "Core differs" in f for f in p["flags"])
+    # complete data but no approval reason -> rejected
     ref = _core_wb(dl, dl["oct"], ["2026-10"], official=("DEFENSIVE", 0.7122398))
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 12, 4, 0), dl["oct"], ref, release="2026-10", reason="")
+    assert NEW.LOCK_JSON.read_bytes() == lock0
+    assert any("approval reason missing" in f for f in p["flags"])
+    # complete, matching, inputs healthy, reason given -> locked as a manual release; the author's
+    # Adaptive row already published at this moment is applied (D3), later ones are not
     p, h, _ = _run_at(dl, tmp_path, _utc(11, 13), dl["oct"], ref, release="2026-10")
     assert h[-1]["signal_month"] == "2026-10" and h[-1]["origin"] == "MANUAL_RELEASE"
+    assert h[-1]["manual_release"] == {"requested_at_utc": "2026-11-13T22:40:00+00:00", "actor": "owner",
+                                       "run_url": "https://github.com/o/r/actions/runs/42", "reason": OK_REASON}
     assert h[-1]["sources"]["adaptive"] == "REFERENCE_OFFICIAL_AT_LOCK" and h[-1]["risk_budget"] == 0.7122398
     assert p["action"]["code"] == "FOLLOW_OFFICIAL" and p["history"][-1]["record_class"] == "RECONSTRUCTED"
     ev = [(e["signal_month"], e["event"]) for e in _events()]
     assert ev[-2:] == [("2026-10", "MANUAL_RELEASE"), ("2026-10", "LOCKED")]
-    assert ev.count(("2026-10", "MANUAL_RELEASE_REJECTED")) == 2
+    assert ev.count(("2026-10", "MANUAL_RELEASE_REJECTED")) == 3
+    rel = _releases()                                                               # separate approval record
+    assert [r["outcome"] for r in rel] == ["REJECTED", "REJECTED", "REJECTED", "LOCKED"]
+    last = rel[-1]
+    assert last["actor"] == "owner" and last["reason"] == OK_REASON and last["problems"] == []
+    assert last["checks"]["f2r_source"] == "F2R_PUBLISHED" and last["checks"]["author_core_max_abs_diff"] <= 1e-12
+    assert last["checks"]["unrate_source"] == "TEST" and last["checks"]["price_integrity"] == "passed"
+    assert last["checks"]["author_core_history"] == "0/0" and last["locked"]["risk_budget"] == 0.7122398
+    assert rel[1]["checks"]["author_core_max_abs_diff"] > 0.5
     # releasing a month that is not newer than the latest official is refused
     locked = NEW.LOCK_JSON.read_bytes()
     p, _, _ = _run_at(dl, tmp_path, _utc(11, 14), dl["oct"], ref, release="2026-09")
     assert NEW.LOCK_JSON.read_bytes() == locked
     assert any(f.startswith("MANUAL_RELEASE_REJECTED 2026-09: not newer") for f in p["flags"])
+    assert _releases()[:4] == rel and _releases()[-1]["outcome"] == "REJECTED"   # append-only
+
+
+@pytest.mark.parametrize("case", ["unrate_cache", "stale_prices", "f2r_endpoint_down", "author_history_mismatch"])
+def test_manual_release_requires_healthy_inputs(dl_market, tmp_path, case):
+    dl = dl_market
+    lock0 = _start_with_october_pending(dl, tmp_path)
+    _run_at(dl, tmp_path, _utc(11, 10), dl["sep"], wb(official=None))              # BLOCKED
+    f2r, ref, kw = dl["oct"], _core_wb(dl, dl["oct"], ["2026-10"]), {}
+    if case == "unrate_cache":
+        kw["after_feed"] = lambda mod: setattr(mod, "fetch_unrate", lambda: (dl["un"].copy(), "CACHE"))
+        expect = "UNRATE from cache"
+    elif case == "stale_prices":
+        kw["px_until"] = "2026-11-06"                                               # 9 days old on 11/15
+        expect = "prices stale"
+    elif case == "f2r_endpoint_down":
+        f2r = None
+        expect = "F2R endpoint unavailable"
+    else:
+        rows = H.author_core_rows(dl["daily"], dl["un"], dl["oct"], ["2026-10"])
+        rows[("HISTORY", "2026-09")] = {"BIL": 1.0}                                 # published history moved
+        ref = wb(official=None, core_rows=rows)
+        expect = "author Core history mismatch"
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 15), f2r, ref, release="2026-10", **kw)
+    assert NEW.LOCK_JSON.read_bytes() == lock0 and p["action"]["code"] == "HALTED"
+    rec = _releases()[-1]
+    assert rec["outcome"] == "REJECTED" and any(expect in x for x in rec["problems"]), rec["problems"]
+
+
+def test_operator_halt_stops_every_new_lock(dl_market, tmp_path):
+    dl = dl_market
+    lock0 = _start_with_october_pending(dl, tmp_path)
+    ref = _core_wb(dl, dl["oct"], ["2026-10"])
+    NEW.OPERATOR_HALT = True
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 3), dl["oct"], ref)                    # complete, but halted
+    assert NEW.LOCK_JSON.read_bytes() == lock0
+    assert p["action"]["code"] == "HALTED" and "PDS_HALT" in p["action"]["message"]
+    assert [e["event"] for e in p["notify"]] == ["OPERATOR_HALT"]
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 4), dl["oct"], ref)
+    assert p["notify"] == [] and NEW.LOCK_JSON.read_bytes() == lock0               # no repeated alert
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 4, 23, 0), dl["oct"], ref, release="2026-10")
+    assert NEW.LOCK_JSON.read_bytes() == lock0
+    assert "operator halt is active (PDS_HALT)" in _releases()[-1]["problems"]
+    NEW.OPERATOR_HALT = False                                                       # variable removed
+    p, h, _ = _run_at(dl, tmp_path, _utc(11, 5), dl["oct"], ref)
+    assert h[-1]["signal_month"] == "2026-10" and h[-1]["origin"] == "LIVE"
+    assert [e["event"] for e in p["notify"]] == ["LOCKED"]
+
+
+def test_notifications_only_on_state_changes(dl_market, tmp_path):
+    dl = dl_market
+    seen = []
+
+    def step(now, f2r, ref):
+        p, _, _ = _run_at(dl, tmp_path, now, f2r, ref)
+        seen.append([e["event"] for e in p["notify"]])
+        return p
+    step(datetime(2026, 11, 1, tzinfo=timezone.utc), dl["sep"], wb(official=None))  # waiting starts
+    step(_utc(11, 2), dl["sep"], wb(official=None))
+    step(_utc(11, 3), dl["sep"], wb(official=None))
+    bad = wb(official=None, core_rows={("OFFICIAL", "2026-10"): {"BIL": 1.0}})
+    step(_utc(11, 4), dl["oct"], bad)                                                # F2R out, Core differs
+    step(_utc(11, 5), dl["oct"], bad)
+    p = step(_utc(11, 6), dl["oct"], _core_wb(dl, dl["oct"], ["2026-10"]))           # fixed -> locked
+    step(_utc(11, 7), dl["oct"], _core_wb(dl, dl["oct"], ["2026-10"]))
+    assert seen == [["PENDING"], [], [], ["CORE_MISMATCH"], [], ["LOCKED"], []]
+    msg = NOTIFY.message(p, "https://x/")
+    assert msg.startswith("[PDS-Lite]\n✅ 2026-10 공식 확정 → 2026-11 보유") and msg.endswith("https://x/")
+    assert NOTIFY.message({"notify": []}) == ""
+
+
+def test_blocked_month_alerts_once(dl_market, tmp_path):
+    dl = dl_market
+    _start_with_october_pending(dl, tmp_path)
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 10), dl["sep"], wb(official=None))
+    assert [e["event"] for e in p["notify"]] == ["BLOCKED"]
+    msg = NOTIFY.message(p)
+    assert "⛔ 2026-10 자동 리밸런싱 중지(10일 마감)" in msg and "현재 보유 자산을 그대로 유지" in msg
+    p, _, _ = _run_at(dl, tmp_path, _utc(11, 13), dl["sep"], wb(official=None))     # Friday re-run
+    assert p["action"]["code"] == "HALTED" and p["notify"] == []
+
+
+def test_run_status_keeps_a_rolling_log_and_ignores_stale_payloads(tmp_path):
+    now = datetime(2026, 12, 3, 22, 45, tzinfo=timezone.utc)
+    payload = {"generated_at_utc": now.isoformat(), "action": {"code": "WAIT", "month": "2026-11", "reason": "x"},
+               "notify": [], "validation": {"new_official_locks": 0}}
+    prev = {"recent": [{"i": k} for k in range(RUNSTATUS.RECENT_KEEP)]}
+    out = RUNSTATUS.build(prev, True, payload, ["[lock] a", "b"], "schedule", "u", now)
+    assert len(out["recent"]) == RUNSTATUS.RECENT_KEEP and out["recent"][-1]["action"] == "WAIT"
+    assert out["recent"][0] == {"i": 1} and out["log_tail"] == ["b"] and out["notify"] == []
+    fail = RUNSTATUS.build(out, False, payload, [], "schedule", "u", now)        # failed run: no payload used
+    assert fail["action"] is None and fail["recent"][-1]["ok"] is False
+    f = tmp_path / "p.json"
+    f.write_text(json.dumps(payload))
+    assert RUNSTATUS.this_runs_payload(f, now) is not None
+    assert RUNSTATUS.this_runs_payload(f, datetime(2026, 12, 3, 23, 0, tzinfo=timezone.utc)) is None
+
+
+def test_rollback_dry_run_flags_a_gap_fill(dl_market, base, tmp_path):
+    """The 1.0 code would back-fill a BLOCKED month: the dry run must say 'manual review'."""
+    dl = dl_market
+    _start_with_october_pending(dl, tmp_path)
+    _run_at(dl, tmp_path, _utc(11, 10), dl["sep"], wb(official=None))              # Oct BLOCKED
+    ref = _core_wb(dl, dl["nov"], ["2026-10", "2026-11"])
+    _run_at(dl, tmp_path, _utc(12, 2), dl["nov"], ref)                               # Nov locked, Oct gap
+    data = tmp_path / "docs" / "data"
+    snap = {f.name: f.read_bytes() for f in data.glob("*.json")}
+    H.feed(base, dl["daily"].loc[:"2026-12-02"], dl["un"], dl["nov"], ref)
+    base.ADAPTIVE_MODE = "reference_then_proxy"
+    res = ROLLBACK.check(base, data, _utc(12, 2, 23, 0))
+    assert res["gap_fills"] == ["2026-10"] and res["needs_review"] is True
+    assert res["changed"] == [] and res["removed"] == []
+    assert "수동 검토 필요" in ROLLBACK.report(res, "main", _utc(12, 2, 23, 0))
+    assert {f.name: f.read_bytes() for f in data.glob("*.json")} == snap             # dry run wrote nothing
+
+
+def test_rollback_dry_run_clean_case(market, base, tmp_path):
+    daily, un, months = market
+    f2r = H.f2r_state(months, official="2026-10")
+    ref = wbc(daily, un, f2r)
+    H.run(NEW, "reference_only", NOV1, tmp_path, daily, un, f2r, ref)
+    H.feed(base, daily, un, f2r, ref)
+    base.ADAPTIVE_MODE = "reference_then_proxy"
+    res = ROLLBACK.check(base, tmp_path / "docs" / "data", datetime(2026, 11, 3, tzinfo=timezone.utc))
+    assert res["needs_review"] is False and res["appended"] == [] and res["gap_fills"] == []
+    assert ROLLBACK.compare([{"signal_month": "2026-09", "x": 1}], [{"signal_month": "2026-09", "x": 2}])["changed"] \
+        == ["2026-09"]
 
 
 def test_month_lock_requires_the_authors_core(market, tmp_path):
@@ -603,12 +761,20 @@ def test_workflow_defaults_and_schedule():
     assert NEW.ADAPTIVE_MODES[0] == "reference_only" and os.environ.get("ADAPTIVE_MODE") in (None, "", "reference_only")
     assert step["env"]["OFFICIAL_REQUIRES_F2R_PUBLISHED"] == "1" and step["env"]["OFFICIAL_REQUIRES_AUTHOR_CORE"] == "1"
     assert "release_month" in step["env"]["MANUAL_RELEASE_MONTH"]
+    assert "release_reason" in step["env"]["MANUAL_RELEASE_REASON"] and "vars.PDS_HALT" in step["env"]["PDS_HALT"]
     assert on["workflow_dispatch"]["inputs"]["release_month"]["default"] == ""
+    assert on["workflow_dispatch"]["inputs"]["release_reason"]["default"] == ""
     # a daily run on days 1-10 at or after the final-check hour
     daily = [c["cron"].split() for c in on["schedule"] if c["cron"].split()[2] == "1-10"]
     assert daily and int(daily[0][1]) >= NEW.LOCK_FINAL_CHECK_UTC_HOUR and daily[0][4] == "*"
-    halted = next(s for s in wf["jobs"]["run"]["steps"] if s.get("name", "").startswith("Telegram alert: rebalancing halted"))
-    assert "HALTED" in halted["if"]
+    steps = {s.get("name", ""): s for s in wf["jobs"]["run"]["steps"]}
+    tg = [n for n in steps if n.startswith("Telegram")]
+    assert tg == ["Telegram alert (state changes only)", "Telegram alert on failure (pipeline or commit/push)"]
+    assert "steps.status.outputs.notify == 'true'" in steps[tg[0]]["if"]
+    assert "steps.commit.outcome == 'failure'" in steps[tg[1]]["if"]
+    assert "record_run_status.py" in steps["Record run status (readable without Actions UI; keeps the last 60 runs)"]["run"]
+    rb = yaml.safe_load((H.ROOT / ".github" / "workflows" / "rollback-check.yml").read_text(encoding="utf-8"))
+    assert rb["permissions"] == {"contents": "read"} and list(rb[True]) == ["workflow_dispatch"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,33 @@
+name: rollback-check
+
+# Read-only dry run for the rollback procedure (README "롤백 절차"): runs run_pipeline.py from
+# target_ref on today's data against a copy of the current docs/data and reports whether it would
+# fill a skipped month or change a locked month.  It never commits and needs no secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: "되돌릴 대상 커밋/브랜치 (예: 병합 직전 main 커밋 SHA)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Dry run (exit 2 = manual review required)
+        env:
+          TARGET_REF: ${{ github.event.inputs.target_ref }}
+        run: python tools/rollback_check.py --ref "$TARGET_REF" --report "$GITHUB_STEP_SUMMARY"

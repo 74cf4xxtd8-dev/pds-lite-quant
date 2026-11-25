@@ -111,7 +111,13 @@ OFFICIAL_REQUIRES_AUTHOR_CORE = os.environ.get("OFFICIAL_REQUIRES_AUTHOR_CORE", 
 LOCK_DEADLINE_DAY = 10
 LOCK_FINAL_CHECK_UTC_HOUR = 22
 MANUAL_RELEASE_MONTH = os.environ.get("MANUAL_RELEASE_MONTH", "").strip()
+MANUAL_RELEASE_REASON = os.environ.get("MANUAL_RELEASE_REASON", "").strip()   # required with a release
+RELEASE_MAX_PRICE_AGE_DAYS = 5   # a manual release needs prices no older than this (calendar days)
+# Operator halt (repository variable PDS_HALT=1): no new month is locked at all, the current holdings
+# stay, every run reports HALTED.  Step 1 of any rollback or incident; cleared by removing the variable.
+OPERATOR_HALT = os.environ.get("PDS_HALT", "").strip().lower() in ("1", "true", "yes", "on")
 EVENTS_JSON = OUT_DIR / "official_events.json"   # append-only audit: PENDING / BLOCKED / LOCKED / releases
+RELEASES_JSON = OUT_DIR / "manual_releases.json"  # append-only: every manual release request and its checks
 LIVE_LOCK_MAX_DAYS = 14          # a lock this many days after the cutoff counts as a live record
 PROXY_TARGET_VOL = 0.10          # annualised; YOUR parameter, not the author's
 PROXY_VOL_WINDOW = 63            # trading days
@@ -1057,6 +1063,38 @@ def load_events() -> list[dict]:
     return []
 
 
+def load_releases() -> list[dict]:
+    if RELEASES_JSON.exists():
+        return json.loads(RELEASES_JSON.read_text(encoding="utf-8"))
+    return []
+
+
+def release_input_problems(daily, now_utc: datetime, unrate_src: str, f2r_state, ref,
+                           lock_before: list[dict]) -> list[str]:
+    """Checks a manual release needs on top of official F2R + matching author Core: the approval
+    reason, every public input fetched live, fresh prices (integrity was already checked in
+    fetch_prices) and the author's published Core history still equal to our locked Core."""
+    probs = []
+    if not MANUAL_RELEASE_REASON:
+        probs.append("approval reason missing (workflow input release_reason)")
+    if OPERATOR_HALT:
+        probs.append("operator halt is active (PDS_HALT)")
+    if f2r_state is None:
+        probs.append("F2R endpoint unavailable")
+    if not ref:
+        probs.append("author workbook unavailable")
+    if unrate_src == "CACHE":
+        probs.append("UNRATE from cache (FRED and BLS both failed)")
+    age = (now_utc.date() - daily.index[-1].date()).days
+    if age > RELEASE_MAX_PRICE_AGE_DAYS:
+        probs.append(f"prices stale: last close {daily.index[-1].date()} ({age} days old)")
+    if ref:
+        v = validate_against_reference(lock_before, ref)
+        if v.get("months_checked") and v["exact_matches"] != v["months_checked"]:
+            probs.append(f"author Core history mismatch: {v['exact_matches']}/{v['months_checked']} months")
+    return probs
+
+
 def _event(events: list[dict], sm: str, kind: str, now_utc: datetime, detail: str, once: bool = True):
     if once and any(e["signal_month"] == sm and e["event"] == kind for e in events):
         return
@@ -1069,6 +1107,11 @@ def rebalance_action(live, official: dict) -> dict:
     days 1-10, official data incomplete, do not trade; HALTED: deadline passed incomplete, keep the
     current holdings and stop automatic rebalancing until a manual release."""
     off = official["signal_month"]
+    if live is not None and live[0] == "OPERATOR_HALT":
+        sm = live[1]
+        return {"code": "HALTED", "month": sm, "in_force": off, "reason": "operator halt (PDS_HALT)",
+                "message": f"⛔ 운영자 중지(PDS_HALT): 신규 잠금·자동 리밸런싱 없음. 현재 보유 자산을 그대로 "
+                           f"유지하세요(마지막 공식 {off}). 저장소 변수 PDS_HALT를 지우면 다음 실행부터 정상 동작."}
     if live is None:
         return {"code": "FOLLOW_OFFICIAL", "month": off, "in_force": off, "reason": None,
                 "message": f"공식 목표 {off}→{official['holding_month']} 유효. 신규 잠금 대상 월 없음."}
@@ -1083,8 +1126,8 @@ def rebalance_action(live, official: dict) -> dict:
                           f"리밸런싱하지 말고 현재 보유를 유지하세요(직전 공식 {off}).")
     else:
         out["message"] = (f"⛔ {sm} 자동 리밸런싱 중지: {why}. 현재 보유 자산을 그대로 유지하세요. "
-                          f"수동 확인 후 release_month={sm} 실행으로만 해제되며, 공식 F2R·원작자 Core가 "
-                          f"갖춰지고 일치할 때만 잠깁니다.")
+                          f"직접 확인한 뒤 release_month={sm}, release_reason을 넣어 실행해야만 해제되며, "
+                          f"공식 F2R·원작자 Core 일치·입력 데이터 정상일 때만 잠깁니다.")
     return out
 
 
@@ -1129,16 +1172,37 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
         flags.append("F2R_UNAVAILABLE")
     earliest = lock_before[0]["signal_month"] if lock_before else None
     latest = lock_before[-1]["signal_month"] if lock_before else None
+    rel_before = load_releases()
+    releases = json.loads(json.dumps(rel_before))
     release = MANUAL_RELEASE_MONTH or None
-    if release and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", release):
-        raise RuntimeError(f"MANUAL_RELEASE_MONTH must be YYYY-MM, got {release!r}")
-    if release and latest and release <= latest:
-        flags.append(f"MANUAL_RELEASE_REJECTED {release}: not newer than the latest official {latest}")
-        _event(oev, release, "MANUAL_RELEASE_REJECTED", now_utc, f"not newer than {latest}", once=False)
-        release = None
+    rel = None                                          # this run's manual-release record
+    if release:
+        if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", release):
+            raise RuntimeError(f"MANUAL_RELEASE_MONTH must be YYYY-MM, got {release!r}")
+        probs = release_input_problems(daily, now_utc, unrate_src, f2r_state, ref, lock_before)
+        if latest and release <= latest:
+            probs.insert(0, f"not newer than the latest official {latest}")
+        run_url = (f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/"
+                   f"{os.environ['GITHUB_RUN_ID']}") if os.environ.get("GITHUB_RUN_ID") else None
+        rel = {"signal_month": release, "requested_at_utc": now_utc.isoformat(timespec="seconds"),
+               "actor": os.environ.get("GITHUB_ACTOR") or "local", "run_url": run_url,
+               "reason": MANUAL_RELEASE_REASON, "outcome": None, "problems": probs,
+               "checks": {"price_integrity": "passed", "prices_last_close": str(daily.index[-1].date()),
+                          "unrate_source": unrate_src, "f2r_endpoint": f2r_state is not None,
+                          "author_workbook": bool(ref), "author_core_history": None}}
+        if ref:
+            v = validate_against_reference(lock_before, ref)
+            rel["checks"]["author_core_history"] = f"{v.get('exact_matches')}/{v.get('months_checked')}"
+        if probs:
+            release = None
     months = [p for p in m.index if str(p) >= backfill_from and p <= last_off]
     live = None                                         # outcome of the newest live month
     gaps: list[str] = []
+    if OPERATOR_HALT:
+        months = []                                     # nothing is locked while the operator halt is on
+        live = ("OPERATOR_HALT", str(last_off))
+        flags.append("OPERATOR_HALT: PDS_HALT is set; no new lock, keep current holdings")
+        _event(oev, str(last_off), "OPERATOR_HALT", now_utc, "PDS_HALT set; no new locks")
     for p in months:
         sm = str(p)
         if sm in lock:
@@ -1163,6 +1227,13 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
             print(f"[skip] backfill {sm}: {e}")
             continue
         hold = official_hold_reason(d, ref, sm, live=(kind == "LIVE"))
+        if hold and hold.startswith("Core differs"):
+            _event(oev, sm, "CORE_MISMATCH", now_utc, hold)
+        if rel is not None and rel["signal_month"] == sm:
+            acore = _author_core(ref, sm)
+            rel["checks"].update({"f2r_source": d["sources"]["f2r"], "author_core_published": acore is not None,
+                                  "author_core_max_abs_diff": None if acore is None else
+                                  float((series_from(d["core"]) - acore).abs().max())})
         if kind == "BACKFILL":
             if hold:
                 flags.append(f"BACKFILL_SKIPPED {sm}: {hold}")
@@ -1170,8 +1241,8 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
         else:
             released = release == sm
             if hold and released:
-                flags.append(f"MANUAL_RELEASE_REJECTED {sm}: {hold}")
-                _event(oev, sm, "MANUAL_RELEASE_REJECTED", now_utc, hold, once=False)
+                rel["problems"].append(hold)
+                released = False
             if hold and now_utc < final_check:
                 d["status"] = "PENDING"
                 live = ("WAIT", d, hold, final_check)
@@ -1193,8 +1264,12 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
             d["origin"] = "BACKFILL_RECOMPUTED"
         elif release == sm:
             d["origin"] = "MANUAL_RELEASE"
-            _event(oev, sm, "MANUAL_RELEASE", now_utc, "locked by manual release with complete official data",
-                   once=False)
+            d["manual_release"] = {k: rel[k] for k in ("requested_at_utc", "actor", "run_url", "reason")}
+            rel["outcome"] = "LOCKED"
+            rel["locked"] = {"state": d["state"], "risk_budget": d["risk_budget"],
+                             "adaptive_source": d["sources"]["adaptive"]}
+            _event(oev, sm, "MANUAL_RELEASE", now_utc,
+                   f"by {rel['actor']}: {rel['reason']}; official F2R and author Core verified", once=False)
         else:
             d["origin"] = "LIVE"
         if kind == "LIVE":
@@ -1204,15 +1279,27 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
         lock[sm] = d
         print(f"[lock] {sm}: state={d['state']} rb={d['risk_budget']:.4f} adaptive={d['sources']['adaptive']} "
               f"f2r={d['sources']['f2r']} origin={d['origin']}")
+    if rel is not None:
+        if rel["outcome"] is None:
+            if not rel["problems"]:
+                rel["problems"].append("signal month not complete yet, or not a month awaiting its lock")
+            rel["outcome"] = "REJECTED"
+            why = "; ".join(rel["problems"])
+            flags.append(f"MANUAL_RELEASE_REJECTED {rel['signal_month']}: {why}")
+            _event(oev, rel["signal_month"], "MANUAL_RELEASE_REJECTED", now_utc,
+                   f"by {rel['actor']}: {why}", once=False)
+        releases.append(rel)
     history = [lock[k] for k in sorted(lock)]
     if not history:
         raise RuntimeError("no official decision available")
     n_new = assert_lock_append_only(lock_before, history)
     if oev[:len(oev_before)] != oev_before:
         raise RuntimeError("official_events.json is append-only")
+    if releases[:len(rel_before)] != rel_before:
+        raise RuntimeError("manual_releases.json is append-only")
 
     preview = None
-    if live is not None and live[0] != "FOLLOW_OFFICIAL":
+    if live is not None and live[0] in ("WAIT", "HALTED"):
         preview = live[1]                               # the month awaiting/blocked: 'do not execute'
     elif prev_p is not None and prev_p in m.index:
         i = m.index.get_loc(prev_p)
@@ -1259,8 +1346,12 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
     payload["action"] = rebalance_action(live, history[-1])
     payload["unlocked_gaps"] = gaps
     payload["official_events"] = oev[-12:]
+    payload["notify"] = oev[len(oev_before):]           # state changes of this run -> Telegram
+    payload["manual_release"] = rel
+    payload["config"]["operator_halt"] = OPERATOR_HALT
     if mode in LOCKING_MODES:
-        files = {LOCK_JSON: history, REF_LEDGER_JSON: ledger, EVENTS_JSON: oev, LATEST_JSON: payload}
+        files = {LOCK_JSON: history, REF_LEDGER_JSON: ledger, EVENTS_JSON: oev, RELEASES_JSON: releases,
+                 LATEST_JSON: payload}
     else:                                               # diagnostic: never touch operational files
         files = {DIAG_DIR / f"portfolio_{mode}.json": payload}
     return payload, files

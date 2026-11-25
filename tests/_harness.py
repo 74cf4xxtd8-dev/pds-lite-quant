@@ -129,6 +129,8 @@ def point(mod, tmp: Path, lock_init: list | None = None):
         mod.DIAG_DIR = out / "diagnostic"
     if hasattr(mod, "EVENTS_JSON"):
         mod.EVENTS_JSON = out / "official_events.json"
+    if hasattr(mod, "RELEASES_JSON"):
+        mod.RELEASES_JSON = out / "manual_releases.json"
     if lock_init is not None:
         mod.LOCK_JSON.write_text(json.dumps(lock_init, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
@@ -146,11 +148,15 @@ def feed(mod, daily, un, f2r, ref, check_prices: bool = True):
     mod.fetch_reference_workbook = lambda: ({k: v.copy() for k, v in ref.items()} if ref is not None else None)
 
 
-def run(mod, mode: str, now: datetime, tmp: Path, daily, un, f2r, ref, lock_init=None, write=True):
+def run(mod, mode: str, now: datetime, tmp: Path, daily, un, f2r, ref, lock_init=None, write=True,
+        after_feed=None):
     """Run one engine pass.  Returns (payload, history list).  For NEW, files are written only
-    when write=True (what main() does after a successful run)."""
+    when write=True (what main() does after a successful run).  after_feed(mod) may override an
+    input (e.g. the UNRATE source) after the standard feed."""
     point(mod, tmp, lock_init)
     feed(mod, daily, un, f2r, ref)
+    if after_feed:
+        after_feed(mod)
     mod.ADAPTIVE_MODE = mode
     res = mod.run_engine("2017-03", now)
     if isinstance(res, tuple):                       # NEW: (payload, files)

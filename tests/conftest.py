@@ -13,15 +13,28 @@ import _harness as H  # noqa: E402
 
 _PATCHED = ("fetch_prices", "fetch_unrate", "fetch_f2r_state", "fetch_reference_workbook",
             "OUT_DIR", "LATEST_JSON", "LOCK_JSON", "UNRATE_CACHE", "REF_LEDGER_JSON", "DIAG_DIR",
-            "EVENTS_JSON", "ADAPTIVE_MODE", "MANUAL_RELEASE_MONTH", "OFFICIAL_REQUIRES_AUTHOR_CORE",
+            "EVENTS_JSON", "RELEASES_JSON", "ADAPTIVE_MODE", "MANUAL_RELEASE_MONTH", "MANUAL_RELEASE_REASON",
+            "OPERATOR_HALT", "OFFICIAL_REQUIRES_AUTHOR_CORE",
             "OFFICIAL_REQUIRES_F2R_PUBLISHED", "assert_lock_append_only")
 ORIGINAL = {k: getattr(H.NEW, k) for k in _PATCHED}
+
+
+REAL_DATA = H.ROOT / "docs" / "data"
+
+
+def _real_data_state():
+    return {f.name: (f.stat().st_size, f.stat().st_mtime_ns) for f in REAL_DATA.rglob("*") if f.is_file()}
 
 
 @pytest.fixture(autouse=True)
 def _restore_pipeline_module():
     for k, v in ORIGINAL.items():
         setattr(H.NEW, k, v)
+    before = _real_data_state()
     yield
     for k, v in ORIGINAL.items():
         setattr(H.NEW, k, v)
+    after = _real_data_state()
+    if after != before:                               # a test wrote to the committed operating data
+        changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
+        pytest.fail(f"test touched the real docs/data: {changed}")
