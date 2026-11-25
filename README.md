@@ -15,9 +15,11 @@ GitHub Actions(연산) → `docs/data/portfolio_latest.json` → GitHub Pages(`d
 ## 실행 모드
 | 명령 | 내용 |
 |---|---|
-| `python run_pipeline.py` | 자체 연산(Yahoo 가격 + FRED UNRATE + F2R 공개 JSON). Adaptive는 원작자 공개값 우선, 없으면 대체 규칙 |
-| `python run_pipeline.py --mode reference` | 원작자 공개 워크북 그대로 미러링 (가격 불필요, 비상용) |
-| `ADAPTIVE_MODE=proxy python run_pipeline.py` | Adaptive를 자체 규칙으로만 결정 |
+| `python run_pipeline.py` | 자체 연산(Yahoo 가격 + FRED/BLS UNRATE + F2R 공개 JSON). `ADAPTIVE_MODE=reference_only`(기본): 원작자 Adaptive 공식값이 **잠금 시점에 이미 공개**돼 있고 검증을 통과하면 반영, 아니면 RB=1.0(Core 100%) |
+| `ADAPTIVE_MODE=core_only python run_pipeline.py` | 운용 모드. 원작자 값은 참고로만 기록하고 항상 RB=1.0 |
+| `ADAPTIVE_MODE=reference_then_proxy` / `proxy` | **진단 전용**(1.0 동작 재현·대체 규칙 확인). `docs/data/diagnostic/`에만 쓰고 운용 파일·잠금은 건드리지 않음 |
+| `python run_pipeline.py --mode reference` | 원작자 공개 워크북 미러(진단용, `docs/data/diagnostic/`에만 기록) |
+| `python -m pytest tests -q` | 오프라인 테스트(합성 데이터, main 대비 전후 비교, fail-safe, 워크플로 커밋 로직). `PDS_LIVE_TEST=1`이면 실데이터 116개월 전후 비교 |
 
 ## 알고리즘 요약 (역추적 결과)
 ```
@@ -31,15 +33,17 @@ Adaptive = RB·Core + (1−RB)·BIL        (NORMAL: RB=1, DEFENSIVE: 0.55 ≤ RB
 - 0.154375 = 0.9 × (0.04375 LAA + 0.041667 HAA + 0.029167 ADM + 0.029167 FAA) + 0.025(F2R)
 
 ## 운영 원칙
-- **Official 잠금**: `official_history.json`에 한 번 기록된 월은 다시 계산하지 않는다 (배당 조정가 소급 변경으로 순위가 뒤집히는 것 방지).
-- **Fail-closed**: 다운로드·검증 실패 시 JSON을 덮어쓰지 않고 워크플로를 실패시킨다 → GitHub가 메일로 알려 줌.
+- **Official 잠금**: `official_history.json`에 한 번 기록된 월은 다시 계산하지 않는다 (배당 조정가 소급 변경으로 순위가 뒤집히는 것 방지). 매 실행마다 기존 항목이 바이트 단위로 그대로인지 검사하고, 다르면 아무것도 쓰지 않고 중단한다.
+- **원작자 값은 참고 원장에 분리**: `reference_adaptive.json`에 원작자 공개 Adaptive 행과 처음 확인한 시각·수정 이력을 추가 전용으로 기록한다. 잠금 이후 공개·수정된 값은 잠금을 바꾸지 않는다(화면 flags에 `AUTHOR_REFERENCE … not applied`로 표시).
+- **F2R 공식값 대기**: 원작자 F2R Top-4(2026-08~10 기준 월말 2~8일 뒤 공개)가 나오기 전에는 그 달을 잠그지 않는다(`OFFICIAL_PENDING`, 직전 Official 유지, 대기 중인 달은 Preview 칸에 표시). 매월 1~10일 매일 재실행으로 공개 다음 날 잠근다. 비상시 `OFFICIAL_REQUIRES_F2R_PUBLISHED=0`.
+- **Fail-closed**: 가격 결측·급변(±25%)·고착, API 실패, Core 불일치, 잠금 변경 시도 시 어떤 파일도 쓰지 않는다. 출력 3개는 모든 검사가 끝난 뒤 한꺼번에 기록된다. 실패한 실행은 `run_status.json`만 커밋하고(Telegram 실패 알림), 진단 모드는 커밋하지 않는다.
 - **Preview는 실행 금지**: 월중 데이터로 계산한 추정치.
 - 60일간 저장소 활동이 없으면 GitHub가 예약 워크플로를 끌 수 있다. 메일이 오면 Actions 탭에서 다시 켠다.
 
 ## 원작자와 다른 부분 (반드시 인지)
 | 항목 | 원작자 | PDS-Lite |
 |---|---|---|
-| Adaptive 상태/RB | 비공개 PPO 앙상블 + 변동성 확인 | 공개 워크북 값 사용, 없으면 자체 규칙: 원작자 12개월 추세 규칙(SPY 12개월 수익 ≤ BIL) AND 변동성 예산<1 → RB=max(0.55, 10%/σ) |
+| Adaptive 상태/RB | 비공개 PPO 앙상블 + 변동성 확인 | 잠금 시점에 공개된 원작자 공식값만 반영, 그 외 RB=1.0(Core 100%). 자체 대체 규칙(SPY 12개월 추세 AND 변동성 예산<1)은 진단값으로만 기록 |
 | F2R | Ridge·ElasticNet·XGBoost 순위 앙상블 + Chronos-2 20% (피처·기간 비공개) | 원작자 공개 JSON의 Top-4 사용, 없으면 모멘텀 대체(동점은 원작자 고정 순서) |
 | 거래비용 | F2R 연구: 편도 10bp | 화면에 전월 목표 대비 회전율과 예상 비용(편도 10bp) 표시. 월중 비중 변화는 빠져 있어 실제보다 낮게 나옴 |
 | IRP | 해당 없음 | 국내 ETF 대체 매핑 + 위험자산 68% 목표 |

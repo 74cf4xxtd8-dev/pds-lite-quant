@@ -1,0 +1,62 @@
+name: tests
+
+# Read-only CI for feature branches and pull requests.  It never writes to the repository and
+# does not share the update-portfolio concurrency group, so production runs are unaffected.
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                 # tests load run_pipeline.py from origin/main as the 'before' side
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest pyyaml
+      - name: Offline tests (synthetic data, before/after vs origin/main, fail-safe, workflow logic)
+        env:
+          PDS_BASE_REF: origin/main
+          PDS_TEST_REPORT_DIR: test-report
+        run: python -m pytest tests -q
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-offline
+          path: test-report/
+          if-no-files-found: ignore
+
+  live:
+    needs: offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest pyyaml
+      - name: Live 116-month before/after on real Yahoo / BLS / F2R / workbook data
+        env:
+          PDS_BASE_REF: origin/main
+          PDS_LIVE_TEST: "1"
+          PDS_TEST_REPORT_DIR: test-report
+        run: python -m pytest tests/test_reference_only.py -q -k live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-live
+          path: test-report/
+          if-no-files-found: ignore

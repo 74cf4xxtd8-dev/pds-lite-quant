@@ -4,7 +4,8 @@ on:
   schedule:
     # Times are UTC. 22:40 UTC = 07:40 KST next morning, after the US close (20:00/21:00 UTC).
     - cron: "40 22 28-31 * *"   # month-end window: the run after the last session locks OFFICIAL
-    - cron: "40 22 1-3 * *"     # first days of the month: safety re-run (holidays, Yahoo delays)
+    - cron: "40 22 1-10 * *"    # days 1-10: retry until the month locks (holidays, Yahoo delays, and
+                                #   the author's F2R Top-4, published 2-8 days after month-end)
     - cron: "40 22 * * 5"       # weekly Friday monitoring (PREVIEW refresh)
   push:                         # recompute when the engine or workflow changes (bot commits don't retrigger)
     branches: [main]
@@ -15,12 +16,12 @@ on:
         description: "engine | reference"
         default: "engine"
       adaptive_mode:
-        description: "reference_then_proxy (운용) | proxy (대체 규칙 검증용)"
+        description: "reference_only (운용) | core_only (운용, 원작자 값 미반영) | reference_then_proxy·proxy (진단 전용, 커밋 안 함)"
         type: choice
-        options: [reference_then_proxy, proxy, reference_only]
-        default: reference_then_proxy
+        options: [reference_only, core_only, reference_then_proxy, proxy]
+        default: reference_only
       commit:
-        description: "결과를 저장소에 커밋 (proxy 검증 실행은 false 권장)"
+        description: "결과를 저장소에 커밋 (운용 모드 + engine 실행 + 성공일 때만 실제로 커밋됨)"
         type: boolean
         default: true
 
@@ -52,7 +53,8 @@ jobs:
       - name: Run pipeline (fails closed; JSON is only written if every check passes)
         id: run
         env:
-          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_then_proxy' }}
+          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_only' }}
+          OFFICIAL_REQUIRES_F2R_PUBLISHED: "1"   # emergency override: "0" locks with F2R preview/proxy
         run: |
           set -o pipefail
           python run_pipeline.py --mode "${{ github.event.inputs.mode || 'engine' }}" 2>&1 | tee run.log
@@ -109,10 +111,22 @@ jobs:
       - name: Commit if changed
         id: commit
         if: always() && github.event.inputs.commit != 'false'
+        env:
+          RUN_OUTCOME: ${{ steps.run.outcome }}
+          RUN_MODE: ${{ github.event.inputs.mode || 'engine' }}
+          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_only' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data
+          if [ "$RUN_OUTCOME" = "success" ] && [ "$RUN_MODE" = "engine" ] && \
+             { [ "$ADAPTIVE_MODE" = "reference_only" ] || [ "$ADAPTIVE_MODE" = "core_only" ]; }; then
+            git add docs/data
+          else
+            # fail-safe: a failed or diagnostic run may only record its status; anything else it
+            # touched under docs/data is discarded so the last good official stays in force
+            git ls-files -z docs/data | { grep -zv 'run_status.json$' || true; } | xargs -0 -r git checkout --
+            git add docs/data/run_status.json
+          fi
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -142,3 +156,15 @@ jobs:
             --data-urlencode "chat_id=${TG_CHAT}" \
             --data-urlencode "text=${MSG}
           ${PAGES_URL}" > /dev/null
+
+      - name: Telegram alert on failure
+        if: always() && steps.run.outcome == 'failure' && env.TG_TOKEN != ''
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TAIL=$(tail -n 3 run.log 2>/dev/null | cut -c1-300)
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=[PDS-Lite] 실행 실패: 새 목표 비중 없음, 직전 Official 유지 (fail-closed)
+          ${TAIL}
+          ${RUN_URL}" > /dev/null
