@@ -3,8 +3,8 @@
 
 Reverse-engineered from the public SlackQuant releases:
   * ADAA sleeves  : adaa-decision-diversification/03_Data_and_Code/02_Code/
-                    01_EXPORT_G2_TARGET_WEIGHTS_ONLY_v0_11_1.R  (HAA, BAA Aggressive, ADM)
-                    04_EXPORT_G3_CANONICAL_FAA_ONLY_v0_16.R      (canonical FAA)
+                    01_EXPORT_G2_TARGET_WEIGHTS_ONLY_v0_11_1.R  (HAA, BAA Aggressive, ADM, legacy FAA)
+                    04_EXPORT_G3_CANONICAL_FAA_ONLY_v0_16.R      (canonical FAA, optional variant)
                     build_independent_decision_panel_v0_11.py    (LAA carry_calendar)
   * ADAA mix      : 05_OPEN_G6_PERFORMANCE_EVIDENCE_v0_17.py  alpha_hist = 25/15/17.5/17.5/25
   * PDS Core      : 0.90 x ADAA + 0.10 x F2R(Top-4 equal weight)
@@ -371,7 +371,9 @@ FAA_VARIANTS = {
     "legacy_v011": (False, False),      # EW incl. self, rank<=6, 1/len(sel)    (01_EXPORT_G2_..._v0_11_1.R build_faa)
     "peer_rank": (True, False),         # peer-only corr, rank<=6, 1/len(sel)
 }
-FAA_VARIANT = os.environ.get("FAA_VARIANT", "canonical_v016")
+# legacy_v011 reproduces the published PDS Core 116/116 months on real Yahoo data (2017-03..2026-10);
+# canonical_v016 (the paper's corrected FAA) matched only 77/116.
+FAA_VARIANT = os.environ.get("FAA_VARIANT", "legacy_v011")
 
 
 def sleeve_faa(m, i, variant: str | None = None):

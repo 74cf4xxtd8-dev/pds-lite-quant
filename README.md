@@ -10,7 +10,7 @@ GitHub Actions(연산) → `docs/data/portfolio_latest.json` → GitHub Pages(`d
 5. (선택) Telegram 알림: Secrets `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`.
 6. 휴대폰에서 `https://<아이디>.github.io/<저장소>/` 열고 홈 화면에 추가.
 
-첫 실행 로그의 `validation: N/M months exact` 줄이 **원작자 공개 Core와의 일치율**이다. 이것이 엔진 검증의 핵심 지표다.
+실제 Yahoo 가격 기준 2017-03~2026-10 **116/116개월 원작자 Core와 정확히 일치** (2026-11-26 확인). 실행 로그의 `validation: N/M months exact` 줄이 **원작자 공개 Core와의 일치율**이다. 이것이 엔진 검증의 핵심 지표다.
 
 ## 실행 모드
 | 명령 | 내용 |
@@ -21,7 +21,7 @@ GitHub Actions(연산) → `docs/data/portfolio_latest.json` → GitHub Pages(`d
 
 ## 알고리즘 요약 (역추적 결과)
 ```
-ADAA = 0.25·HAA + 0.15·BAA공격형 + 0.175·ADM + 0.175·FAA(canonical) + 0.25·LAA
+ADAA = 0.25·HAA + 0.15·BAA공격형 + 0.175·ADM + 0.175·FAA(legacy v0.11) + 0.25·LAA
 Core = 0.90·ADAA + 0.10·F2R(Top-4 × 25%)
 Adaptive = RB·Core + (1−RB)·BIL        (NORMAL: RB=1, DEFENSIVE: 0.55 ≤ RB < 1)
 ```
