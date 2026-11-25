@@ -1,11 +1,14 @@
 {
  "ok": true,
- "finished_utc": "2026-11-25T15:39:12Z",
+ "finished_utc": "2026-11-25T15:42:36Z",
  "event": "push",
- "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45647294013",
+ "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45647928985",
  "log_tail": [
   "[warn] UNRATE via FRED failed: GET failed: https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE: The read operation timed out",
   "[data] prices 2015-01-02..2026-11-25, UNRATE via BLS (last 2026-10)",
+  "[diag] FAA canonical_v016: 77/116 exact",
+  "[diag] FAA legacy_v011: 116/116 exact",
+  "[diag] FAA peer_rank: 84/116 exact",
   "OK engine: official 2026-10->2026-11 NORMAL RB=100.00%; flags=['2026-11: F2R_PREVIEW']",
   "validation: 77/116 months exact, max diff 3.15e-02"
  ]
