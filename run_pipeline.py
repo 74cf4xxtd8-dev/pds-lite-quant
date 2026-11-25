@@ -371,7 +371,7 @@ FAA_VARIANTS = {
     "legacy_v011": (False, False),      # EW incl. self, rank<=6, 1/len(sel)    (01_EXPORT_G2_..._v0_11_1.R build_faa)
     "peer_rank": (True, False),         # peer-only corr, rank<=6, 1/len(sel)
 }
-# legacy_v011 reproduces the published PDS Core 116/116 months on real Yahoo data (2017-03..2026-10);
+# legacy_v011 reproduces the published PDS Core: 116/116 months on real Yahoo data (2017-03..2026-10);
 # canonical_v016 (the paper's corrected FAA) matched only 77/116.
 FAA_VARIANT = os.environ.get("FAA_VARIANT", "legacy_v011")
 
