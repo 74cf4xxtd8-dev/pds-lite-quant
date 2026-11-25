@@ -365,8 +365,18 @@ def sleeve_adm(m, i):
     return _safe_residual(m, i, w, risk)
 
 
-def sleeve_faa(m, i):
-    """Canonical FAA v0.16: peer-only correlation, exact-N stable tie order."""
+FAA_VARIANTS = {
+    # name: (peer_only_correlation, exact_n)
+    "canonical_v016": (True, True),     # peer-only corr, exact Top-6 stable    (04_EXPORT_G3_CANONICAL_FAA_ONLY_v0_16.R)
+    "legacy_v011": (False, False),      # EW incl. self, rank<=6, 1/len(sel)    (01_EXPORT_G2_..._v0_11_1.R build_faa)
+    "peer_rank": (True, False),         # peer-only corr, rank<=6, 1/len(sel)
+}
+FAA_VARIANT = os.environ.get("FAA_VARIANT", "canonical_v016")
+
+
+def sleeve_faa(m, i, variant: str | None = None):
+    """FAA sleeve. Variants differ in correlation definition and tie handling."""
+    peer_only, exact_n = FAA_VARIANTS[variant or FAA_VARIANT]
     risk, safe = ADM_FAA_RISK, ["SHY", "BIL"]
     if i < 12 or not _complete(m, i, risk + safe, (0, 3, 6, 12)):
         return None
@@ -376,9 +386,10 @@ def sleeve_faa(m, i):
         return None
     mom = {a: _ratio_avg(m, a, i, (3, 6, 12)) for a in risk}
     vol, corv = {}, {}
+    ew_all = rwin.mean(axis=1)
     for j, a in enumerate(risk):
         vol[a] = float(np.std(rwin[:, j], ddof=1))
-        peer = np.delete(rwin, j, axis=1).mean(axis=1)
+        peer = np.delete(rwin, j, axis=1).mean(axis=1) if peer_only else ew_all
         corv[a] = float(np.corrcoef(rwin[:, j], peer)[0, 1])
     if not all(np.isfinite(list(mom.values()) + list(vol.values()) + list(corv.values()))):
         return None
@@ -386,11 +397,17 @@ def sleeve_faa(m, i):
     V = _rank(vol)
     C = _rank(corv)
     agg = M + 0.5 * V + 0.5 * C                                             # R + 0.5V + 0.5C
-    sel = sorted(risk, key=lambda a: (agg[a], a))[:6]
+    if exact_n:
+        sel = sorted(risk, key=lambda a: (agg[a], a))[:6]
+    else:                                                                   # ties can select 5 or 7
+        rr = agg.rank(method="average")
+        sel = list(rr[rr <= 6].index)
+    if not sel:
+        return None
     w = _zero()
     for a in sel:
         if mom[a] >= 1:
-            w[a] = 1 / 6
+            w[a] = 1 / len(sel)
     return _safe_residual(m, i, w, risk)
 
 
@@ -750,6 +767,40 @@ def run_reference(ref) -> dict:
                          "reference", asof, ["REFERENCE_MODE"])
 
 
+def diagnose_faa_variants(m, unrate, f2r, ref, backfill_from, last_off) -> dict:
+    """Core match rate vs the published workbook for each FAA variant (other sleeves fixed)."""
+    if not ref or "Core Portfolio" not in ref:
+        return {}
+    df = ref["Core Portfolio"]
+    df = df[df["Status"] != "PREVIEW"].set_index("Signal Month")
+    out = {v: {"checked": 0, "exact": 0, "miss": []} for v in FAA_VARIANTS}
+    for p in m.index:
+        sm = str(p)
+        if sm < backfill_from or p > last_off or sm not in df.index:
+            continue
+        i = m.index.get_loc(p)
+        base = {"HAA": sleeve_haa(m, i), "BAA": sleeve_baa(m, i), "ADM": sleeve_adm(m, i),
+                "LAA": sleeve_laa(m, i, unrate)[0]}
+        if any(v is None for v in base.values()):
+            continue
+        f2w = f2r_weights(f2r, m, i)[0]
+        refw = df.loc[sm, UNIVERSE].astype(float)
+        for v in FAA_VARIANTS:
+            faa = sleeve_faa(m, i, v)
+            if faa is None:
+                continue
+            sl = dict(base, FAA=faa)
+            core = core_weights(sum(SLEEVE_MIX[k] * sl[k] for k in SLEEVE_MIX), f2w)
+            ok = float((core - refw).abs().max()) <= 1e-6
+            out[v]["checked"] += 1
+            out[v]["exact"] += int(ok)
+            if not ok:
+                out[v]["miss"].append(sm)
+    for v in out:
+        print(f"[diag] FAA {v}: {out[v]['exact']}/{out[v]['checked']} exact")
+    return out
+
+
 def run_engine(backfill_from: str, now_utc: datetime) -> dict:
     daily = fetch_prices()
     unrate, unrate_src = fetch_unrate()
@@ -799,6 +850,8 @@ def run_engine(backfill_from: str, now_utc: datetime) -> dict:
         if d["sources"]["unrate_carried"]:
             flags.append(f"{d['signal_month']}: UNRATE_CARRIED")
     validation = validate_against_reference(history, ref)
+    validation["faa_variant"] = FAA_VARIANT
+    validation["faa_variant_match"] = diagnose_faa_variants(m, unrate, f2r, ref, backfill_from, last_off)
     return build_payload(history, preview, validation, "engine", str(daily.index[-1].date()), flags)
 
 
