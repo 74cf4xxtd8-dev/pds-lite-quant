@@ -1,24 +1,12 @@
 {
- "ok": false,
- "finished_utc": "2026-11-25T15:36:20Z",
+ "ok": true,
+ "finished_utc": "2026-11-25T15:39:12Z",
  "event": "push",
- "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45646353029",
+ "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45647294013",
  "log_tail": [
-  "Traceback (most recent call last):",
-  "  File \"/home/runner/work/pds-lite-quant/pds-lite-quant/run_pipeline.py\", line 782, in <module>",
-  "    sys.exit(main())",
-  "             ^^^^^^",
-  "  File \"/home/runner/work/pds-lite-quant/pds-lite-quant/run_pipeline.py\", line 771, in main",
-  "    payload = run_engine(args.backfill_from, now)",
-  "              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-  "  File \"/home/runner/work/pds-lite-quant/pds-lite-quant/run_pipeline.py\", line 711, in run_engine",
-  "    unrate = fetch_unrate()",
-  "             ^^^^^^^^^^^^^^",
-  "  File \"/home/runner/work/pds-lite-quant/pds-lite-quant/run_pipeline.py\", line 158, in fetch_unrate",
-  "    df = pd.read_csv(io.BytesIO(_http_get(UNRATE_URL)))",
-  "                                ^^^^^^^^^^^^^^^^^^^^^",
-  "  File \"/home/runner/work/pds-lite-quant/pds-lite-quant/run_pipeline.py\", line 131, in _http_get",
-  "    raise RuntimeError(f\"GET failed: {url}: {last}\")",
-  "RuntimeError: GET failed: https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE: The read operation timed out"
+  "[warn] UNRATE via FRED failed: GET failed: https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE: The read operation timed out",
+  "[data] prices 2015-01-02..2026-11-25, UNRATE via BLS (last 2026-10)",
+  "OK engine: official 2026-10->2026-11 NORMAL RB=100.00%; flags=['2026-11: F2R_PREVIEW']",
+  "validation: 77/116 months exact, max diff 3.15e-02"
  ]
 }

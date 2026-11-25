@@ -1,12 +1,12 @@
 {
  "schema": "pds-lite/1",
  "engine": "pds-lite-1.0.0",
- "mode": "reference",
- "generated_at_utc": "2026-11-25T15:23:41+00:00",
- "generated_at_kst": "2026-11-26 00:23 KST",
- "market_asof": "2026-11",
+ "mode": "engine",
+ "generated_at_utc": "2026-11-25T15:39:12+00:00",
+ "generated_at_kst": "2026-11-26 00:39 KST",
+ "market_asof": "2026-11-25",
  "flags": [
-  "REFERENCE_MODE"
+  "2026-11: F2R_PREVIEW"
  ],
  "official": {
   "signal_month": "2026-10",
@@ -14,18 +14,64 @@
   "state": "NORMAL",
   "risk_budget": 1.0,
   "sources": {
-   "core": "REFERENCE_WORKBOOK",
-   "adaptive": "REFERENCE_OFFICIAL"
+   "f2r": "F2R_PUBLISHED",
+   "adaptive": "REFERENCE_OFFICIAL",
+   "unrate_carried": false,
+   "asof": "2026-10-30",
+   "proxy": {
+    "state": "NORMAL",
+    "rb": 1.0,
+    "sigma": 0.075986,
+    "vol_budget": 1.0,
+    "trend12_excess": 0.080368
+   },
+   "sleeves": {
+    "HAA": {
+     "SPY": 0.166667,
+     "IWM": 0.166667,
+     "EFA": 0.166667,
+     "EWY": 0.166667,
+     "DBC": 0.166667,
+     "VNQ": 0.166667
+    },
+    "BAA": {
+     "DBC": 0.333333,
+     "BIL": 0.666667
+    },
+    "ADM": {
+     "SPY": 0.166667,
+     "TIP": 0.166667,
+     "DBC": 0.166667,
+     "TLT": 0.166667,
+     "LQD": 0.166667,
+     "BIL": 0.166667
+    },
+    "FAA": {
+     "SPY": 0.166667,
+     "VGK": 0.166667,
+     "DBC": 0.166667,
+     "VNQ": 0.166667,
+     "BIL": 0.333333
+    },
+    "LAA": {
+     "QQQ": 0.25,
+     "SPY": 0.175,
+     "EEM": 0.05,
+     "EWY": 0.025,
+     "IEF": 0.25,
+     "GLD": 0.25
+    }
+   }
   },
-  "turnover_one_way": 0.42299146488308903,
-  "est_cost": 0.0008459829297661781,
+  "turnover_one_way": 0.4276756862,
+  "est_cost": 0.0008553513724,
   "us": [
    {
     "ticker": "BIL",
     "name": "T-Bill 1-3M",
     "core": 0.16875,
     "adaptive": 0.16875,
-    "delta": -0.3807583253085611,
+    "delta": -0.38075832530000003,
     "class": "Cash"
    },
    {
@@ -33,7 +79,7 @@
     "name": "Commodities",
     "core": 0.16,
     "adaptive": 0.16,
-    "delta": 0.0905566193163397,
+    "delta": 0.0905566193,
     "class": "Real Assets / Other"
    },
    {
@@ -41,7 +87,7 @@
     "name": "S&P 500",
     "core": 0.154375,
     "adaptive": 0.154375,
-    "delta": 0.10763426300138235,
+    "delta": 0.10763426300000001,
     "class": "Equity"
    },
    {
@@ -49,23 +95,23 @@
     "name": "Nasdaq-100",
     "core": 0.08125,
     "adaptive": 0.08125,
-    "delta": -0.014012073501944333,
+    "delta": 0.004684221299999999,
     "class": "Equity"
    },
    {
     "ticker": "EWY",
     "name": "MSCI Korea",
-    "core": 0.06812500000000003,
-    "adaptive": 0.06812500000000003,
-    "delta": 0.00892006646841769,
+    "core": 0.068125,
+    "adaptive": 0.068125,
+    "delta": 0.008920066500000004,
     "class": "Equity"
    },
    {
     "ticker": "VNQ",
     "name": "US REIT",
-    "core": 0.06374999999999997,
-    "adaptive": 0.06374999999999997,
-    "delta": 0.045944004952907534,
+    "core": 0.06375,
+    "adaptive": 0.06375,
+    "delta": 0.045944004999999996,
     "class": "Real Assets / Other"
    },
    {
@@ -73,7 +119,7 @@
     "name": "UST 7-10Y",
     "core": 0.05625,
     "adaptive": 0.05625,
-    "delta": 0.016186511144042015,
+    "delta": 0.016186511100000002,
     "class": "Fixed Income"
    },
    {
@@ -81,55 +127,55 @@
     "name": "Gold",
     "core": 0.05625,
     "adaptive": 0.05625,
-    "delta": -0.001619483903050424,
+    "delta": -0.001619483899999996,
     "class": "Real Assets / Other"
    },
    {
     "ticker": "IWM",
     "name": "Russell 2000",
-    "core": 0.03750000000000003,
-    "adaptive": 0.03750000000000003,
-    "delta": 0.03750000000000003,
+    "core": 0.0375,
+    "adaptive": 0.0375,
+    "delta": 0.0375,
     "class": "Equity"
    },
    {
     "ticker": "EFA",
     "name": "MSCI EAFE",
-    "core": 0.03750000000000003,
-    "adaptive": 0.03750000000000003,
-    "delta": 0.03750000000000003,
+    "core": 0.0375,
+    "adaptive": 0.0375,
+    "delta": 0.0375,
     "class": "Equity"
    },
    {
     "ticker": "VGK",
     "name": "FTSE Europe",
-    "core": 0.02625000000000003,
-    "adaptive": 0.02625000000000003,
-    "delta": -0.011142589598894068,
+    "core": 0.02625,
+    "adaptive": 0.02625,
+    "delta": -0.011142589599999999,
     "class": "Equity"
    },
    {
     "ticker": "TIP",
     "name": "US TIPS",
-    "core": 0.02625000000000003,
-    "adaptive": 0.02625000000000003,
-    "delta": 0.02625000000000003,
+    "core": 0.02625,
+    "adaptive": 0.02625,
+    "delta": 0.02625,
     "class": "Fixed Income"
    },
    {
     "ticker": "TLT",
     "name": "UST 20Y+",
-    "core": 0.02625000000000003,
-    "adaptive": 0.02625000000000003,
-    "delta": 0.02625000000000003,
+    "core": 0.02625,
+    "adaptive": 0.02625,
+    "delta": 0.02625,
     "class": "Fixed Income"
    },
    {
     "ticker": "LQD",
     "name": "IG Corp",
-    "core": 0.02625000000000003,
-    "adaptive": 0.02625000000000003,
-    "delta": 0.02625000000000003,
+    "core": 0.02625,
+    "adaptive": 0.02625,
+    "delta": 0.02625,
     "class": "Fixed Income"
    },
    {
@@ -137,21 +183,21 @@
     "name": "MSCI EM",
     "core": 0.01125,
     "adaptive": 0.01125,
-    "delta": -0.01545899257063868,
+    "delta": -0.0341552874,
     "class": "Equity"
    }
   ],
   "asset_class": {
    "core": {
-    "Equity": 0.4162500000000002,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.27999999999999997,
+    "Equity": 0.41624999999999995,
+    "Fixed Income": 0.135,
+    "Real Assets / Other": 0.28,
     "Cash": 0.16875
    },
    "adaptive": {
-    "Equity": 0.4162500000000002,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.27999999999999997,
+    "Equity": 0.41624999999999995,
+    "Fixed Income": 0.135,
+    "Real Assets / Other": 0.28,
     "Cash": 0.16875
    }
   },
@@ -162,7 +208,7 @@
       "code": "411060",
       "name": "ACE KRX금현물",
       "class": "RISK",
-      "weight": 0.21120287253141826,
+      "weight": 0.21120287253141828,
       "from": [
        "DBC",
        "GLD"
@@ -188,7 +234,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.1850000000000002,
+      "weight": 0.1850000000000001,
       "from": [
        "BIL",
        "CAP_OVERFLOW"
@@ -199,7 +245,7 @@
       "code": "0091C0",
       "name": "KODEX 미국10년국채액티브(H)",
       "class": "SAFE",
-      "weight": 0.08250000000000003,
+      "weight": 0.0825,
       "from": [
        "TIP",
        "IEF"
@@ -212,7 +258,7 @@
       "code": "133690",
       "name": "TIGER 미국나스닥100",
       "class": "RISK",
-      "weight": 0.07935368043087969,
+      "weight": 0.0793536804308797,
       "from": [
        "QQQ"
       ],
@@ -222,7 +268,7 @@
       "code": "069500",
       "name": "KODEX 200",
       "class": "RISK",
-      "weight": 0.0665350089766607,
+      "weight": 0.06653500897666068,
       "from": [
        "EWY"
       ],
@@ -232,7 +278,7 @@
       "code": "182480",
       "name": "TIGER 미국MSCI리츠(합성 H)",
       "class": "RISK",
-      "weight": 0.06226211849192096,
+      "weight": 0.062262118491920995,
       "from": [
        "VNQ"
       ],
@@ -242,7 +288,7 @@
       "code": "251350",
       "name": "KODEX MSCI선진국",
       "class": "RISK",
-      "weight": 0.03662477558348297,
+      "weight": 0.03662477558348294,
       "from": [
        "EFA"
       ],
@@ -254,7 +300,7 @@
       "code": "458250",
       "name": "TIGER 미국30년국채스트립액티브(합성H)",
       "class": "SAFE",
-      "weight": 0.02625000000000003,
+      "weight": 0.02625,
       "from": [
        "TLT"
       ],
@@ -266,7 +312,7 @@
       "code": "458260",
       "name": "TIGER 미국투자등급회사채액티브(H)",
       "class": "SAFE",
-      "weight": 0.02625000000000003,
+      "weight": 0.02625,
       "from": [
        "LQD"
       ],
@@ -276,7 +322,7 @@
       "code": "195930",
       "name": "TIGER 유로스탁스50(합성 H)",
       "class": "RISK",
-      "weight": 0.025637342908438086,
+      "weight": 0.025637342908438058,
       "from": [
        "VGK"
       ],
@@ -286,16 +332,16 @@
       "code": "195980",
       "name": "PLUS 신흥국MSCI(합성 H)",
       "class": "RISK",
-      "weight": 0.01098743267504488,
+      "weight": 0.010987432675044881,
       "from": [
        "EEM"
       ],
       "notes": []
      }
     ],
-    "risk_before_cap": 0.6962500000000001,
+    "risk_before_cap": 0.69625,
     "risk_after_cap": 0.6799999999999999,
-    "moved_to_safe": 0.01625000000000017,
+    "moved_to_safe": 0.01625000000000009,
     "cap": 0.7,
     "cap_target": 0.6799999999999999
    },
@@ -305,7 +351,7 @@
       "code": "411060",
       "name": "ACE KRX금현물",
       "class": "RISK",
-      "weight": 0.21120287253141826,
+      "weight": 0.21120287253141828,
       "from": [
        "DBC",
        "GLD"
@@ -331,7 +377,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.1850000000000002,
+      "weight": 0.1850000000000001,
       "from": [
        "BIL",
        "CAP_OVERFLOW"
@@ -342,7 +388,7 @@
       "code": "0091C0",
       "name": "KODEX 미국10년국채액티브(H)",
       "class": "SAFE",
-      "weight": 0.08250000000000003,
+      "weight": 0.0825,
       "from": [
        "TIP",
        "IEF"
@@ -355,7 +401,7 @@
       "code": "133690",
       "name": "TIGER 미국나스닥100",
       "class": "RISK",
-      "weight": 0.07935368043087969,
+      "weight": 0.0793536804308797,
       "from": [
        "QQQ"
       ],
@@ -365,7 +411,7 @@
       "code": "069500",
       "name": "KODEX 200",
       "class": "RISK",
-      "weight": 0.0665350089766607,
+      "weight": 0.06653500897666068,
       "from": [
        "EWY"
       ],
@@ -375,7 +421,7 @@
       "code": "182480",
       "name": "TIGER 미국MSCI리츠(합성 H)",
       "class": "RISK",
-      "weight": 0.06226211849192096,
+      "weight": 0.062262118491920995,
       "from": [
        "VNQ"
       ],
@@ -385,7 +431,7 @@
       "code": "251350",
       "name": "KODEX MSCI선진국",
       "class": "RISK",
-      "weight": 0.03662477558348297,
+      "weight": 0.03662477558348294,
       "from": [
        "EFA"
       ],
@@ -397,7 +443,7 @@
       "code": "458250",
       "name": "TIGER 미국30년국채스트립액티브(합성H)",
       "class": "SAFE",
-      "weight": 0.02625000000000003,
+      "weight": 0.02625,
       "from": [
        "TLT"
       ],
@@ -409,7 +455,7 @@
       "code": "458260",
       "name": "TIGER 미국투자등급회사채액티브(H)",
       "class": "SAFE",
-      "weight": 0.02625000000000003,
+      "weight": 0.02625,
       "from": [
        "LQD"
       ],
@@ -419,7 +465,7 @@
       "code": "195930",
       "name": "TIGER 유로스탁스50(합성 H)",
       "class": "RISK",
-      "weight": 0.025637342908438086,
+      "weight": 0.025637342908438058,
       "from": [
        "VGK"
       ],
@@ -429,16 +475,16 @@
       "code": "195980",
       "name": "PLUS 신흥국MSCI(합성 H)",
       "class": "RISK",
-      "weight": 0.01098743267504488,
+      "weight": 0.010987432675044881,
       "from": [
        "EEM"
       ],
       "notes": []
      }
     ],
-    "risk_before_cap": 0.6962500000000001,
+    "risk_before_cap": 0.69625,
     "risk_after_cap": 0.6799999999999999,
-    "moved_to_safe": 0.01625000000000017,
+    "moved_to_safe": 0.01625000000000009,
     "cap": 0.7,
     "cap_target": 0.6799999999999999
    }
@@ -450,18 +496,54 @@
   "state": "NORMAL",
   "risk_budget": 1.0,
   "sources": {
-   "core": "REFERENCE_WORKBOOK",
-   "adaptive": "REFERENCE_PREVIEW"
+   "f2r": "F2R_PREVIEW",
+   "adaptive": "REFERENCE_PREVIEW",
+   "unrate_carried": false,
+   "asof": "2026-11-25",
+   "proxy": {
+    "state": "NORMAL",
+    "rb": 1.0,
+    "sigma": 0.071791,
+    "vol_budget": 1.0,
+    "trend12_excess": 0.001685
+   },
+   "sleeves": {
+    "HAA": {
+     "BIL": 1.0
+    },
+    "BAA": {
+     "DBC": 0.333333,
+     "BIL": 0.666667
+    },
+    "ADM": {
+     "TLT": 0.166667,
+     "VNQ": 0.166667,
+     "BIL": 0.666667
+    },
+    "FAA": {
+     "DBC": 0.166667,
+     "VNQ": 0.166667,
+     "BIL": 0.666667
+    },
+    "LAA": {
+     "QQQ": 0.25,
+     "SPY": 0.175,
+     "EEM": 0.05,
+     "EWY": 0.025,
+     "IEF": 0.25,
+     "GLD": 0.25
+    }
+   }
   },
-  "turnover_one_way": 0.4087500000000002,
-  "est_cost": 0.0008175000000000005,
+  "turnover_one_way": 0.35625000000000007,
+  "est_cost": 0.0007125000000000001,
   "us": [
    {
     "ticker": "BIL",
     "name": "T-Bill 1-3M",
-    "core": 0.5775000000000003,
-    "adaptive": 0.5775000000000003,
-    "delta": 0.40875000000000034,
+    "core": 0.525,
+    "adaptive": 0.525,
+    "delta": 0.35625,
     "class": "Cash"
    },
    {
@@ -475,9 +557,9 @@
    {
     "ticker": "DBC",
     "name": "Commodities",
-    "core": 0.07125000000000004,
-    "adaptive": 0.07125000000000004,
-    "delta": -0.08874999999999997,
+    "core": 0.07125,
+    "adaptive": 0.07125,
+    "delta": -0.08875000000000001,
     "class": "Real Assets / Other"
    },
    {
@@ -505,27 +587,35 @@
     "class": "Real Assets / Other"
    },
    {
+    "ticker": "VNQ",
+    "name": "US REIT",
+    "core": 0.0525,
+    "adaptive": 0.0525,
+    "delta": -0.011250000000000003,
+    "class": "Real Assets / Other"
+   },
+   {
     "ticker": "EWY",
     "name": "MSCI Korea",
     "core": 0.030625,
     "adaptive": 0.030625,
-    "delta": -0.03750000000000003,
+    "delta": -0.037500000000000006,
     "class": "Equity"
    },
    {
-    "ticker": "VNQ",
-    "name": "US REIT",
-    "core": 0.02625000000000003,
-    "adaptive": 0.02625000000000003,
-    "delta": -0.03749999999999994,
-    "class": "Real Assets / Other"
+    "ticker": "TLT",
+    "name": "UST 20Y+",
+    "core": 0.02625,
+    "adaptive": 0.02625,
+    "delta": 0.0,
+    "class": "Fixed Income"
    },
    {
     "ticker": "IWM",
     "name": "Russell 2000",
     "core": 0.025,
     "adaptive": 0.025,
-    "delta": -0.012500000000000032,
+    "delta": -0.012499999999999997,
     "class": "Equity"
    },
    {
@@ -541,7 +631,7 @@
     "name": "MSCI EAFE",
     "core": 0.0,
     "adaptive": 0.0,
-    "delta": -0.03750000000000003,
+    "delta": -0.0375,
     "class": "Equity"
    },
    {
@@ -549,7 +639,7 @@
     "name": "FTSE Europe",
     "core": 0.0,
     "adaptive": 0.0,
-    "delta": -0.02625000000000003,
+    "delta": -0.02625,
     "class": "Equity"
    },
    {
@@ -557,15 +647,7 @@
     "name": "US TIPS",
     "core": 0.0,
     "adaptive": 0.0,
-    "delta": -0.02625000000000003,
-    "class": "Fixed Income"
-   },
-   {
-    "ticker": "TLT",
-    "name": "UST 20Y+",
-    "core": 0.0,
-    "adaptive": 0.0,
-    "delta": -0.02625000000000003,
+    "delta": -0.02625,
     "class": "Fixed Income"
    },
    {
@@ -573,22 +655,22 @@
     "name": "IG Corp",
     "core": 0.0,
     "adaptive": 0.0,
-    "delta": -0.02625000000000003,
+    "delta": -0.02625,
     "class": "Fixed Income"
    }
   ],
   "asset_class": {
    "core": {
     "Equity": 0.21250000000000002,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.15375000000000005,
-    "Cash": 0.5775000000000003
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18,
+    "Cash": 0.525
    },
    "adaptive": {
     "Equity": 0.21250000000000002,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.15375000000000005,
-    "Cash": 0.5775000000000003
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18,
+    "Cash": 0.525
    }
   },
   "irp": {
@@ -598,7 +680,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.5775000000000003,
+      "weight": 0.525,
       "from": [
        "BIL"
       ],
@@ -608,7 +690,7 @@
       "code": "411060",
       "name": "ACE KRX금현물",
       "class": "RISK",
-      "weight": 0.12750000000000003,
+      "weight": 0.1275,
       "from": [
        "DBC",
        "GLD"
@@ -651,6 +733,16 @@
       "notes": []
      },
      {
+      "code": "182480",
+      "name": "TIGER 미국MSCI리츠(합성 H)",
+      "class": "RISK",
+      "weight": 0.0525,
+      "from": [
+       "VNQ"
+      ],
+      "notes": []
+     },
+     {
       "code": "069500",
       "name": "KODEX 200",
       "class": "RISK",
@@ -661,14 +753,16 @@
       "notes": []
      },
      {
-      "code": "182480",
-      "name": "TIGER 미국MSCI리츠(합성 H)",
-      "class": "RISK",
-      "weight": 0.02625000000000003,
+      "code": "458250",
+      "name": "TIGER 미국30년국채스트립액티브(합성H)",
+      "class": "SAFE",
+      "weight": 0.02625,
       "from": [
-       "VNQ"
+       "TLT"
       ],
-      "notes": []
+      "notes": [
+       "TLT: 듀레이션이 TLT보다 김"
+      ]
      },
      {
       "code": "195980",
@@ -681,8 +775,8 @@
       "notes": []
      }
     ],
-    "risk_before_cap": 0.3662500000000001,
-    "risk_after_cap": 0.3662500000000001,
+    "risk_before_cap": 0.3925,
+    "risk_after_cap": 0.3925,
     "moved_to_safe": 0.0,
     "cap": 0.7,
     "cap_target": 0.6799999999999999
@@ -693,7 +787,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.5775000000000003,
+      "weight": 0.525,
       "from": [
        "BIL"
       ],
@@ -703,7 +797,7 @@
       "code": "411060",
       "name": "ACE KRX금현물",
       "class": "RISK",
-      "weight": 0.12750000000000003,
+      "weight": 0.1275,
       "from": [
        "DBC",
        "GLD"
@@ -746,6 +840,16 @@
       "notes": []
      },
      {
+      "code": "182480",
+      "name": "TIGER 미국MSCI리츠(합성 H)",
+      "class": "RISK",
+      "weight": 0.0525,
+      "from": [
+       "VNQ"
+      ],
+      "notes": []
+     },
+     {
       "code": "069500",
       "name": "KODEX 200",
       "class": "RISK",
@@ -756,14 +860,16 @@
       "notes": []
      },
      {
-      "code": "182480",
-      "name": "TIGER 미국MSCI리츠(합성 H)",
-      "class": "RISK",
-      "weight": 0.02625000000000003,
+      "code": "458250",
+      "name": "TIGER 미국30년국채스트립액티브(합성H)",
+      "class": "SAFE",
+      "weight": 0.02625,
       "from": [
-       "VNQ"
+       "TLT"
       ],
-      "notes": []
+      "notes": [
+       "TLT: 듀레이션이 TLT보다 김"
+      ]
      },
      {
       "code": "195980",
@@ -776,8 +882,8 @@
       "notes": []
      }
     ],
-    "risk_before_cap": 0.3662500000000001,
-    "risk_after_cap": 0.3662500000000001,
+    "risk_before_cap": 0.3925,
+    "risk_after_cap": 0.3925,
     "moved_to_safe": 0.0,
     "cap": 0.7,
     "cap_target": 0.6799999999999999
@@ -786,2469 +892,21 @@
  },
  "history": [
   {
-   "signal_month": "2005-11",
-   "holding_month": "2005-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4102499999999998,
-    "Fixed Income": 0.11925000000000002,
-    "Real Assets / Other": 0.3804999999999994,
-    "Cash": 0.09000000000000001
-   },
-   "adaptive": {
-    "Equity": 0.4102499999999998,
-    "Fixed Income": 0.11925000000000002,
-    "Real Assets / Other": 0.3804999999999994,
-    "Cash": 0.09000000000000001
-   }
-  },
-  {
-   "signal_month": "2005-12",
-   "holding_month": "2006-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6344999999999998,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.3092499999999994,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6344999999999998,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.3092499999999994,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-01",
-   "holding_month": "2006-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5662499999999997,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.35125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5662499999999997,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.35125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-02",
-   "holding_month": "2006-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5452499999999997,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.3669999999999991,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5452499999999997,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.3669999999999991,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-03",
-   "holding_month": "2006-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.34500000000000003,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2837499999999994,
-    "Cash": 0.315
-   },
-   "adaptive": {
-    "Equity": 0.34500000000000003,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2837499999999994,
-    "Cash": 0.315
-   }
-  },
-  {
-   "signal_month": "2006-04",
-   "holding_month": "2006-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.34499999999999975,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.25749999999999945,
-    "Cash": 0.315
-   },
-   "adaptive": {
-    "Equity": 0.34499999999999975,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.25749999999999945,
-    "Cash": 0.315
-   }
-  },
-  {
-   "signal_month": "2006-05",
-   "holding_month": "2006-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2600000000000001,
-    "Fixed Income": 0.12750000000000006,
-    "Real Assets / Other": 0.29750000000000065,
-    "Cash": 0.315
-   },
-   "adaptive": {
-    "Equity": 0.2600000000000001,
-    "Fixed Income": 0.12750000000000006,
-    "Real Assets / Other": 0.29750000000000065,
-    "Cash": 0.315
-   }
-  },
-  {
-   "signal_month": "2006-06",
-   "holding_month": "2006-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.26750000000000007,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.2824999999999994,
-    "Cash": 0.315
-   },
-   "adaptive": {
-    "Equity": 0.26750000000000007,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.2824999999999994,
-    "Cash": 0.315
-   }
-  },
-  {
-   "signal_month": "2006-07",
-   "holding_month": "2006-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4625000000000004,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.37625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4625000000000004,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.37625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-08",
-   "holding_month": "2006-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4887500000000004,
-    "Fixed Income": 0.18750000000000006,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4887500000000004,
-    "Fixed Income": 0.18750000000000006,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-09",
-   "holding_month": "2006-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5150000000000003,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5150000000000003,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-10",
-   "holding_month": "2006-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6300000000000003,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.23499999999999996,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6300000000000003,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.23499999999999996,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-11",
-   "holding_month": "2006-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6607500000000001,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.25150000000000006,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6607500000000001,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.25150000000000006,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2006-12",
-   "holding_month": "2007-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5587499999999991,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.225
-   },
-   "adaptive": {
-    "Equity": 0.5587499999999991,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.225
-   }
-  },
-  {
-   "signal_month": "2007-01",
-   "holding_month": "2007-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7200000000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.19750000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7200000000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.19750000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-02",
-   "holding_month": "2007-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6457500000000005,
-    "Fixed Income": 0.11400000000000005,
-    "Real Assets / Other": 0.2402499999999994,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6457500000000005,
-    "Fixed Income": 0.11400000000000005,
-    "Real Assets / Other": 0.2402499999999994,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-03",
-   "holding_month": "2007-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5937500000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5937500000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-04",
-   "holding_month": "2007-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7462499999999996,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7462499999999996,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-05",
-   "holding_month": "2007-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6382499999999992,
-    "Fixed Income": 0.23550000000000004,
-    "Real Assets / Other": 0.12625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6382499999999992,
-    "Fixed Income": 0.23550000000000004,
-    "Real Assets / Other": 0.12625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-06",
-   "holding_month": "2007-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6224999999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.17874999999999971,
-    "Cash": 0.09000000000000001
-   },
-   "adaptive": {
-    "Equity": 0.6224999999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.17874999999999971,
-    "Cash": 0.09000000000000001
-   }
-  },
-  {
-   "signal_month": "2007-07",
-   "holding_month": "2007-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5325000000000001,
-    "Fixed Income": 0.2512499999999997,
-    "Real Assets / Other": 0.21625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5325000000000001,
-    "Fixed Income": 0.2512499999999997,
-    "Real Assets / Other": 0.21625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-08",
-   "holding_month": "2007-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7187500000000001,
-    "Fixed Income": 0.19875000000000023,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7187500000000001,
-    "Fixed Income": 0.19875000000000023,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-09",
-   "holding_month": "2007-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.68125,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.20999999999999971,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.68125,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.20999999999999971,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-10",
-   "holding_month": "2007-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7075000000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.1837499999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7075000000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.1837499999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-11",
-   "holding_month": "2007-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.31500000000000006,
-    "Fixed Income": 0.37875000000000003,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.31500000000000006,
-    "Fixed Income": 0.37875000000000003,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2007-12",
-   "holding_month": "2008-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3224999999999999,
-    "Fixed Income": 0.3712499999999998,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3224999999999999,
-    "Fixed Income": 0.3712499999999998,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-01",
-   "holding_month": "2008-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.20625000000000004,
-    "Fixed Income": 0.48750000000000004,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.20625000000000004,
-    "Fixed Income": 0.48750000000000004,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-02",
-   "holding_month": "2008-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2062500000000001,
-    "Fixed Income": 0.4874999999999997,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.2062500000000001,
-    "Fixed Income": 0.4874999999999997,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-03",
-   "holding_month": "2008-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.16875000000000007,
-    "Fixed Income": 0.4874999999999997,
-    "Real Assets / Other": 0.34375,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.16875000000000007,
-    "Fixed Income": 0.4874999999999997,
-    "Real Assets / Other": 0.34375,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-04",
-   "holding_month": "2008-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.36749999999999977,
-    "Fixed Income": 0.37125000000000025,
-    "Real Assets / Other": 0.26124999999999976,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.36749999999999977,
-    "Fixed Income": 0.37125000000000025,
-    "Real Assets / Other": 0.26124999999999976,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-05",
-   "holding_month": "2008-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2587499999999999,
-    "Fixed Income": 0.3712500000000004,
-    "Real Assets / Other": 0.37,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.2587499999999999,
-    "Fixed Income": 0.3712500000000004,
-    "Real Assets / Other": 0.37,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-06",
-   "holding_month": "2008-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.20625000000000004,
-    "Fixed Income": 0.4875000000000004,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.20625000000000004,
-    "Fixed Income": 0.4875000000000004,
-    "Real Assets / Other": 0.30625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-07",
-   "holding_month": "2008-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.18125000000000008,
-    "Fixed Income": 0.4874999999999997,
-    "Real Assets / Other": 0.33125000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.18125000000000008,
-    "Fixed Income": 0.4874999999999997,
-    "Real Assets / Other": 0.33125000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-08",
-   "holding_month": "2008-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.23249999999999998,
-    "Fixed Income": 0.4875000000000004,
-    "Real Assets / Other": 0.2799999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.23249999999999998,
-    "Fixed Income": 0.4875000000000004,
-    "Real Assets / Other": 0.2799999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2008-09",
-   "holding_month": "2008-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.10625,
-    "Fixed Income": 0.7097500000000005,
-    "Real Assets / Other": 0.13900000000000004,
-    "Cash": 0.04500000000000001
-   },
-   "adaptive": {
-    "Equity": 0.10625,
-    "Fixed Income": 0.7097500000000005,
-    "Real Assets / Other": 0.13900000000000004,
-    "Cash": 0.04500000000000001
-   }
-  },
-  {
-   "signal_month": "2008-10",
-   "holding_month": "2008-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.13125,
-    "Fixed Income": 0.7424999999999999,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.04500000000000001
-   },
-   "adaptive": {
-    "Equity": 0.13125,
-    "Fixed Income": 0.7424999999999999,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.04500000000000001
-   }
-  },
-  {
-   "signal_month": "2008-11",
-   "holding_month": "2008-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.10625,
-    "Fixed Income": 0.7662499999999997,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.04500000000000001
-   },
-   "adaptive": {
-    "Equity": 0.10625,
-    "Fixed Income": 0.7662499999999997,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.04500000000000001
-   }
-  },
-  {
-   "signal_month": "2008-12",
-   "holding_month": "2009-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.24375000000000008,
-    "Fixed Income": 0.61,
-    "Real Assets / Other": 0.14625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.24375000000000008,
-    "Fixed Income": 0.61,
-    "Real Assets / Other": 0.14625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-01",
-   "holding_month": "2009-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.13124999999999998,
-    "Fixed Income": 0.7349999999999993,
-    "Real Assets / Other": 0.1337499999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.13124999999999998,
-    "Fixed Income": 0.7349999999999993,
-    "Real Assets / Other": 0.1337499999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-02",
-   "holding_month": "2009-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.08125,
-    "Fixed Income": 0.7547500000000006,
-    "Real Assets / Other": 0.16400000000000028,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.08125,
-    "Fixed Income": 0.7547500000000006,
-    "Real Assets / Other": 0.16400000000000028,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-03",
-   "holding_month": "2009-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.24500000000000002,
-    "Fixed Income": 0.5587500000000006,
-    "Real Assets / Other": 0.19625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.24500000000000002,
-    "Fixed Income": 0.5587500000000006,
-    "Real Assets / Other": 0.19625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-04",
-   "holding_month": "2009-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.34874999999999995,
-    "Fixed Income": 0.48000000000000037,
-    "Real Assets / Other": 0.17124999999999974,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.34874999999999995,
-    "Fixed Income": 0.48000000000000037,
-    "Real Assets / Other": 0.17124999999999974,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-05",
-   "holding_month": "2009-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6112499999999998,
-    "Fixed Income": 0.21750000000000003,
-    "Real Assets / Other": 0.17124999999999974,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6112499999999998,
-    "Fixed Income": 0.21750000000000003,
-    "Real Assets / Other": 0.17124999999999974,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-06",
-   "holding_month": "2009-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6375000000000001,
-    "Fixed Income": 0.21750000000000003,
-    "Real Assets / Other": 0.1449999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6375000000000001,
-    "Fixed Income": 0.21750000000000003,
-    "Real Assets / Other": 0.1449999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-07",
-   "holding_month": "2009-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7312499999999997,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7312499999999997,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-08",
-   "holding_month": "2009-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7087499999999992,
-    "Fixed Income": 0.12375,
-    "Real Assets / Other": 0.16749999999999995,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7087499999999992,
-    "Fixed Income": 0.12375,
-    "Real Assets / Other": 0.16749999999999995,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-09",
-   "holding_month": "2009-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7187499999999998,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.14625000000000002,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7187499999999998,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.14625000000000002,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-10",
-   "holding_month": "2009-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6287500000000004,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.23625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6287500000000004,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.23625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-11",
-   "holding_month": "2009-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6549999999999997,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.20999999999999996,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6549999999999997,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.20999999999999996,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2009-12",
-   "holding_month": "2010-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6099999999999998,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.21750000000000005,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6099999999999998,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.21750000000000005,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-01",
-   "holding_month": "2010-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.47999999999999954,
-    "Fixed Income": 0.3224999999999998,
-    "Real Assets / Other": 0.19750000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.47999999999999954,
-    "Fixed Income": 0.3224999999999998,
-    "Real Assets / Other": 0.19750000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-02",
-   "holding_month": "2010-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6925000000000001,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.17250000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6925000000000001,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.17250000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-03",
-   "holding_month": "2010-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6779999999999993,
-    "Fixed Income": 0.14550000000000005,
-    "Real Assets / Other": 0.1764999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6779999999999993,
-    "Fixed Income": 0.14550000000000005,
-    "Real Assets / Other": 0.1764999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-04",
-   "holding_month": "2010-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6779999999999993,
-    "Fixed Income": 0.11925000000000002,
-    "Real Assets / Other": 0.20274999999999974,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6779999999999993,
-    "Fixed Income": 0.11925000000000002,
-    "Real Assets / Other": 0.20274999999999974,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-05",
-   "holding_month": "2010-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.26374999999999976,
-    "Fixed Income": 0.4762500000000001,
-    "Real Assets / Other": 0.25999999999999995,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.26374999999999976,
-    "Fixed Income": 0.4762500000000001,
-    "Real Assets / Other": 0.25999999999999995,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-06",
-   "holding_month": "2010-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2375000000000001,
-    "Fixed Income": 0.5025,
-    "Real Assets / Other": 0.26,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.2375000000000001,
-    "Fixed Income": 0.5025,
-    "Real Assets / Other": 0.26,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-07",
-   "holding_month": "2010-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.44999999999999984,
-    "Fixed Income": 0.31500000000000034,
-    "Real Assets / Other": 0.2349999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.44999999999999984,
-    "Fixed Income": 0.31500000000000034,
-    "Real Assets / Other": 0.2349999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-08",
-   "holding_month": "2010-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.26375000000000004,
-    "Fixed Income": 0.45,
-    "Real Assets / Other": 0.28625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.26375000000000004,
-    "Fixed Income": 0.45,
-    "Real Assets / Other": 0.28625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-09",
-   "holding_month": "2010-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6287499999999997,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.23625000000000002,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6287499999999997,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.23625000000000002,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-10",
-   "holding_month": "2010-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.60375,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.60375,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-11",
-   "holding_month": "2010-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4804999999999995,
-    "Fixed Income": 0.17775000000000002,
-    "Real Assets / Other": 0.3417499999999998,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4804999999999995,
-    "Fixed Income": 0.17775000000000002,
-    "Real Assets / Other": 0.3417499999999998,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2010-12",
-   "holding_month": "2011-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.49625,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.33125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.49625,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.33125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-01",
-   "holding_month": "2011-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4962500000000001,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.33125000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4962500000000001,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.33125000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-02",
-   "holding_month": "2011-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6037499999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.28750000000000003,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6037499999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.28750000000000003,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-03",
-   "holding_month": "2011-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4724999999999995,
-    "Fixed Income": 0.16875,
-    "Real Assets / Other": 0.35874999999999996,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4724999999999995,
-    "Fixed Income": 0.16875,
-    "Real Assets / Other": 0.35874999999999996,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-04",
-   "holding_month": "2011-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5412500000000005,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.37625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5412500000000005,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.37625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-05",
-   "holding_month": "2011-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5675000000000003,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5675000000000003,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.3237499999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-06",
-   "holding_month": "2011-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6424999999999994,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.22250000000000003,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6424999999999994,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.22250000000000003,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-07",
-   "holding_month": "2011-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2899999999999997,
-    "Fixed Income": 0.3149999999999998,
-    "Real Assets / Other": 0.3949999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.2899999999999997,
-    "Fixed Income": 0.3149999999999998,
-    "Real Assets / Other": 0.3949999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-08",
-   "holding_month": "2011-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2512499999999997,
-    "Fixed Income": 0.4050000000000003,
-    "Real Assets / Other": 0.34375,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.2512499999999997,
-    "Fixed Income": 0.4050000000000003,
-    "Real Assets / Other": 0.34375,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-09",
-   "holding_month": "2011-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.23750000000000032,
-    "Fixed Income": 0.5287500000000003,
-    "Real Assets / Other": 0.23375000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.23750000000000032,
-    "Fixed Income": 0.5287500000000003,
-    "Real Assets / Other": 0.23375000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-10",
-   "holding_month": "2011-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3400000000000001,
-    "Fixed Income": 0.4762500000000003,
-    "Real Assets / Other": 0.18375000000000002,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3400000000000001,
-    "Fixed Income": 0.4762500000000003,
-    "Real Assets / Other": 0.18375000000000002,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-11",
-   "holding_month": "2011-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.31499999999999945,
-    "Fixed Income": 0.47625000000000006,
-    "Real Assets / Other": 0.20875000000000005,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.31499999999999945,
-    "Fixed Income": 0.47625000000000006,
-    "Real Assets / Other": 0.20875000000000005,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2011-12",
-   "holding_month": "2012-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.32625000000000004,
-    "Fixed Income": 0.47625,
-    "Real Assets / Other": 0.1975,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.32625000000000004,
-    "Fixed Income": 0.47625,
-    "Real Assets / Other": 0.1975,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-01",
-   "holding_month": "2012-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.44999999999999984,
-    "Fixed Income": 0.2887500000000004,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.44999999999999984,
-    "Fixed Income": 0.2887500000000004,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-02",
-   "holding_month": "2012-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6562500000000001,
-    "Fixed Income": 0.22499999999999998,
-    "Real Assets / Other": 0.11875000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6562500000000001,
-    "Fixed Income": 0.22499999999999998,
-    "Real Assets / Other": 0.11875000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-03",
-   "holding_month": "2012-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6312500000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.25999999999999973,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6312500000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.25999999999999973,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-04",
-   "holding_month": "2012-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3799999999999997,
-    "Fixed Income": 0.4237499999999997,
-    "Real Assets / Other": 0.19625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3799999999999997,
-    "Fixed Income": 0.4237499999999997,
-    "Real Assets / Other": 0.19625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-05",
-   "holding_month": "2012-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3012499999999998,
-    "Fixed Income": 0.4972500000000004,
-    "Real Assets / Other": 0.2014999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3012499999999998,
-    "Fixed Income": 0.4972500000000004,
-    "Real Assets / Other": 0.2014999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-06",
-   "holding_month": "2012-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5137499999999997,
-    "Fixed Income": 0.31500000000000034,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5137499999999997,
-    "Fixed Income": 0.31500000000000034,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-07",
-   "holding_month": "2012-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3524999999999995,
-    "Fixed Income": 0.47624999999999995,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3524999999999995,
-    "Fixed Income": 0.47624999999999995,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-08",
-   "holding_month": "2012-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.42374999999999946,
-    "Fixed Income": 0.31125000000000064,
-    "Real Assets / Other": 0.26500000000000007,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.42374999999999946,
-    "Fixed Income": 0.31125000000000064,
-    "Real Assets / Other": 0.26500000000000007,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-09",
-   "holding_month": "2012-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6037499999999997,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6037499999999997,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-10",
-   "holding_month": "2012-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4887500000000004,
-    "Fixed Income": 0.3150000000000002,
-    "Real Assets / Other": 0.19624999999999998,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4887500000000004,
-    "Fixed Income": 0.3150000000000002,
-    "Real Assets / Other": 0.19624999999999998,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-11",
-   "holding_month": "2012-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7062500000000006,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7062500000000006,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2012-12",
-   "holding_month": "2013-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6824999999999996,
-    "Fixed Income": 0.15000000000000005,
-    "Real Assets / Other": 0.1675,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6824999999999996,
-    "Fixed Income": 0.15000000000000005,
-    "Real Assets / Other": 0.1675,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2013-01",
-   "holding_month": "2013-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5494999999999992,
-    "Fixed Income": 0.17775000000000002,
-    "Real Assets / Other": 0.27274999999999977,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5494999999999992,
-    "Fixed Income": 0.17775000000000002,
-    "Real Assets / Other": 0.27274999999999977,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2013-02",
-   "holding_month": "2013-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6425000000000003,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.19625,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6425000000000003,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.19625,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2013-03",
-   "holding_month": "2013-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4687499999999998,
-    "Fixed Income": 0.3600000000000001,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4687499999999998,
-    "Fixed Income": 0.3600000000000001,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2013-04",
-   "holding_month": "2013-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5787500000000003,
-    "Fixed Income": 0.25,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5787500000000003,
-    "Fixed Income": 0.25,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2013-05",
-   "holding_month": "2013-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3357500000000006,
-    "Fixed Income": 0.17175000000000007,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.36
-   },
-   "adaptive": {
-    "Equity": 0.3357500000000006,
-    "Fixed Income": 0.17175000000000007,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.36
-   }
-  },
-  {
-   "signal_month": "2013-06",
-   "holding_month": "2013-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.29374999999999946,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.4912499999999997
-   },
-   "adaptive": {
-    "Equity": 0.29374999999999946,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.4912499999999997
-   }
-  },
-  {
-   "signal_month": "2013-07",
-   "holding_month": "2013-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3199999999999994,
-    "Fixed Income": 0.18749999999999997,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.36
-   },
-   "adaptive": {
-    "Equity": 0.3199999999999994,
-    "Fixed Income": 0.18749999999999997,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.36
-   }
-  },
-  {
-   "signal_month": "2013-08",
-   "holding_month": "2013-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3199999999999994,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.4650000000000004
-   },
-   "adaptive": {
-    "Equity": 0.3199999999999994,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13250000000000003,
-    "Cash": 0.4650000000000004
-   }
-  },
-  {
-   "signal_month": "2013-09",
-   "holding_month": "2013-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5587499999999994,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.225
-   },
-   "adaptive": {
-    "Equity": 0.5587499999999994,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.225
-   }
-  },
-  {
-   "signal_month": "2013-10",
-   "holding_month": "2013-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5574999999999994,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.225
-   },
-   "adaptive": {
-    "Equity": 0.5574999999999994,
-    "Fixed Income": 0.135,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.225
-   }
-  },
-  {
-   "signal_month": "2013-11",
-   "holding_month": "2013-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5437500000000004,
-    "Fixed Income": 0.12750000000000003,
-    "Real Assets / Other": 0.10375000000000001,
-    "Cash": 0.225
-   },
-   "adaptive": {
-    "Equity": 0.5437500000000004,
-    "Fixed Income": 0.12750000000000003,
-    "Real Assets / Other": 0.10375000000000001,
-    "Cash": 0.225
-   }
-  },
-  {
-   "signal_month": "2013-12",
-   "holding_month": "2014-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4337500000000004,
-    "Fixed Income": 0.15000000000000005,
-    "Real Assets / Other": 0.05625,
-    "Cash": 0.36
-   },
-   "adaptive": {
-    "Equity": 0.4337500000000004,
-    "Fixed Income": 0.15000000000000005,
-    "Real Assets / Other": 0.05625,
-    "Cash": 0.36
-   }
-  },
-  {
-   "signal_month": "2014-01",
-   "holding_month": "2014-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.33375000000000044,
-    "Fixed Income": 0.5400000000000005,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.04500000000000001
-   },
-   "adaptive": {
-    "Equity": 0.33375000000000044,
-    "Fixed Income": 0.5400000000000005,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.04500000000000001
-   }
-  },
-  {
-   "signal_month": "2014-02",
-   "holding_month": "2014-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4537499999999995,
-    "Fixed Income": 0.41250000000000003,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4537499999999995,
-    "Fixed Income": 0.41250000000000003,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-03",
-   "holding_month": "2014-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.46425000000000066,
-    "Fixed Income": 0.17175000000000007,
-    "Real Assets / Other": 0.13900000000000004,
-    "Cash": 0.225
-   },
-   "adaptive": {
-    "Equity": 0.46425000000000066,
-    "Fixed Income": 0.17175000000000007,
-    "Real Assets / Other": 0.13900000000000004,
-    "Cash": 0.225
-   }
-  },
-  {
-   "signal_month": "2014-04",
-   "holding_month": "2014-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.47875,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.135,
-    "Cash": 0.225
-   },
-   "adaptive": {
-    "Equity": 0.47875,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.135,
-    "Cash": 0.225
-   }
-  },
-  {
-   "signal_month": "2014-05",
-   "holding_month": "2014-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6654999999999994,
-    "Fixed Income": 0.18299999999999972,
-    "Real Assets / Other": 0.15149999999999972,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6654999999999994,
-    "Fixed Income": 0.18299999999999972,
-    "Real Assets / Other": 0.15149999999999972,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-06",
-   "holding_month": "2014-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6767499999999995,
-    "Fixed Income": 0.14550000000000005,
-    "Real Assets / Other": 0.17774999999999974,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6767499999999995,
-    "Fixed Income": 0.14550000000000005,
-    "Real Assets / Other": 0.17774999999999974,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-07",
-   "holding_month": "2014-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5212499999999997,
-    "Fixed Income": 0.3337500000000001,
-    "Real Assets / Other": 0.14499999999999996,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5212499999999997,
-    "Fixed Income": 0.3337500000000001,
-    "Real Assets / Other": 0.14499999999999996,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-08",
-   "holding_month": "2014-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6562499999999997,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6562499999999997,
-    "Fixed Income": 0.17250000000000004,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-09",
-   "holding_month": "2014-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3030000000000006,
-    "Fixed Income": 0.6157500000000006,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3030000000000006,
-    "Fixed Income": 0.6157500000000006,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-10",
-   "holding_month": "2014-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.405,
-    "Fixed Income": 0.42374999999999996,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.405,
-    "Fixed Income": 0.42374999999999996,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-11",
-   "holding_month": "2014-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.405,
-    "Fixed Income": 0.42375,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.405,
-    "Fixed Income": 0.42375,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2014-12",
-   "holding_month": "2015-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4154999999999994,
-    "Fixed Income": 0.4080000000000001,
-    "Real Assets / Other": 0.1764999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4154999999999994,
-    "Fixed Income": 0.4080000000000001,
-    "Real Assets / Other": 0.1764999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-01",
-   "holding_month": "2015-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3412499999999997,
-    "Fixed Income": 0.42375000000000007,
-    "Real Assets / Other": 0.2349999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3412499999999997,
-    "Fixed Income": 0.42375000000000007,
-    "Real Assets / Other": 0.2349999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-02",
-   "holding_month": "2015-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.56625,
-    "Fixed Income": 0.2625000000000003,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.56625,
-    "Fixed Income": 0.2625000000000003,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-03",
-   "holding_month": "2015-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.4050000000000001,
-    "Fixed Income": 0.42374999999999996,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.4050000000000001,
-    "Fixed Income": 0.42374999999999996,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-04",
-   "holding_month": "2015-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7837500000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7837500000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-05",
-   "holding_month": "2015-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3187499999999995,
-    "Fixed Income": 0.5475,
-    "Real Assets / Other": 0.13375000000000006,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3187499999999995,
-    "Fixed Income": 0.5475,
-    "Real Assets / Other": 0.13375000000000006,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-06",
-   "holding_month": "2015-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2924999999999998,
-    "Fixed Income": 0.2850000000000003,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.315
-   },
-   "adaptive": {
-    "Equity": 0.2924999999999998,
-    "Fixed Income": 0.2850000000000003,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.315
-   }
-  },
-  {
-   "signal_month": "2015-07",
-   "holding_month": "2015-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.3187499999999995,
-    "Fixed Income": 0.57375,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.3187499999999995,
-    "Fixed Income": 0.57375,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-08",
-   "holding_month": "2015-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.1875,
-    "Fixed Income": 0.68625,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.04500000000000001
-   },
-   "adaptive": {
-    "Equity": 0.1875,
-    "Fixed Income": 0.68625,
-    "Real Assets / Other": 0.08125,
-    "Cash": 0.04500000000000001
-   }
-  },
-  {
-   "signal_month": "2015-09",
-   "holding_month": "2015-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.1875,
-    "Fixed Income": 0.69975,
-    "Real Assets / Other": 0.11275000000000002,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.1875,
-    "Fixed Income": 0.69975,
-    "Real Assets / Other": 0.11275000000000002,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-10",
-   "holding_month": "2015-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.42749999999999977,
-    "Fixed Income": 0.41250000000000003,
-    "Real Assets / Other": 0.16,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.42749999999999977,
-    "Fixed Income": 0.41250000000000003,
-    "Real Assets / Other": 0.16,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2015-11",
-   "holding_month": "2015-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2924999999999994,
-    "Fixed Income": 0.48375,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.09000000000000001
-   },
-   "adaptive": {
-    "Equity": 0.2924999999999994,
-    "Fixed Income": 0.48375,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.09000000000000001
-   }
-  },
-  {
-   "signal_month": "2015-12",
-   "holding_month": "2016-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2924999999999994,
-    "Fixed Income": 0.33375,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.2400000000000003
-   },
-   "adaptive": {
-    "Equity": 0.2924999999999994,
-    "Fixed Income": 0.33375,
-    "Real Assets / Other": 0.13374999999999998,
-    "Cash": 0.2400000000000003
-   }
-  },
-  {
-   "signal_month": "2016-01",
-   "holding_month": "2016-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.16250000000000003,
-    "Fixed Income": 0.7299999999999993,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.16250000000000003,
-    "Fixed Income": 0.7299999999999993,
-    "Real Assets / Other": 0.10750000000000004,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-02",
-   "holding_month": "2016-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.26250000000000034,
-    "Fixed Income": 0.5025000000000006,
-    "Real Assets / Other": 0.23499999999999996,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.26250000000000034,
-    "Fixed Income": 0.5025000000000006,
-    "Real Assets / Other": 0.23499999999999996,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-03",
-   "holding_month": "2016-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.38000000000000034,
-    "Fixed Income": 0.35875000000000007,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.38000000000000034,
-    "Fixed Income": 0.35875000000000007,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-04",
-   "holding_month": "2016-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.28875000000000006,
-    "Fixed Income": 0.41325000000000045,
-    "Real Assets / Other": 0.29799999999999943,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.28875000000000006,
-    "Fixed Income": 0.41325000000000045,
-    "Real Assets / Other": 0.29799999999999943,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-05",
-   "holding_month": "2016-06",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.31499999999999945,
-    "Fixed Income": 0.42375000000000035,
-    "Real Assets / Other": 0.26124999999999976,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.31499999999999945,
-    "Fixed Income": 0.42375000000000035,
-    "Real Assets / Other": 0.26124999999999976,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-06",
-   "holding_month": "2016-07",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.2,
-    "Fixed Income": 0.45,
-    "Real Assets / Other": 0.35,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.2,
-    "Fixed Income": 0.45,
-    "Real Assets / Other": 0.35,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-07",
-   "holding_month": "2016-08",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5400000000000004,
-    "Fixed Income": 0.19875000000000007,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5400000000000004,
-    "Fixed Income": 0.19875000000000007,
-    "Real Assets / Other": 0.26125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-08",
-   "holding_month": "2016-09",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.6562499999999993,
-    "Fixed Income": 0.17249999999999993,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.6562499999999993,
-    "Fixed Income": 0.17249999999999993,
-    "Real Assets / Other": 0.17125,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-09",
-   "holding_month": "2016-10",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7212500000000001,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.17000000000000035,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7212500000000001,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.17000000000000035,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-10",
-   "holding_month": "2016-11",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5325000000000001,
-    "Fixed Income": 0.27749999999999975,
-    "Real Assets / Other": 0.1899999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.5325000000000001,
-    "Fixed Income": 0.27749999999999975,
-    "Real Assets / Other": 0.1899999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
-   "signal_month": "2016-11",
-   "holding_month": "2016-12",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5167499999999994,
-    "Fixed Income": 0.19050000000000006,
-    "Real Assets / Other": 0.2214999999999997,
-    "Cash": 0.07125000000000004
-   },
-   "adaptive": {
-    "Equity": 0.5167499999999994,
-    "Fixed Income": 0.19050000000000006,
-    "Real Assets / Other": 0.2214999999999997,
-    "Cash": 0.07125000000000004
-   }
-  },
-  {
-   "signal_month": "2016-12",
-   "holding_month": "2017-01",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.5325,
-    "Fixed Income": 0.18000000000000002,
-    "Real Assets / Other": 0.21625,
-    "Cash": 0.07125000000000004
-   },
-   "adaptive": {
-    "Equity": 0.5325,
-    "Fixed Income": 0.18000000000000002,
-    "Real Assets / Other": 0.21625,
-    "Cash": 0.07125000000000004
-   }
-  },
-  {
-   "signal_month": "2017-01",
-   "holding_month": "2017-02",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.585,
-    "Fixed Income": 0.15375000000000005,
-    "Real Assets / Other": 0.21625,
-    "Cash": 0.04500000000000001
-   },
-   "adaptive": {
-    "Equity": 0.585,
-    "Fixed Income": 0.15375000000000005,
-    "Real Assets / Other": 0.21625,
-    "Cash": 0.04500000000000001
-   }
-  },
-  {
-   "signal_month": "2017-02",
-   "holding_month": "2017-03",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
-   "core": {
-    "Equity": 0.7357499999999991,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.1764999999999997,
-    "Cash": 0.0
-   },
-   "adaptive": {
-    "Equity": 0.7357499999999991,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.1764999999999997,
-    "Cash": 0.0
-   }
-  },
-  {
    "signal_month": "2017-03",
    "holding_month": "2017-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6382499999999992,
-    "Fixed Income": 0.18400000000000005,
-    "Real Assets / Other": 0.13275,
-    "Cash": 0.04500000000000001
+    "Equity": 0.64875,
+    "Fixed Income": 0.17875,
+    "Real Assets / Other": 0.1275,
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.6382499999999992,
-    "Fixed Income": 0.18400000000000005,
-    "Real Assets / Other": 0.13275,
-    "Cash": 0.04500000000000001
+    "Equity": 0.64875,
+    "Fixed Income": 0.17875,
+    "Real Assets / Other": 0.1275,
+    "Cash": 0.045
    }
   },
   {
@@ -3257,15 +915,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7837500000000002,
-    "Fixed Income": 0.13374999999999998,
-    "Real Assets / Other": 0.08250000000000003,
+    "Equity": 0.78375,
+    "Fixed Income": 0.13375,
+    "Real Assets / Other": 0.0825,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7837500000000002,
-    "Fixed Income": 0.13374999999999998,
-    "Real Assets / Other": 0.08250000000000003,
+    "Equity": 0.78375,
+    "Fixed Income": 0.13375,
+    "Real Assets / Other": 0.0825,
     "Cash": 0.0
    }
   },
@@ -3275,14 +933,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7837499999999998,
-    "Fixed Income": 0.1600000000000001,
+    "Equity": 0.78375,
+    "Fixed Income": 0.16,
     "Real Assets / Other": 0.05625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7837499999999998,
-    "Fixed Income": 0.1600000000000001,
+    "Equity": 0.78375,
+    "Fixed Income": 0.16,
     "Real Assets / Other": 0.05625,
     "Cash": 0.0
    }
@@ -3294,13 +952,13 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.55875,
-    "Fixed Income": 0.1600000000000001,
+    "Fixed Income": 0.16,
     "Real Assets / Other": 0.05625,
     "Cash": 0.225
    },
    "adaptive": {
     "Equity": 0.55875,
-    "Fixed Income": 0.1600000000000001,
+    "Fixed Income": 0.16,
     "Real Assets / Other": 0.05625,
     "Cash": 0.225
    }
@@ -3311,13 +969,13 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5587499999999994,
+    "Equity": 0.55875,
     "Fixed Income": 0.16,
     "Real Assets / Other": 0.05625,
     "Cash": 0.225
    },
    "adaptive": {
-    "Equity": 0.5587499999999994,
+    "Equity": 0.55875,
     "Fixed Income": 0.16,
     "Real Assets / Other": 0.05625,
     "Cash": 0.225
@@ -3329,15 +987,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7574999999999994,
-    "Fixed Income": 0.1600000000000001,
-    "Real Assets / Other": 0.08250000000000003,
+    "Equity": 0.7574999999999998,
+    "Fixed Income": 0.13375,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7574999999999994,
-    "Fixed Income": 0.1600000000000001,
-    "Real Assets / Other": 0.08250000000000003,
+    "Equity": 0.7574999999999998,
+    "Fixed Income": 0.13375,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    }
   },
@@ -3347,15 +1005,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5482500000000007,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.13900000000000004,
+    "Equity": 0.5325,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.16,
     "Cash": 0.225
    },
    "adaptive": {
-    "Equity": 0.5482500000000007,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.13900000000000004,
+    "Equity": 0.5325,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.16,
     "Cash": 0.225
    }
   },
@@ -3365,15 +1023,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.793749999999999,
-    "Fixed Income": 0.07875,
-    "Real Assets / Other": 0.12750000000000003,
+    "Equity": 0.80875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.793749999999999,
-    "Fixed Income": 0.07875,
-    "Real Assets / Other": 0.12750000000000003,
+    "Equity": 0.80875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    }
   },
@@ -3383,15 +1041,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7824999999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.10875000000000007,
+    "Equity": 0.80875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7824999999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.10875000000000007,
+    "Equity": 0.80875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    }
   },
@@ -3401,13 +1059,13 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7975000000000001,
+    "Equity": 0.7975,
     "Fixed Income": 0.05625,
     "Real Assets / Other": 0.14625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7975000000000001,
+    "Equity": 0.7975,
     "Fixed Income": 0.05625,
     "Real Assets / Other": 0.14625,
     "Cash": 0.0
@@ -3419,16 +1077,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6224999999999997,
-    "Fixed Income": 0.15375000000000005,
-    "Real Assets / Other": 0.17874999999999971,
-    "Cash": 0.04500000000000001
+    "Equity": 0.6224999999999999,
+    "Fixed Income": 0.15375,
+    "Real Assets / Other": 0.17875,
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.6224999999999997,
-    "Fixed Income": 0.15375000000000005,
-    "Real Assets / Other": 0.17874999999999971,
-    "Cash": 0.04500000000000001
+    "Equity": 0.6224999999999999,
+    "Fixed Income": 0.15375,
+    "Real Assets / Other": 0.17875,
+    "Cash": 0.045
    }
   },
   {
@@ -3437,16 +1095,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.36999999999999944,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.17999999999999972,
-    "Cash": 0.3674999999999997
+    "Equity": 0.37,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18,
+    "Cash": 0.3675
    },
    "adaptive": {
-    "Equity": 0.36999999999999944,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.17999999999999972,
-    "Cash": 0.3674999999999997
+    "Equity": 0.37,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18,
+    "Cash": 0.3675
    }
   },
   {
@@ -3455,16 +1113,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5994999999999997,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.22275,
-    "Cash": 0.09000000000000001
+    "Equity": 0.61,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.21750000000000003,
+    "Cash": 0.09
    },
    "adaptive": {
-    "Equity": 0.5994999999999997,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.22275,
-    "Cash": 0.09000000000000001
+    "Equity": 0.61,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.21750000000000003,
+    "Cash": 0.09
    }
   },
   {
@@ -3473,16 +1131,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.35425000000000034,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.1590000000000003,
-    "Cash": 0.3989999999999997
+    "Equity": 0.37,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.15375,
+    "Cash": 0.39375
    },
    "adaptive": {
-    "Equity": 0.35425000000000034,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.1590000000000003,
-    "Cash": 0.3989999999999997
+    "Equity": 0.37,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.15375,
+    "Cash": 0.39375
    }
   },
   {
@@ -3491,16 +1149,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.46750000000000014,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.28125000000000006,
-    "Cash": 0.09000000000000001
+    "Equity": 0.4675000000000001,
+    "Fixed Income": 0.16125,
+    "Real Assets / Other": 0.28125,
+    "Cash": 0.09
    },
    "adaptive": {
-    "Equity": 0.46750000000000014,
-    "Fixed Income": 0.16125000000000003,
-    "Real Assets / Other": 0.28125000000000006,
-    "Cash": 0.09000000000000001
+    "Equity": 0.4675000000000001,
+    "Fixed Income": 0.16125,
+    "Real Assets / Other": 0.28125,
+    "Cash": 0.09
    }
   },
   {
@@ -3509,16 +1167,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4675000000000001,
-    "Fixed Income": 0.20624999999999968,
-    "Real Assets / Other": 0.28125000000000006,
-    "Cash": 0.04500000000000001
+    "Equity": 0.4675,
+    "Fixed Income": 0.20625,
+    "Real Assets / Other": 0.28125,
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.4675000000000001,
-    "Fixed Income": 0.20624999999999968,
-    "Real Assets / Other": 0.28125000000000006,
-    "Cash": 0.04500000000000001
+    "Equity": 0.4675,
+    "Fixed Income": 0.20625,
+    "Real Assets / Other": 0.28125,
+    "Cash": 0.045
    }
   },
   {
@@ -3527,16 +1185,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6025000000000001,
-    "Fixed Income": 0.18749999999999997,
-    "Real Assets / Other": 0.18374999999999994,
-    "Cash": 0.02625000000000003
+    "Equity": 0.6025,
+    "Fixed Income": 0.1875,
+    "Real Assets / Other": 0.18375,
+    "Cash": 0.02625
    },
    "adaptive": {
-    "Equity": 0.6025000000000001,
-    "Fixed Income": 0.18749999999999997,
-    "Real Assets / Other": 0.18374999999999994,
-    "Cash": 0.02625000000000003
+    "Equity": 0.6025,
+    "Fixed Income": 0.1875,
+    "Real Assets / Other": 0.18375,
+    "Cash": 0.02625
    }
   },
   {
@@ -3546,15 +1204,15 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.43000000000000005,
-    "Fixed Income": 0.2699999999999997,
-    "Real Assets / Other": 0.2549999999999997,
-    "Cash": 0.04500000000000001
+    "Fixed Income": 0.27,
+    "Real Assets / Other": 0.255,
+    "Cash": 0.045
    },
    "adaptive": {
     "Equity": 0.43000000000000005,
-    "Fixed Income": 0.2699999999999997,
-    "Real Assets / Other": 0.2549999999999997,
-    "Cash": 0.04500000000000001
+    "Fixed Income": 0.27,
+    "Real Assets / Other": 0.255,
+    "Cash": 0.045
    }
   },
   {
@@ -3563,16 +1221,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.31749999999999945,
+    "Equity": 0.3175,
     "Fixed Income": 0.135,
-    "Real Assets / Other": 0.20624999999999968,
-    "Cash": 0.3412500000000003
+    "Real Assets / Other": 0.20625,
+    "Cash": 0.34125
    },
    "adaptive": {
-    "Equity": 0.31749999999999945,
+    "Equity": 0.3175,
     "Fixed Income": 0.135,
-    "Real Assets / Other": 0.20624999999999968,
-    "Cash": 0.3412500000000003
+    "Real Assets / Other": 0.20625,
+    "Cash": 0.34125
    }
   },
   {
@@ -3582,15 +1240,15 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.23875000000000002,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.10875000000000007,
-    "Cash": 0.5699999999999997
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.57
    },
    "adaptive": {
     "Equity": 0.23875000000000002,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.10875000000000007,
-    "Cash": 0.5699999999999997
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.57
    }
   },
   {
@@ -3599,16 +1257,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.21250000000000002,
+    "Equity": 0.23875000000000002,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.11400000000000005,
-    "Cash": 0.6172499999999996
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.59625
    },
    "adaptive": {
-    "Equity": 0.21250000000000002,
+    "Equity": 0.23875000000000002,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.11400000000000005,
-    "Cash": 0.6172499999999996
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.59625
    }
   },
   {
@@ -3619,13 +1277,13 @@
    "core": {
     "Equity": 0.1875,
     "Fixed Income": 0.70375,
-    "Real Assets / Other": 0.1087499999999997,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    },
    "adaptive": {
     "Equity": 0.1875,
     "Fixed Income": 0.70375,
-    "Real Assets / Other": 0.1087499999999997,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    }
   },
@@ -3635,14 +1293,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.31500000000000034,
-    "Fixed Income": 0.4237500000000004,
+    "Equity": 0.31499999999999995,
+    "Fixed Income": 0.42374999999999996,
     "Real Assets / Other": 0.26125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.31500000000000034,
-    "Fixed Income": 0.4237500000000004,
+    "Equity": 0.31499999999999995,
+    "Fixed Income": 0.42374999999999996,
     "Real Assets / Other": 0.26125,
     "Cash": 0.0
    }
@@ -3653,15 +1311,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3137500000000001,
-    "Fixed Income": 0.45,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.31375,
+    "Fixed Income": 0.45000000000000007,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3137500000000001,
-    "Fixed Income": 0.45,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.31375,
+    "Fixed Income": 0.45000000000000007,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -3671,15 +1329,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5649999999999998,
-    "Fixed Income": 0.26250000000000034,
-    "Real Assets / Other": 0.17250000000000004,
+    "Equity": 0.5650000000000001,
+    "Fixed Income": 0.2625,
+    "Real Assets / Other": 0.1725,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.5649999999999998,
-    "Fixed Income": 0.26250000000000034,
-    "Real Assets / Other": 0.17250000000000004,
+    "Equity": 0.5650000000000001,
+    "Fixed Income": 0.2625,
+    "Real Assets / Other": 0.1725,
     "Cash": 0.0
    }
   },
@@ -3689,15 +1347,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6300000000000002,
+    "Equity": 0.63,
     "Fixed Income": 0.25,
-    "Real Assets / Other": 0.11999999999999997,
+    "Real Assets / Other": 0.12,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6300000000000002,
+    "Equity": 0.63,
     "Fixed Income": 0.25,
-    "Real Assets / Other": 0.11999999999999997,
+    "Real Assets / Other": 0.12,
     "Cash": 0.0
    }
   },
@@ -3707,15 +1365,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.2625000000000003,
+    "Equity": 0.26249999999999996,
     "Fixed Income": 0.50125,
-    "Real Assets / Other": 0.23625000000000002,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.2625000000000003,
+    "Equity": 0.26249999999999996,
     "Fixed Income": 0.50125,
-    "Real Assets / Other": 0.23625000000000002,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -3725,15 +1383,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5399999999999997,
-    "Fixed Income": 0.22374999999999998,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.54,
+    "Fixed Income": 0.22375,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.5399999999999997,
-    "Fixed Income": 0.22374999999999998,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.54,
+    "Fixed Income": 0.22375,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -3743,15 +1401,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3412499999999997,
+    "Equity": 0.34125,
     "Fixed Income": 0.4225,
-    "Real Assets / Other": 0.23625000000000002,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3412499999999997,
+    "Equity": 0.34125,
     "Fixed Income": 0.4225,
-    "Real Assets / Other": 0.23625000000000002,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -3761,15 +1419,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.2887499999999997,
-    "Fixed Income": 0.4645000000000003,
-    "Real Assets / Other": 0.24674999999999941,
+    "Equity": 0.315,
+    "Fixed Income": 0.44875,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.2887499999999997,
-    "Fixed Income": 0.4645000000000003,
-    "Real Assets / Other": 0.24674999999999941,
+    "Equity": 0.315,
+    "Fixed Income": 0.44875,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -3779,15 +1437,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3412499999999997,
-    "Fixed Income": 0.3975,
-    "Real Assets / Other": 0.26125000000000004,
+    "Equity": 0.34125,
+    "Fixed Income": 0.3975000000000001,
+    "Real Assets / Other": 0.26125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3412499999999997,
-    "Fixed Income": 0.3975,
-    "Real Assets / Other": 0.26125000000000004,
+    "Equity": 0.34125,
+    "Fixed Income": 0.3975000000000001,
+    "Real Assets / Other": 0.26125,
     "Cash": 0.0
    }
   },
@@ -3797,15 +1455,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.47624999999999945,
-    "Fixed Income": 0.2875000000000003,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.47625,
+    "Fixed Income": 0.2875,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.47624999999999945,
-    "Fixed Income": 0.2875000000000003,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.47625,
+    "Fixed Income": 0.2875,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -3815,15 +1473,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6667499999999995,
-    "Fixed Income": 0.15675000000000003,
-    "Real Assets / Other": 0.1764999999999997,
+    "Equity": 0.6825,
+    "Fixed Income": 0.14625,
+    "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6667499999999995,
-    "Fixed Income": 0.15675000000000003,
-    "Real Assets / Other": 0.1764999999999997,
+    "Equity": 0.6825,
+    "Fixed Income": 0.14625,
+    "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
   },
@@ -3833,15 +1491,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7357499999999995,
-    "Fixed Income": 0.11275000000000002,
-    "Real Assets / Other": 0.15150000000000005,
+    "Equity": 0.72,
+    "Fixed Income": 0.1075,
+    "Real Assets / Other": 0.1725,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7357499999999995,
-    "Fixed Income": 0.11275000000000002,
-    "Real Assets / Other": 0.15150000000000005,
+    "Equity": 0.72,
+    "Fixed Income": 0.1075,
+    "Real Assets / Other": 0.1725,
     "Cash": 0.0
    }
   },
@@ -3853,13 +1511,13 @@
    "core": {
     "Equity": 0.3425,
     "Fixed Income": 0.4225,
-    "Real Assets / Other": 0.2349999999999997,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    },
    "adaptive": {
     "Equity": 0.3425,
     "Fixed Income": 0.4225,
-    "Real Assets / Other": 0.2349999999999997,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    }
   },
@@ -3869,14 +1527,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3275000000000001,
-    "Fixed Income": 0.5012500000000001,
+    "Equity": 0.3275,
+    "Fixed Income": 0.50125,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3275000000000001,
-    "Fixed Income": 0.5012500000000001,
+    "Equity": 0.3275,
+    "Fixed Income": 0.50125,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
@@ -3884,37 +1542,37 @@
   {
    "signal_month": "2020-03",
    "holding_month": "2020-04",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
+   "state": "DEFENSIVE",
+   "risk_budget": 0.5599681815085519,
    "core": {
-    "Equity": 0.3000000000000004,
+    "Equity": 0.3,
     "Fixed Income": 0.52875,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3000000000000004,
-    "Fixed Income": 0.52875,
-    "Real Assets / Other": 0.17124999999999999,
-    "Cash": 0.0
+    "Equity": 0.1679904545,
+    "Fixed Income": 0.296083176,
+    "Real Assets / Other": 0.095894551,
+    "Cash": 0.4400318185
    }
   },
   {
    "signal_month": "2020-04",
    "holding_month": "2020-05",
-   "state": "NORMAL",
-   "risk_budget": 1.0,
+   "state": "DEFENSIVE",
+   "risk_budget": 0.55,
    "core": {
-    "Equity": 0.32249999999999973,
-    "Fixed Income": 0.5062500000000003,
+    "Equity": 0.3225,
+    "Fixed Income": 0.50625,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.32249999999999973,
-    "Fixed Income": 0.5062500000000003,
-    "Real Assets / Other": 0.17124999999999999,
-    "Cash": 0.0
+    "Equity": 0.17737500000000003,
+    "Fixed Income": 0.2784375,
+    "Real Assets / Other": 0.0941875,
+    "Cash": 0.45
    }
   },
   {
@@ -3923,14 +1581,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4050000000000001,
-    "Fixed Income": 0.42374999999999996,
+    "Equity": 0.405,
+    "Fixed Income": 0.42375000000000007,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.4050000000000001,
-    "Fixed Income": 0.42374999999999996,
+    "Equity": 0.405,
+    "Fixed Income": 0.42375000000000007,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    }
@@ -3942,13 +1600,13 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.56625,
-    "Fixed Income": 0.26250000000000034,
+    "Fixed Income": 0.2625,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    },
    "adaptive": {
     "Equity": 0.56625,
-    "Fixed Income": 0.26250000000000034,
+    "Fixed Income": 0.2625,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    }
@@ -3959,14 +1617,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6299999999999997,
-    "Fixed Income": 0.19875000000000007,
+    "Equity": 0.63,
+    "Fixed Income": 0.19874999999999998,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6299999999999997,
-    "Fixed Income": 0.19875000000000007,
+    "Equity": 0.63,
+    "Fixed Income": 0.19874999999999998,
     "Real Assets / Other": 0.17124999999999999,
     "Cash": 0.0
    }
@@ -3978,13 +1636,13 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.69375,
-    "Fixed Income": 0.1350000000000001,
+    "Fixed Income": 0.135,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
     "Equity": 0.69375,
-    "Fixed Income": 0.1350000000000001,
+    "Fixed Income": 0.135,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
@@ -3996,14 +1654,14 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.7475,
-    "Fixed Income": 0.10750000000000004,
-    "Real Assets / Other": 0.1449999999999997,
+    "Fixed Income": 0.1075,
+    "Real Assets / Other": 0.145,
     "Cash": 0.0
    },
    "adaptive": {
     "Equity": 0.7475,
-    "Fixed Income": 0.10750000000000004,
-    "Real Assets / Other": 0.1449999999999997,
+    "Fixed Income": 0.1075,
+    "Real Assets / Other": 0.145,
     "Cash": 0.0
    }
   },
@@ -4013,15 +1671,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5744999999999989,
-    "Fixed Income": 0.2805000000000001,
-    "Real Assets / Other": 0.14500000000000032,
+    "Equity": 0.55875,
+    "Fixed Income": 0.29624999999999996,
+    "Real Assets / Other": 0.145,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.5744999999999989,
-    "Fixed Income": 0.2805000000000001,
-    "Real Assets / Other": 0.14500000000000032,
+    "Equity": 0.55875,
+    "Fixed Income": 0.29624999999999996,
+    "Real Assets / Other": 0.145,
     "Cash": 0.0
    }
   },
@@ -4031,15 +1689,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7824999999999998,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.08250000000000003,
+    "Equity": 0.7825,
+    "Fixed Income": 0.135,
+    "Real Assets / Other": 0.0825,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7824999999999998,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.08250000000000003,
+    "Equity": 0.7825,
+    "Fixed Income": 0.135,
+    "Real Assets / Other": 0.0825,
     "Cash": 0.0
    }
   },
@@ -4049,15 +1707,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7824999999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.10875000000000007,
+    "Equity": 0.7825,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7824999999999998,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.10875000000000007,
+    "Equity": 0.7825,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.10875,
     "Cash": 0.0
    }
   },
@@ -4067,15 +1725,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6257499999999991,
-    "Fixed Income": 0.20925000000000002,
-    "Real Assets / Other": 0.1649999999999997,
+    "Equity": 0.63625,
+    "Fixed Income": 0.19874999999999998,
+    "Real Assets / Other": 0.165,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6257499999999991,
-    "Fixed Income": 0.20925000000000002,
-    "Real Assets / Other": 0.1649999999999997,
+    "Equity": 0.63625,
+    "Fixed Income": 0.19874999999999998,
+    "Real Assets / Other": 0.165,
     "Cash": 0.0
    }
   },
@@ -4085,14 +1743,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5325000000000001,
-    "Fixed Income": 0.19875000000000007,
+    "Equity": 0.5325,
+    "Fixed Income": 0.19874999999999998,
     "Real Assets / Other": 0.26875,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.5325000000000001,
-    "Fixed Income": 0.19875000000000007,
+    "Equity": 0.5325,
+    "Fixed Income": 0.19874999999999998,
     "Real Assets / Other": 0.26875,
     "Cash": 0.0
    }
@@ -4103,16 +1761,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5587500000000003,
-    "Fixed Income": 0.12750000000000003,
+    "Equity": 0.55875,
+    "Fixed Income": 0.1275,
     "Real Assets / Other": 0.26875,
-    "Cash": 0.04500000000000001
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.5587500000000003,
-    "Fixed Income": 0.12750000000000003,
+    "Equity": 0.55875,
+    "Fixed Income": 0.1275,
     "Real Assets / Other": 0.26875,
-    "Cash": 0.04500000000000001
+    "Cash": 0.045
    }
   },
   {
@@ -4121,16 +1779,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.49624999999999986,
-    "Fixed Income": 0.12750000000000003,
+    "Equity": 0.49624999999999997,
+    "Fixed Income": 0.1275,
     "Real Assets / Other": 0.33125,
-    "Cash": 0.04500000000000001
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.49624999999999986,
-    "Fixed Income": 0.12750000000000003,
+    "Equity": 0.49624999999999997,
+    "Fixed Income": 0.1275,
     "Real Assets / Other": 0.33125,
-    "Cash": 0.04500000000000001
+    "Cash": 0.045
    }
   },
   {
@@ -4139,16 +1797,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.49625000000000014,
+    "Equity": 0.49624999999999997,
     "Fixed Income": 0.10125,
     "Real Assets / Other": 0.3575,
-    "Cash": 0.04500000000000001
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.49625000000000014,
+    "Equity": 0.49624999999999997,
     "Fixed Income": 0.10125,
     "Real Assets / Other": 0.3575,
-    "Cash": 0.04500000000000001
+    "Cash": 0.045
    }
   },
   {
@@ -4157,15 +1815,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6825000000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.23499999999999996,
+    "Equity": 0.6825,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6825000000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.23499999999999996,
+    "Equity": 0.6825,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    }
   },
@@ -4175,14 +1833,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4949999999999998,
-    "Fixed Income": 0.19875000000000007,
+    "Equity": 0.49499999999999994,
+    "Fixed Income": 0.19874999999999998,
     "Real Assets / Other": 0.30625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.4949999999999998,
-    "Fixed Income": 0.19875000000000007,
+    "Equity": 0.49499999999999994,
+    "Fixed Income": 0.19874999999999998,
     "Real Assets / Other": 0.30625,
     "Cash": 0.0
    }
@@ -4193,14 +1851,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6550000000000001,
-    "Fixed Income": 0.1350000000000001,
+    "Equity": 0.68125,
+    "Fixed Income": 0.10875,
     "Real Assets / Other": 0.21,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6550000000000001,
-    "Fixed Income": 0.1350000000000001,
+    "Equity": 0.68125,
+    "Fixed Income": 0.10875,
     "Real Assets / Other": 0.21,
     "Cash": 0.0
    }
@@ -4211,15 +1869,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.45299999999999946,
-    "Fixed Income": 0.26175000000000037,
-    "Real Assets / Other": 0.28524999999999967,
+    "Equity": 0.4425,
+    "Fixed Income": 0.25125,
+    "Real Assets / Other": 0.30625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.45299999999999946,
-    "Fixed Income": 0.26175000000000037,
-    "Real Assets / Other": 0.28524999999999967,
+    "Equity": 0.4425,
+    "Fixed Income": 0.25125,
+    "Real Assets / Other": 0.30625,
     "Cash": 0.0
    }
   },
@@ -4229,15 +1887,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4837499999999995,
-    "Fixed Income": 0.24000000000000002,
-    "Real Assets / Other": 0.27624999999999966,
+    "Equity": 0.46874999999999994,
+    "Fixed Income": 0.22499999999999998,
+    "Real Assets / Other": 0.30625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.4837499999999995,
-    "Fixed Income": 0.24000000000000002,
-    "Real Assets / Other": 0.27624999999999966,
+    "Equity": 0.46874999999999994,
+    "Fixed Income": 0.22499999999999998,
+    "Real Assets / Other": 0.30625,
     "Cash": 0.0
    }
   },
@@ -4248,14 +1906,14 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.405,
-    "Fixed Income": 0.34124999999999983,
-    "Real Assets / Other": 0.2537499999999997,
+    "Fixed Income": 0.34125,
+    "Real Assets / Other": 0.25375000000000003,
     "Cash": 0.0
    },
    "adaptive": {
     "Equity": 0.405,
-    "Fixed Income": 0.34124999999999983,
-    "Real Assets / Other": 0.2537499999999997,
+    "Fixed Income": 0.34125,
+    "Real Assets / Other": 0.25375000000000003,
     "Cash": 0.0
    }
   },
@@ -4265,15 +1923,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4362499999999995,
-    "Fixed Income": 0.23875,
-    "Real Assets / Other": 0.3249999999999997,
+    "Equity": 0.44375,
+    "Fixed Income": 0.25,
+    "Real Assets / Other": 0.30625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.4362499999999995,
-    "Fixed Income": 0.23875,
-    "Real Assets / Other": 0.3249999999999997,
+    "Equity": 0.44375,
+    "Fixed Income": 0.25,
+    "Real Assets / Other": 0.30625,
     "Cash": 0.0
    }
   },
@@ -4283,16 +1941,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.21500000000000005,
-    "Fixed Income": 0.12750000000000003,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.4537500000000003
+    "Equity": 0.215,
+    "Fixed Income": 0.1275,
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.45375
    },
    "adaptive": {
-    "Equity": 0.21500000000000005,
-    "Fixed Income": 0.12750000000000003,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.4537500000000003
+    "Equity": 0.215,
+    "Fixed Income": 0.1275,
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.45375
    }
   },
   {
@@ -4301,16 +1959,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.2637499999999997,
-    "Fixed Income": 0.19125000000000003,
+    "Equity": 0.26375,
+    "Fixed Income": 0.19125,
     "Real Assets / Other": 0.36875,
-    "Cash": 0.1762499999999997
+    "Cash": 0.17625
    },
    "adaptive": {
-    "Equity": 0.2637499999999997,
-    "Fixed Income": 0.19125000000000003,
+    "Equity": 0.26375,
+    "Fixed Income": 0.19125,
     "Real Assets / Other": 0.36875,
-    "Cash": 0.1762499999999997
+    "Cash": 0.17625
    }
   },
   {
@@ -4319,16 +1977,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.19000000000000003,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.30749999999999944,
-    "Cash": 0.4200000000000003
+    "Equity": 0.19,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.3075,
+    "Cash": 0.42
    },
    "adaptive": {
-    "Equity": 0.19000000000000003,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.30749999999999944,
-    "Cash": 0.4200000000000003
+    "Equity": 0.19,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.3075,
+    "Cash": 0.42
    }
   },
   {
@@ -4339,14 +1997,14 @@
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2824999999999994,
-    "Cash": 0.4987500000000004
+    "Real Assets / Other": 0.2825,
+    "Cash": 0.49875
    },
    "adaptive": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2824999999999994,
-    "Cash": 0.4987500000000004
+    "Real Assets / Other": 0.2825,
+    "Cash": 0.49875
    }
   },
   {
@@ -4357,14 +2015,14 @@
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.5775000000000003
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.5775
    },
    "adaptive": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.5775000000000003
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.5775
    }
   },
   {
@@ -4375,14 +2033,14 @@
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.5775000000000003
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.5775
    },
    "adaptive": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.5775000000000003
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.5775
    }
   },
   {
@@ -4391,16 +2049,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.21500000000000005,
-    "Fixed Income": 0.13375000000000006,
-    "Real Assets / Other": 0.1840000000000003,
-    "Cash": 0.4672500000000003
+    "Equity": 0.215,
+    "Fixed Income": 0.13375,
+    "Real Assets / Other": 0.17875,
+    "Cash": 0.4725
    },
    "adaptive": {
-    "Equity": 0.21500000000000005,
-    "Fixed Income": 0.13375000000000006,
-    "Real Assets / Other": 0.1840000000000003,
-    "Cash": 0.4672500000000003
+    "Equity": 0.215,
+    "Fixed Income": 0.13375,
+    "Real Assets / Other": 0.17875,
+    "Cash": 0.4725
    }
   },
   {
@@ -4411,14 +2069,14 @@
    "core": {
     "Equity": 0.1875,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.15250000000000002,
-    "Cash": 0.6037499999999997
+    "Real Assets / Other": 0.1525,
+    "Cash": 0.60375
    },
    "adaptive": {
     "Equity": 0.1875,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.15250000000000002,
-    "Cash": 0.6037499999999997
+    "Real Assets / Other": 0.1525,
+    "Cash": 0.60375
    }
   },
   {
@@ -4447,14 +2105,14 @@
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.17750000000000002,
-    "Cash": 0.6037499999999997
+    "Real Assets / Other": 0.1775,
+    "Cash": 0.60375
    },
    "adaptive": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.17750000000000002,
-    "Cash": 0.6037499999999997
+    "Real Assets / Other": 0.1775,
+    "Cash": 0.60375
    }
   },
   {
@@ -4463,16 +2121,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.42750000000000016,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13375000000000006,
-    "Cash": 0.3562499999999997
+    "Equity": 0.4275,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.13375,
+    "Cash": 0.35625
    },
    "adaptive": {
-    "Equity": 0.42750000000000016,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13375000000000006,
-    "Cash": 0.3562499999999997
+    "Equity": 0.4275,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.13375,
+    "Cash": 0.35625
    }
   },
   {
@@ -4481,15 +2139,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3437500000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13499999999999973,
+    "Equity": 0.34375,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.135,
     "Cash": 0.43875
    },
    "adaptive": {
-    "Equity": 0.3437500000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.13499999999999973,
+    "Equity": 0.34375,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.135,
     "Cash": 0.43875
    }
   },
@@ -4499,16 +2157,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4892500000000001,
-    "Fixed Income": 0.11400000000000005,
-    "Real Assets / Other": 0.17175000000000035,
-    "Cash": 0.225
+    "Equity": 0.47875,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.16125,
+    "Cash": 0.25125
    },
    "adaptive": {
-    "Equity": 0.4892500000000001,
-    "Fixed Income": 0.11400000000000005,
-    "Real Assets / Other": 0.17175000000000035,
-    "Cash": 0.225
+    "Equity": 0.47875,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.16125,
+    "Cash": 0.25125
    }
   },
   {
@@ -4518,15 +2176,15 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.265,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.1087499999999997,
-    "Cash": 0.5437500000000003
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.54375
    },
    "adaptive": {
     "Equity": 0.265,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.1087499999999997,
-    "Cash": 0.5437500000000003
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.54375
    }
   },
   {
@@ -4535,16 +2193,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7450000000000003,
-    "Fixed Income": 0.10875000000000007,
+    "Equity": 0.7450000000000001,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.14625,
-    "Cash": 0.0
+    "Cash": 0.02625
    },
    "adaptive": {
-    "Equity": 0.7450000000000003,
-    "Fixed Income": 0.10875000000000007,
+    "Equity": 0.7450000000000001,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.14625,
-    "Cash": 0.0
+    "Cash": 0.02625
    }
   },
   {
@@ -4553,16 +2211,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.54625,
-    "Fixed Income": 0.2175000000000004,
+    "Equity": 0.5462500000000001,
+    "Fixed Income": 0.21749999999999997,
     "Real Assets / Other": 0.14625,
-    "Cash": 0.09000000000000001
+    "Cash": 0.09
    },
    "adaptive": {
-    "Equity": 0.54625,
-    "Fixed Income": 0.2175000000000004,
+    "Equity": 0.5462500000000001,
+    "Fixed Income": 0.21749999999999997,
     "Real Assets / Other": 0.14625,
-    "Cash": 0.09000000000000001
+    "Cash": 0.09
    }
   },
   {
@@ -4571,16 +2229,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.39624999999999944,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.1087499999999997,
-    "Cash": 0.3862500000000003
+    "Equity": 0.39625,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.38625
    },
    "adaptive": {
-    "Equity": 0.39624999999999944,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.1087499999999997,
-    "Cash": 0.3862500000000003
+    "Equity": 0.39625,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.38625
    }
   },
   {
@@ -4589,16 +2247,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4224999999999995,
-    "Fixed Income": 0.12750000000000003,
-    "Real Assets / Other": 0.10875000000000007,
-    "Cash": 0.3412500000000003
+    "Equity": 0.44875,
+    "Fixed Income": 0.1275,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.315
    },
    "adaptive": {
-    "Equity": 0.4224999999999995,
-    "Fixed Income": 0.12750000000000003,
-    "Real Assets / Other": 0.10875000000000007,
-    "Cash": 0.3412500000000003
+    "Equity": 0.44875,
+    "Fixed Income": 0.1275,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.315
    }
   },
   {
@@ -4607,16 +2265,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4697500000000007,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.3915
+    "Equity": 0.44875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.36
    },
    "adaptive": {
-    "Equity": 0.4697500000000007,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.08250000000000003,
-    "Cash": 0.3915
+    "Equity": 0.44875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.10875,
+    "Cash": 0.36
    }
   },
   {
@@ -4625,15 +2283,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.36999999999999944,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.16124999999999967,
+    "Equity": 0.37,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.16125,
     "Cash": 0.36
    },
    "adaptive": {
-    "Equity": 0.36999999999999944,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.16124999999999967,
+    "Equity": 0.37,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.16125,
     "Cash": 0.36
    }
   },
@@ -4643,16 +2301,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3174999999999998,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.17999999999999974,
-    "Cash": 0.4200000000000003
+    "Equity": 0.3175,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18,
+    "Cash": 0.42
    },
    "adaptive": {
-    "Equity": 0.3174999999999998,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.17999999999999974,
-    "Cash": 0.4200000000000003
+    "Equity": 0.3175,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18,
+    "Cash": 0.42
    }
   },
   {
@@ -4661,16 +2319,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.24000000000000005,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.18624999999999967,
-    "Cash": 0.4912499999999997
+    "Equity": 0.24,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18625,
+    "Cash": 0.49125
    },
    "adaptive": {
-    "Equity": 0.24000000000000005,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.18624999999999967,
-    "Cash": 0.4912499999999997
+    "Equity": 0.24,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.18625,
+    "Cash": 0.49125
    }
   },
   {
@@ -4679,15 +2337,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7357499999999991,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.17650000000000032,
+    "Equity": 0.72,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7357499999999991,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.17650000000000032,
+    "Equity": 0.72,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    }
   },
@@ -4697,15 +2355,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6937500000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.19749999999999968,
+    "Equity": 0.69375,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6937500000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.19749999999999968,
+    "Equity": 0.69375,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    }
   },
@@ -4715,16 +2373,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.49375000000000013,
-    "Fixed Income": 0.34125000000000005,
-    "Real Assets / Other": 0.1199999999999997,
-    "Cash": 0.04500000000000001
+    "Equity": 0.49375,
+    "Fixed Income": 0.34124999999999994,
+    "Real Assets / Other": 0.12,
+    "Cash": 0.045
    },
    "adaptive": {
-    "Equity": 0.49375000000000013,
-    "Fixed Income": 0.34125000000000005,
-    "Real Assets / Other": 0.1199999999999997,
-    "Cash": 0.04500000000000001
+    "Equity": 0.49375,
+    "Fixed Income": 0.34124999999999994,
+    "Real Assets / Other": 0.12,
+    "Cash": 0.045
    }
   },
   {
@@ -4734,15 +2392,15 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.6225,
-    "Fixed Income": 0.15375000000000008,
-    "Real Assets / Other": 0.13375000000000006,
-    "Cash": 0.09000000000000001
+    "Fixed Income": 0.15375,
+    "Real Assets / Other": 0.13375,
+    "Cash": 0.09
    },
    "adaptive": {
     "Equity": 0.6225,
-    "Fixed Income": 0.15375000000000008,
-    "Real Assets / Other": 0.13375000000000006,
-    "Cash": 0.09000000000000001
+    "Fixed Income": 0.15375,
+    "Real Assets / Other": 0.13375,
+    "Cash": 0.09
    }
   },
   {
@@ -4751,15 +2409,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6925000000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.19875000000000004,
+    "Equity": 0.6925,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.19874999999999998,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6925000000000001,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.19875000000000004,
+    "Equity": 0.6925,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.19874999999999998,
     "Cash": 0.0
    }
   },
@@ -4769,15 +2427,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4132500000000008,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2155000000000003,
+    "Equity": 0.39749999999999996,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.20500000000000002,
     "Cash": 0.315
    },
    "adaptive": {
-    "Equity": 0.4132500000000008,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2155000000000003,
+    "Equity": 0.39749999999999996,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.20500000000000002,
     "Cash": 0.315
    }
   },
@@ -4787,15 +2445,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7094999999999992,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.20799999999999969,
+    "Equity": 0.6937500000000001,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7094999999999992,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.20799999999999969,
+    "Equity": 0.6937500000000001,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    }
   },
@@ -4805,15 +2463,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6719999999999992,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.27174999999999944,
+    "Equity": 0.65625,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.26125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6719999999999992,
-    "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.27174999999999944,
+    "Equity": 0.65625,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.26125,
     "Cash": 0.0
    }
   },
@@ -4823,15 +2481,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6825000000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.235,
+    "Equity": 0.6825,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6825000000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.235,
+    "Equity": 0.6825,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    }
   },
@@ -4841,15 +2499,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6812499999999998,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.68125,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6812499999999998,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.23625000000000002,
+    "Equity": 0.68125,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
   },
@@ -4860,15 +2518,15 @@
    "risk_budget": 0.55,
    "core": {
     "Equity": 0.6562500000000001,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.26125000000000004,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.26125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3609375,
-    "Fixed Income": 0.04537500000000002,
-    "Real Assets / Other": 0.14368750000000002,
-    "Cash": 0.44999999999999996
+    "Equity": 0.36093749999999997,
+    "Fixed Income": 0.045375,
+    "Real Assets / Other": 0.1436875,
+    "Cash": 0.45
    }
   },
   {
@@ -4878,15 +2536,15 @@
    "risk_budget": 1.0,
    "core": {
     "Equity": 0.49500000000000005,
-    "Fixed Income": 0.15374999999999997,
+    "Fixed Income": 0.15375,
     "Real Assets / Other": 0.26125,
-    "Cash": 0.09000000000000001
+    "Cash": 0.09
    },
    "adaptive": {
     "Equity": 0.49500000000000005,
-    "Fixed Income": 0.15374999999999997,
+    "Fixed Income": 0.15375,
     "Real Assets / Other": 0.26125,
-    "Cash": 0.09000000000000001
+    "Cash": 0.09
    }
   },
   {
@@ -4895,16 +2553,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4529999999999995,
-    "Fixed Income": 0.23025000000000007,
-    "Real Assets / Other": 0.24024999999999969,
-    "Cash": 0.07650000000000001
+    "Equity": 0.46875000000000006,
+    "Fixed Income": 0.22499999999999998,
+    "Real Assets / Other": 0.23500000000000001,
+    "Cash": 0.07125
    },
    "adaptive": {
-    "Equity": 0.4529999999999995,
-    "Fixed Income": 0.23025000000000007,
-    "Real Assets / Other": 0.24024999999999969,
-    "Cash": 0.07650000000000001
+    "Equity": 0.46875000000000006,
+    "Fixed Income": 0.22499999999999998,
+    "Real Assets / Other": 0.23500000000000001,
+    "Cash": 0.07125
    }
   },
   {
@@ -4913,16 +2571,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3030000000000006,
-    "Fixed Income": 0.11400000000000005,
-    "Real Assets / Other": 0.1705000000000003,
-    "Cash": 0.4124999999999997
+    "Equity": 0.2925,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.16,
+    "Cash": 0.43875
    },
    "adaptive": {
-    "Equity": 0.3030000000000006,
-    "Fixed Income": 0.11400000000000005,
-    "Real Assets / Other": 0.1705000000000003,
-    "Cash": 0.4124999999999997
+    "Equity": 0.2925,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.16,
+    "Cash": 0.43875
    }
   },
   {
@@ -4931,15 +2589,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6675000000000001,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.22374999999999998,
+    "Equity": 0.6675,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.22375,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6675000000000001,
-    "Fixed Income": 0.10874999999999997,
-    "Real Assets / Other": 0.22374999999999998,
+    "Equity": 0.6675,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.22375,
     "Cash": 0.0
    }
   },
@@ -4949,15 +2607,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5662499999999997,
+    "Equity": 0.56625,
     "Fixed Income": 0.135,
-    "Real Assets / Other": 0.29875000000000007,
+    "Real Assets / Other": 0.29875,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.5662499999999997,
+    "Equity": 0.56625,
     "Fixed Income": 0.135,
-    "Real Assets / Other": 0.29875000000000007,
+    "Real Assets / Other": 0.29875,
     "Cash": 0.0
    }
   },
@@ -4967,15 +2625,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.31125,
+    "Equity": 0.31124999999999997,
     "Fixed Income": 0.34500000000000003,
-    "Real Assets / Other": 0.34375000000000006,
+    "Real Assets / Other": 0.34375,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.31125,
+    "Equity": 0.31124999999999997,
     "Fixed Income": 0.34500000000000003,
-    "Real Assets / Other": 0.34375000000000006,
+    "Real Assets / Other": 0.34375,
     "Cash": 0.0
    }
   },
@@ -4985,15 +2643,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.3375000000000001,
-    "Fixed Income": 0.4537500000000001,
-    "Real Assets / Other": 0.20875000000000005,
+    "Equity": 0.33749999999999997,
+    "Fixed Income": 0.45375,
+    "Real Assets / Other": 0.20875000000000002,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.3375000000000001,
-    "Fixed Income": 0.4537500000000001,
-    "Real Assets / Other": 0.20875000000000005,
+    "Equity": 0.33749999999999997,
+    "Fixed Income": 0.45375,
+    "Real Assets / Other": 0.20875000000000002,
     "Cash": 0.0
    }
   },
@@ -5003,13 +2661,13 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.5587500000000001,
+    "Equity": 0.55875,
     "Fixed Income": 0.135,
     "Real Assets / Other": 0.17125,
     "Cash": 0.135
    },
    "adaptive": {
-    "Equity": 0.5587500000000001,
+    "Equity": 0.55875,
     "Fixed Income": 0.135,
     "Real Assets / Other": 0.17125,
     "Cash": 0.135
@@ -5021,14 +2679,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7199999999999996,
-    "Fixed Income": 0.10875000000000007,
+    "Equity": 0.7199999999999999,
+    "Fixed Income": 0.10875,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7199999999999996,
-    "Fixed Income": 0.10875000000000007,
+    "Equity": 0.7199999999999999,
+    "Fixed Income": 0.10875,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
@@ -5039,14 +2697,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7462499999999999,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.74625,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7462499999999999,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.74625,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
@@ -5057,14 +2715,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7462500000000001,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.74625,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7462500000000001,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.74625,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
@@ -5075,15 +2733,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7357499999999992,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.1764999999999997,
+    "Equity": 0.74625,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.17125,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7357499999999992,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.1764999999999997,
+    "Equity": 0.74625,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.17125,
     "Cash": 0.0
    }
   },
@@ -5093,15 +2751,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7187499999999997,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.17250000000000001,
+    "Equity": 0.71875,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.1725,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7187499999999997,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.17250000000000001,
+    "Equity": 0.71875,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.1725,
     "Cash": 0.0
    }
   },
@@ -5111,15 +2769,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7187499999999994,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.19874999999999995,
+    "Equity": 0.71875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.19874999999999998,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7187499999999994,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.19874999999999995,
+    "Equity": 0.71875,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.19874999999999998,
     "Cash": 0.0
    }
   },
@@ -5129,15 +2787,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.7199999999999994,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.19750000000000004,
+    "Equity": 0.72,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.7199999999999994,
-    "Fixed Income": 0.08250000000000003,
-    "Real Assets / Other": 0.19750000000000004,
+    "Equity": 0.72,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.1975,
     "Cash": 0.0
    }
   },
@@ -5147,15 +2805,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6562499999999994,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.235,
+    "Equity": 0.6562499999999999,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6562499999999994,
-    "Fixed Income": 0.10875000000000007,
-    "Real Assets / Other": 0.235,
+    "Equity": 0.6562499999999999,
+    "Fixed Income": 0.10875,
+    "Real Assets / Other": 0.23500000000000001,
     "Cash": 0.0
    }
   },
@@ -5165,14 +2823,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6812499999999998,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.6812499999999999,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.23625,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6812499999999998,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.6812499999999999,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.23625,
     "Cash": 0.0
    }
@@ -5183,16 +2841,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4282499999999998,
-    "Fixed Income": 0.14400000000000002,
-    "Real Assets / Other": 0.28524999999999945,
-    "Cash": 0.1424999999999997
+    "Equity": 0.43875,
+    "Fixed Income": 0.13875,
+    "Real Assets / Other": 0.28,
+    "Cash": 0.1425
    },
    "adaptive": {
-    "Equity": 0.4282499999999998,
-    "Fixed Income": 0.14400000000000002,
-    "Real Assets / Other": 0.28524999999999945,
-    "Cash": 0.1424999999999997
+    "Equity": 0.43875,
+    "Fixed Income": 0.13875,
+    "Real Assets / Other": 0.28,
+    "Cash": 0.1425
    }
   },
   {
@@ -5201,14 +2859,14 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.6687499999999997,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.66875,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.24875000000000003,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.6687499999999997,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.66875,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.24875000000000003,
     "Cash": 0.0
    }
@@ -5219,16 +2877,16 @@
    "state": "DEFENSIVE",
    "risk_budget": 0.5812204962094375,
    "core": {
-    "Equity": 0.7199999999999998,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.72,
+    "Fixed Income": 0.0825,
     "Real Assets / Other": 0.1975,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.4184787572707949,
-    "Fixed Income": 0.04795069093727861,
-    "Real Assets / Other": 0.11479104800136392,
-    "Cash": 0.4187795037905625
+    "Equity": 0.41847875730000006,
+    "Fixed Income": 0.0479506909,
+    "Real Assets / Other": 0.114791048,
+    "Cash": 0.4187795038
    }
   },
   {
@@ -5237,16 +2895,16 @@
    "state": "DEFENSIVE",
    "risk_budget": 0.55,
    "core": {
-    "Equity": 0.7732499999999991,
-    "Fixed Income": 0.08775000000000001,
-    "Real Assets / Other": 0.13900000000000004,
+    "Equity": 0.78375,
+    "Fixed Income": 0.0825,
+    "Real Assets / Other": 0.13375,
     "Cash": 0.0
    },
    "adaptive": {
-    "Equity": 0.42528749999999954,
-    "Fixed Income": 0.048262500000000014,
-    "Real Assets / Other": 0.07645000000000003,
-    "Cash": 0.44999999999999996
+    "Equity": 0.4310625,
+    "Fixed Income": 0.045375,
+    "Real Assets / Other": 0.0735625,
+    "Cash": 0.45
    }
   },
   {
@@ -5255,16 +2913,16 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4962499999999998,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.5225,
+    "Fixed Income": 0.05625,
     "Real Assets / Other": 0.33125,
-    "Cash": 0.09000000000000001
+    "Cash": 0.09
    },
    "adaptive": {
-    "Equity": 0.4962499999999998,
-    "Fixed Income": 0.08250000000000003,
+    "Equity": 0.5225,
+    "Fixed Income": 0.05625,
     "Real Assets / Other": 0.33125,
-    "Cash": 0.09000000000000001
+    "Cash": 0.09
    }
   },
   {
@@ -5273,15 +2931,15 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4087500000000005,
+    "Equity": 0.39749999999999996,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2200000000000003,
+    "Real Assets / Other": 0.23125,
     "Cash": 0.315
    },
    "adaptive": {
-    "Equity": 0.4087500000000005,
+    "Equity": 0.39749999999999996,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2200000000000003,
+    "Real Assets / Other": 0.23125,
     "Cash": 0.315
    }
   },
@@ -5291,16 +2949,16 @@
    "state": "DEFENSIVE",
    "risk_budget": 0.7122398018836975,
    "core": {
-    "Equity": 0.3724999999999997,
+    "Equity": 0.3725,
     "Fixed Income": 0.05625,
-    "Real Assets / Other": 0.2037499999999997,
-    "Cash": 0.3674999999999997
+    "Real Assets / Other": 0.20375,
+    "Cash": 0.3675
    },
    "adaptive": {
-    "Equity": 0.26530932620167713,
-    "Fixed Income": 0.040063488855957986,
-    "Real Assets / Other": 0.14511885963380317,
-    "Cash": 0.5495083253085611
+    "Equity": 0.26530932620000003,
+    "Fixed Income": 0.0400634889,
+    "Real Assets / Other": 0.1451188596,
+    "Cash": 0.5495083253
    }
   },
   {
@@ -5309,22 +2967,74 @@
    "state": "NORMAL",
    "risk_budget": 1.0,
    "core": {
-    "Equity": 0.4162500000000002,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.27999999999999997,
+    "Equity": 0.41624999999999995,
+    "Fixed Income": 0.135,
+    "Real Assets / Other": 0.28,
     "Cash": 0.16875
    },
    "adaptive": {
-    "Equity": 0.4162500000000002,
-    "Fixed Income": 0.1350000000000001,
-    "Real Assets / Other": 0.27999999999999997,
+    "Equity": 0.41624999999999995,
+    "Fixed Income": 0.135,
+    "Real Assets / Other": 0.28,
     "Cash": 0.16875
    }
   }
  ],
  "validation": {
   "available": true,
-  "note": "reference mode = published values"
+  "months_checked": 116,
+  "exact_matches": 77,
+  "max_abs_diff": 0.03150000000000029,
+  "mismatches": [
+   {
+    "signal_month": "2024-06",
+    "max_abs_diff": 0.02625
+   },
+   {
+    "signal_month": "2024-11",
+    "max_abs_diff": 0.026249999999999954
+   },
+   {
+    "signal_month": "2024-12",
+    "max_abs_diff": 0.026250000000000273
+   },
+   {
+    "signal_month": "2025-09",
+    "max_abs_diff": 0.03150000000000001
+   },
+   {
+    "signal_month": "2025-10",
+    "max_abs_diff": 0.026250000000000037
+   },
+   {
+    "signal_month": "2025-11",
+    "max_abs_diff": 0.02625000000000003
+   },
+   {
+    "signal_month": "2026-01",
+    "max_abs_diff": 0.026250000000000273
+   },
+   {
+    "signal_month": "2026-03",
+    "max_abs_diff": 0.02625
+   },
+   {
+    "signal_month": "2026-06",
+    "max_abs_diff": 0.026250000000000037
+   },
+   {
+    "signal_month": "2026-07",
+    "max_abs_diff": 0.02625000000000003
+   },
+   {
+    "signal_month": "2026-08",
+    "max_abs_diff": 0.02250000000000031
+   },
+   {
+    "signal_month": "2026-09",
+    "max_abs_diff": 0.026249999999999968
+   }
+  ]
  },
  "config": {
   "sleeve_mix": {
