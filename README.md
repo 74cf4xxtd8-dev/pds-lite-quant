@@ -35,8 +35,12 @@ Adaptive = RB·Core + (1−RB)·BIL        (NORMAL: RB=1, DEFENSIVE: 0.55 ≤ RB
 ## 운영 원칙
 - **Official 잠금**: `official_history.json`에 한 번 기록된 월은 다시 계산하지 않는다 (배당 조정가 소급 변경으로 순위가 뒤집히는 것 방지). 매 실행마다 기존 항목이 바이트 단위로 그대로인지 검사하고, 다르면 아무것도 쓰지 않고 중단한다.
 - **원작자 값은 참고 원장에 분리**: `reference_adaptive.json`에 원작자 공개 Adaptive 행과 처음 확인한 시각·수정 이력을 추가 전용으로 기록한다. 잠금 이후 공개·수정된 값은 잠금을 바꾸지 않는다(화면 flags에 `AUTHOR_REFERENCE … not applied`로 표시).
-- **F2R 공식값 대기**: 원작자 F2R Top-4(2026-08~10 기준 월말 2~8일 뒤 공개)가 나오기 전에는 그 달을 잠그지 않는다(`OFFICIAL_PENDING`, 직전 Official 유지, 대기 중인 달은 Preview 칸에 표시). 매월 1~10일 매일 재실행으로 공개 다음 날 잠근다. 비상시 `OFFICIAL_REQUIRES_F2R_PUBLISHED=0`.
-- **Fail-closed**: 가격 결측·급변(±25%)·고착, API 실패, Core 불일치, 잠금 변경 시도 시 어떤 파일도 쓰지 않는다. 출력 3개는 모든 검사가 끝난 뒤 한꺼번에 기록된다. 실패한 실행은 `run_status.json`만 커밋하고(Telegram 실패 알림), 진단 모드는 커밋하지 않는다.
+- **월간 목표 확정 조건**: 그 달의 원작자 **F2R 공식 Top-4**가 공개되고, 원작자가 공개한 그 달 **Core 행이 자체 계산 Core와 일치(오차 ≤1e-6)**할 때만 잠근다. 2026-09·10월은 둘 다 월말 2일 뒤 같은 날 공개됐다. Adaptive는 잠그는 순간 이미 공개된 원작자 공식값만 반영하고, 이후 공개값은 참고 원장에만 남는다.
+- **매월 1~10일 매일 확인**: 조건이 안 갖춰지면 `OFFICIAL_PENDING`(⏳ 잠금 대기). 직전 Official이 유효하고 리밸런싱하지 않는다. Preview로 대체하지 않는다.
+- **10일 마감 → BLOCKED**: 10일 22:40 UTC 실행(마지막 확인)에도 미확보면 그 달은 잠그지 않는다. `action.code = HALTED`, 화면 상단 배너와 Telegram ⛔ 알림: **현재 보유 자산 유지, 자동 리밸런싱 중지**. 마감 뒤에 데이터가 들어와도 자동으로 잠그지 않는다.
+- **수동 해제(예외)**: 직접 확인한 뒤 Actions → update-portfolio → Run workflow에서 `release_month=YYYY-MM`. 그때도 공식 F2R과 원작자 Core 일치가 갖춰져야만 잠기고(`origin: MANUAL_RELEASE`), 아니면 `MANUAL_RELEASE_REJECTED`. 이미 다음 달이 잠긴 뒤의 지난 달은 해제할 수 없다(건너뛴 달로 남음, `unlocked_gaps`).
+- **감사 기록**: `official_events.json`에 PENDING·BLOCKED·LOCKED·MANUAL_RELEASE(_REJECTED)를 시각과 함께 추가 전용으로 남긴다.
+- **Fail-closed**: 가격 결측·급변(±25%)·고착, API 실패, Core 불일치, 잠금 변경 시도 시 어떤 파일도 쓰지 않는다. 출력 4개는 모든 검사가 끝난 뒤 한꺼번에 기록된다. 실패한 실행은 `run_status.json`만 커밋하고(Telegram 실패 알림), 진단 모드는 커밋하지 않는다.
 - **Preview는 실행 금지**: 월중 데이터로 계산한 추정치.
 - 60일간 저장소 활동이 없으면 GitHub가 예약 워크플로를 끌 수 있다. 메일이 오면 Actions 탭에서 다시 켠다.
 

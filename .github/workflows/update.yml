@@ -4,8 +4,10 @@ on:
   schedule:
     # Times are UTC. 22:40 UTC = 07:40 KST next morning, after the US close (20:00/21:00 UTC).
     - cron: "40 22 28-31 * *"   # month-end window: the run after the last session locks OFFICIAL
-    - cron: "40 22 1-10 * *"    # days 1-10: retry until the month locks (holidays, Yahoo delays, and
-                                #   the author's F2R Top-4, published 2-8 days after month-end)
+    - cron: "40 22 1-10 * *"    # days 1-10: daily check until the month locks (official F2R Top-4 and the
+                                #   author's Core, published 2-8 days after month-end).  The day-10 run
+                                #   is the final check: still incomplete -> BLOCKED (no lock, keep
+                                #   holdings, alert); never locked automatically afterwards.
     - cron: "40 22 * * 5"       # weekly Friday monitoring (PREVIEW refresh)
   push:                         # recompute when the engine or workflow changes (bot commits don't retrigger)
     branches: [main]
@@ -20,6 +22,10 @@ on:
         type: choice
         options: [reference_only, core_only, reference_then_proxy, proxy]
         default: reference_only
+      release_month:
+        description: "수동 해제 (YYYY-MM): 10일 마감으로 BLOCKED 된 신호월. 공식 F2R·원작자 Core가 갖춰지고 일치할 때만 잠김. 평소에는 비워 두세요."
+        type: string
+        default: ""
       commit:
         description: "결과를 저장소에 커밋 (운용 모드 + engine 실행 + 성공일 때만 실제로 커밋됨)"
         type: boolean
@@ -54,12 +60,15 @@ jobs:
         id: run
         env:
           ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_only' }}
-          OFFICIAL_REQUIRES_F2R_PUBLISHED: "1"   # emergency override: "0" locks with F2R preview/proxy
+          OFFICIAL_REQUIRES_F2R_PUBLISHED: "1"   # keep "1": a live month locks only with official F2R
+          OFFICIAL_REQUIRES_AUTHOR_CORE: "1"     # keep "1": ... and only when the author's Core matches ours
+          MANUAL_RELEASE_MONTH: ${{ github.event.inputs.release_month || '' }}
         run: |
           set -o pipefail
           python run_pipeline.py --mode "${{ github.event.inputs.mode || 'engine' }}" 2>&1 | tee run.log
 
       - name: Record run status (readable without Actions UI)
+        id: status
         if: always()
         env:
           RUN_OUTCOME: ${{ steps.run.outcome }}
@@ -68,7 +77,13 @@ jobs:
           python - <<'PY'
           import json, os, datetime
           log = open("run.log", encoding="utf-8", errors="replace").read().splitlines() if os.path.exists("run.log") else []
-          json.dump({"ok": os.environ["RUN_OUTCOME"] == "success",
+          ok = os.environ["RUN_OUTCOME"] == "success"
+          action = None
+          if ok and os.path.exists("docs/data/portfolio_latest.json"):
+              action = json.load(open("docs/data/portfolio_latest.json")).get("action")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"action={(action or {}).get('code', 'NONE')}\n")
+          json.dump({"ok": ok, "action": action,
                      "finished_utc": datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z",
                      "event": os.environ.get("GITHUB_EVENT_NAME"), "run_url": os.environ["RUN_URL"],
                      "log_tail": [l for l in log if not l.startswith("[lock]")][-40:]},
@@ -92,6 +107,9 @@ jobs:
               for m in v.get("mismatches", []):
                   print(f"  - 불일치 {m['signal_month']}: {m['max_abs_diff']:.4f}")
           o = d["official"]
+          a = d.get("action") or {}
+          if a:
+              print(f"- **{a['code']}** {a['month']}: {a['message']}")
           print(f"- Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']:.2%}")
           lock = "docs/data/official_history.json"
           if os.path.exists(lock):
@@ -137,16 +155,18 @@ jobs:
 
       # Optional phone alert. Add repo secrets TELEGRAM_TOKEN and TELEGRAM_CHAT_ID to enable.
       - name: Telegram alert
-        if: steps.run.outcome == 'success' && steps.commit.outputs.changed == 'true' && env.TG_TOKEN != ''
+        if: steps.run.outcome == 'success' && steps.commit.outputs.changed == 'true' && steps.status.outputs.action != 'HALTED' && env.TG_TOKEN != ''
         env:
           PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
         run: |
           MSG=$(python - <<'PY'
           import json
           p = json.load(open("docs/data/portfolio_latest.json"))
-          o = p["official"]; v = p.get("preview")
+          o = p["official"]; v = p.get("preview"); a = p.get("action") or {}
           top = ", ".join(f"{r['ticker']} {r['adaptive']*100:.1f}%" for r in o["us"][:5])
-          s = f"[PDS-Lite] Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']*100:.0f}%\n{top}"
+          head = {"WAIT": "⏳ 잠금 대기", "FOLLOW_OFFICIAL": "✅ 공식 확정"}.get(a.get("code"), "")
+          s = f"[PDS-Lite] {head}\n{a.get('message', '')}\n" if a else "[PDS-Lite] "
+          s += f"Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']*100:.0f}%\n{top}"
           if v: s += f"\nPreview {v['signal_month']}: {v['state']} RB {v['risk_budget']*100:.0f}%"
           if p["flags"]: s += "\n⚠ " + "; ".join(p["flags"])
           print(s)
@@ -156,6 +176,18 @@ jobs:
             --data-urlencode "chat_id=${TG_CHAT}" \
             --data-urlencode "text=${MSG}
           ${PAGES_URL}" > /dev/null
+
+      - name: "Telegram alert: rebalancing halted (BLOCKED month, keep holdings)"
+        if: steps.run.outcome == 'success' && steps.status.outputs.action == 'HALTED' && env.TG_TOKEN != ''
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          MSG=$(python -c 'import json; a=json.load(open("docs/data/portfolio_latest.json"))["action"]; print(a["message"])')
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=[PDS-Lite] ⛔ 자동 리밸런싱 중지
+          ${MSG}
+          ${RUN_URL}" > /dev/null
 
       - name: Telegram alert on failure
         if: always() && steps.run.outcome == 'failure' && env.TG_TOKEN != ''

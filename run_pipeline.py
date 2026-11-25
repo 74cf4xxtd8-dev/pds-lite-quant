@@ -37,6 +37,7 @@ import io
 import json
 import math
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -100,6 +101,17 @@ FROZEN_ONE_DAYS = 10             # one ticker unchanged this many days in a row 
 # month-end in 2026-08..10).  Locking a preview/proxy F2R would freeze a Core that differs from the
 # author's.  Set to "0" only as an emergency override.
 OFFICIAL_REQUIRES_F2R_PUBLISHED = os.environ.get("OFFICIAL_REQUIRES_F2R_PUBLISHED", "1") != "0"
+# ... and until the author's own Core row for that month is published AND equals ours (<= 1e-6).
+# The author's Core OFFICIAL row appeared the same day as F2R (2026-09: 10/02, 2026-10: 11/02).
+OFFICIAL_REQUIRES_AUTHOR_CORE = os.environ.get("OFFICIAL_REQUIRES_AUTHOR_CORE", "1") != "0"
+# Lock deadline in the holding month: the scheduled run of day LOCK_DEADLINE_DAY at >= 22:00 UTC is
+# the final check.  Still incomplete then -> BLOCKED: no lock, keep current holdings, alert.  Data
+# that arrives after the end of that day is never locked automatically; only a manual release
+# (MANUAL_RELEASE_MONTH=YYYY-MM via workflow_dispatch) can lock it, and only with complete data.
+LOCK_DEADLINE_DAY = 10
+LOCK_FINAL_CHECK_UTC_HOUR = 22
+MANUAL_RELEASE_MONTH = os.environ.get("MANUAL_RELEASE_MONTH", "").strip()
+EVENTS_JSON = OUT_DIR / "official_events.json"   # append-only audit: PENDING / BLOCKED / LOCKED / releases
 LIVE_LOCK_MAX_DAYS = 14          # a lock this many days after the cutoff counts as a live record
 PROXY_TARGET_VOL = 0.10          # annualised; YOUR parameter, not the author's
 PROXY_VOL_WINDOW = 63            # trading days
@@ -944,7 +956,10 @@ def build_payload(history: list[dict], preview: dict | None, validation: dict, m
         "config": {"sleeve_mix": SLEEVE_MIX, "core_mix": CORE_MIX, "adaptive_mode": ADAPTIVE_MODE,
                    "adaptive_floor": ADAPTIVE_FLOOR, "irp_cap": IRP_RISK_CAP,
                    "irp_cap_buffer": IRP_CAP_BUFFER,
-                   "official_requires_f2r_published": OFFICIAL_REQUIRES_F2R_PUBLISHED},
+                   "official_requires_f2r_published": OFFICIAL_REQUIRES_F2R_PUBLISHED,
+                   "official_requires_author_core": OFFICIAL_REQUIRES_AUTHOR_CORE,
+                   "lock_deadline_day": LOCK_DEADLINE_DAY,
+                   "lock_final_check_utc_hour": LOCK_FINAL_CHECK_UTC_HOUR},
         "disclaimer": "Research reconstruction for personal monitoring. Not investment advice.",
     }
     if reference is not None:
@@ -1026,6 +1041,68 @@ def _author_core(ref, sm: str) -> pd.Series | None:
     return None if df.empty else df.iloc[0][UNIVERSE].astype(float)
 
 
+def lock_deadlines(sm: str) -> tuple[datetime, datetime]:
+    """(final_check, hard_deadline) in UTC for signal month sm, both on LOCK_DEADLINE_DAY of the
+    holding month: from final_check an incomplete month is BLOCKED; after hard_deadline even
+    complete data is never locked automatically."""
+    h = pd.Period(sm, "M") + 1
+    final = datetime(h.year, h.month, LOCK_DEADLINE_DAY, LOCK_FINAL_CHECK_UTC_HOUR, 0, tzinfo=timezone.utc)
+    hard = datetime(h.year, h.month, LOCK_DEADLINE_DAY, 23, 59, 59, tzinfo=timezone.utc)
+    return final, hard
+
+
+def load_events() -> list[dict]:
+    if EVENTS_JSON.exists():
+        return json.loads(EVENTS_JSON.read_text(encoding="utf-8"))
+    return []
+
+
+def _event(events: list[dict], sm: str, kind: str, now_utc: datetime, detail: str, once: bool = True):
+    if once and any(e["signal_month"] == sm and e["event"] == kind for e in events):
+        return
+    events.append({"signal_month": sm, "event": kind, "at_utc": now_utc.isoformat(timespec="seconds"),
+                   "detail": detail})
+
+
+def rebalance_action(live, official: dict) -> dict:
+    """What the operator should do now.  FOLLOW_OFFICIAL: the newest month is locked; WAIT: inside
+    days 1-10, official data incomplete, do not trade; HALTED: deadline passed incomplete, keep the
+    current holdings and stop automatic rebalancing until a manual release."""
+    off = official["signal_month"]
+    if live is None:
+        return {"code": "FOLLOW_OFFICIAL", "month": off, "in_force": off, "reason": None,
+                "message": f"공식 목표 {off}→{official['holding_month']} 유효. 신규 잠금 대상 월 없음."}
+    code, d, why, final_check = live
+    sm = d["signal_month"]
+    out = {"code": code, "month": sm, "in_force": off, "reason": why,
+           "final_check_utc": final_check.isoformat(timespec="minutes")}
+    if code == "FOLLOW_OFFICIAL":
+        out["message"] = f"{sm} 공식 목표 확정({d['holding_month']} 보유). 이 목표로만 리밸런싱."
+    elif code == "WAIT":
+        out["message"] = (f"{sm} 잠금 대기: {why}. 매월 {LOCK_DEADLINE_DAY}일까지 매일 재확인. "
+                          f"리밸런싱하지 말고 현재 보유를 유지하세요(직전 공식 {off}).")
+    else:
+        out["message"] = (f"⛔ {sm} 자동 리밸런싱 중지: {why}. 현재 보유 자산을 그대로 유지하세요. "
+                          f"수동 확인 후 release_month={sm} 실행으로만 해제되며, 공식 F2R·원작자 Core가 "
+                          f"갖춰지고 일치할 때만 잠깁니다.")
+    return out
+
+
+def official_hold_reason(d: dict, ref, sm: str, live: bool) -> str | None:
+    """Why this month may not be locked yet (None = complete and verified)."""
+    if OFFICIAL_REQUIRES_F2R_PUBLISHED and d["sources"]["f2r"] != "F2R_PUBLISHED":
+        return f"F2R official not published ({d['sources']['f2r']})"
+    if not live:
+        return None
+    acore = _author_core(ref, sm)
+    if acore is None:
+        return "author's Core for this month not published" if OFFICIAL_REQUIRES_AUTHOR_CORE else None
+    diff = float((series_from(d["core"]) - acore).abs().max())
+    if diff > 1e-6:
+        return f"Core differs from the author's published Core by {diff:.4f}"
+    return None
+
+
 def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -> tuple[dict, dict]:
     """Compute everything in memory.  Returns (payload, files) where files maps a path to the
     object to write; main() writes them only after this function has returned without error."""
@@ -1045,16 +1122,37 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
 
     lock_before = load_lock()
     lock = {d["signal_month"]: d for d in lock_before}
+    oev_before = load_events()
+    oev = json.loads(json.dumps(oev_before))
     flags: list[str] = [] if unrate_src != "CACHE" else ["UNRATE_FROM_CACHE"]
     if f2r_state is None:
         flags.append("F2R_UNAVAILABLE")
+    earliest = lock_before[0]["signal_month"] if lock_before else None
+    latest = lock_before[-1]["signal_month"] if lock_before else None
+    release = MANUAL_RELEASE_MONTH or None
+    if release and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", release):
+        raise RuntimeError(f"MANUAL_RELEASE_MONTH must be YYYY-MM, got {release!r}")
+    if release and latest and release <= latest:
+        flags.append(f"MANUAL_RELEASE_REJECTED {release}: not newer than the latest official {latest}")
+        _event(oev, release, "MANUAL_RELEASE_REJECTED", now_utc, f"not newer than {latest}", once=False)
+        release = None
     months = [p for p in m.index if str(p) >= backfill_from and p <= last_off]
-    pending = None
+    live = None                                         # outcome of the newest live month
+    gaps: list[str] = []
     for p in months:
         sm = str(p)
         if sm in lock:
             continue                                    # official decisions are immutable
-        kind = "LIVE" if p == last_off else "BACKFILL"
+        final_check, hard_deadline = lock_deadlines(sm)
+        if latest is None:                              # bootstrap: reconstruct the history
+            kind = "LIVE" if (p == last_off and now_utc <= hard_deadline) else "BACKFILL"
+        elif sm < earliest:
+            kind = "BACKFILL"                           # extending the history backwards
+        elif sm < latest:
+            gaps.append(sm)                             # blocked and never released: stays unlocked
+            continue
+        else:
+            kind = "LIVE"
         i = m.index.get_loc(p)
         asof = daily.index[daily.index.to_period("M") == p][-1]
         try:
@@ -1064,35 +1162,58 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
                 raise                                   # live month must succeed (fail closed)
             print(f"[skip] backfill {sm}: {e}")
             continue
-        hold = None
-        if OFFICIAL_REQUIRES_F2R_PUBLISHED and d["sources"]["f2r"] != "F2R_PUBLISHED":
-            hold = f"F2R official not published yet ({d['sources']['f2r']})"
-        acore = _author_core(ref, sm) if kind == "LIVE" else None
-        if hold is None and acore is not None:
-            diff = float((series_from(d["core"]) - acore).abs().max())
-            if diff > 1e-6:
-                hold = f"Core differs from the author's published Core by {diff:.4f}"
-        if hold:
-            if kind == "LIVE":
-                d["status"] = "PENDING"
-                pending = d
-                flags.append(f"OFFICIAL_PENDING {sm}: {hold}; previous official stays in force")
-            else:
+        hold = official_hold_reason(d, ref, sm, live=(kind == "LIVE"))
+        if kind == "BACKFILL":
+            if hold:
                 flags.append(f"BACKFILL_SKIPPED {sm}: {hold}")
-            continue
+                continue
+        else:
+            released = release == sm
+            if hold and released:
+                flags.append(f"MANUAL_RELEASE_REJECTED {sm}: {hold}")
+                _event(oev, sm, "MANUAL_RELEASE_REJECTED", now_utc, hold, once=False)
+            if hold and now_utc < final_check:
+                d["status"] = "PENDING"
+                live = ("WAIT", d, hold, final_check)
+                flags.append(f"OFFICIAL_PENDING {sm}: {hold}; previous official stays in force "
+                             f"(final check {final_check:%Y-%m-%d %H:%M} UTC)")
+                _event(oev, sm, "PENDING", now_utc, hold)
+                continue
+            if hold or (now_utc > hard_deadline and not released):
+                why = hold or "official data complete only after the lock deadline"
+                d["status"] = "BLOCKED"
+                live = ("HALTED", d, why, final_check)
+                flags.append(f"REBALANCE_HALTED {sm}: {why}. Keep current holdings; no automatic lock after "
+                             f"day {LOCK_DEADLINE_DAY}. Manual release (workflow input release_month={sm}) "
+                             f"locks it only once official F2R and the author's Core are complete and match.")
+                _event(oev, sm, "BLOCKED", now_utc, why)
+                continue
         d["locked_at_utc"] = now_utc.isoformat(timespec="seconds")
-        d["origin"] = "LIVE" if kind == "LIVE" else "BACKFILL_RECOMPUTED"
+        if kind == "BACKFILL":
+            d["origin"] = "BACKFILL_RECOMPUTED"
+        elif release == sm:
+            d["origin"] = "MANUAL_RELEASE"
+            _event(oev, sm, "MANUAL_RELEASE", now_utc, "locked by manual release with complete official data",
+                   once=False)
+        else:
+            d["origin"] = "LIVE"
+        if kind == "LIVE":
+            live = ("FOLLOW_OFFICIAL", d, None, final_check)
+            _event(oev, sm, "LOCKED", now_utc, f"{d['origin']} {d['state']} RB {d['risk_budget']:.4f} "
+                   f"({d['sources']['adaptive']})")
         lock[sm] = d
         print(f"[lock] {sm}: state={d['state']} rb={d['risk_budget']:.4f} adaptive={d['sources']['adaptive']} "
-              f"f2r={d['sources']['f2r']}")
+              f"f2r={d['sources']['f2r']} origin={d['origin']}")
     history = [lock[k] for k in sorted(lock)]
     if not history:
         raise RuntimeError("no official decision available")
     n_new = assert_lock_append_only(lock_before, history)
+    if oev[:len(oev_before)] != oev_before:
+        raise RuntimeError("official_events.json is append-only")
 
     preview = None
-    if pending is not None:
-        preview = pending                               # the month awaiting its lock: 'do not execute yet'
+    if live is not None and live[0] != "FOLLOW_OFFICIAL":
+        preview = live[1]                               # the month awaiting/blocked: 'do not execute'
     elif prev_p is not None and prev_p in m.index:
         i = m.index.get_loc(prev_p)
         try:
@@ -1123,7 +1244,8 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
         "applied_to_official": off["sources"]["adaptive"].startswith("REFERENCE"),
         "preview": reference_view(ledger, preview["signal_month"], preview=True)
         if preview and preview["status"] == "PREVIEW" else None,
-        "pending": reference_view(ledger, pending["signal_month"]) if pending else None,
+        "pending": reference_view(ledger, preview["signal_month"])
+        if preview and preview["status"] in ("PENDING", "BLOCKED") else None,
         "ledger_rows": len(ledger.get("rows", {})), "last_fetch_ok": ledger.get("last_fetch_ok"),
         "events": events,
     }
@@ -1134,8 +1256,11 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
     payload = build_payload(history, preview, validation, "engine", str(daily.index[-1].date()), flags,
                             reference=reference)
     payload["config"]["adaptive_mode"] = mode
+    payload["action"] = rebalance_action(live, history[-1])
+    payload["unlocked_gaps"] = gaps
+    payload["official_events"] = oev[-12:]
     if mode in LOCKING_MODES:
-        files = {LOCK_JSON: history, REF_LEDGER_JSON: ledger, LATEST_JSON: payload}
+        files = {LOCK_JSON: history, REF_LEDGER_JSON: ledger, EVENTS_JSON: oev, LATEST_JSON: payload}
     else:                                               # diagnostic: never touch operational files
         files = {DIAG_DIR / f"portfolio_{mode}.json": payload}
     return payload, files
@@ -1161,6 +1286,8 @@ def main(argv=None):
     print(f"OK {payload['mode']} ({payload['config']['adaptive_mode']}): official {o['signal_month']}->"
           f"{o['holding_month']} {o['state']} RB={o['risk_budget']:.2%}; wrote {[p.name for p in files]}; "
           f"flags={payload['flags']}")
+    if payload.get("action"):
+        print(f"ACTION {payload['action']['code']} {payload['action']['month']}: {payload['action']['message']}")
     v = payload["validation"]
     if v.get("months_checked"):
         print(f"validation: {v['exact_matches']}/{v['months_checked']} months exact, max diff {v['max_abs_diff']:.2e}")

@@ -58,6 +58,9 @@
     <span id="modeBadge" class="text-[11px] px-2 py-1 rounded-full hair border muted"></span>
   </header>
 
+  <!-- action: shown only while a month is waiting for its lock or rebalancing is halted -->
+  <div id="action" role="alert" class="hidden mb-3 rounded-xl px-4 py-3 text-sm font-semibold badge-def"></div>
+
   <!-- status -->
   <section class="card p-4 mb-3" aria-live="polite">
     <div class="flex items-center justify-between">
@@ -191,7 +194,11 @@ function renderStatus(){
   const b = cur();
   document.getElementById("updated").textContent = `갱신 ${D.generated_at_kst} · 시장 기준 ${D.market_asof}`;
   document.getElementById("modeBadge").textContent = D.mode==="engine" ? "자체 연산" : "원작자 공개값";
-  document.getElementById("stLabel").textContent = view==="preview" ? "월중 추정 (Preview · 실행 금지)" : "공식 목표 (Official)";
+  const PV = {PENDING:"잠금 대기 (공식 데이터 미확보 · 실행 금지)", BLOCKED:"잠금 보류 (10일 마감 경과 · 실행 금지)"};
+  document.getElementById("stLabel").textContent = view==="preview" ? (PV[b.status] || "월중 추정 (Preview · 실행 금지)") : "공식 목표 (Official)";
+  const act = document.getElementById("action"), A = D.action;
+  act.classList.toggle("hidden", !A || A.code==="FOLLOW_OFFICIAL");
+  act.textContent = A && A.code!=="FOLLOW_OFFICIAL" ? (A.code==="HALTED" ? "" : "⏳ ") + A.message : "";
   document.getElementById("stMonths").textContent = `신호 ${b.signal_month} → 보유 ${b.holding_month}`;
   const def = b.state==="DEFENSIVE";
   const badge = document.getElementById("stBadge");

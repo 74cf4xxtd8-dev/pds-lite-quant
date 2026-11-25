@@ -71,6 +71,20 @@ def author_workbook(adaptive_rows: list[tuple], core_rows: dict | None = None) -
     return {"Core Portfolio": c, "Adaptive Portfolio": a}
 
 
+def engine_core(daily, un, f2r: dict | None, sm: str) -> dict:
+    """Core weights the engine computes for signal month sm (what the author publishes when the
+    reconstruction is exact) - used to build an author workbook whose Core row matches."""
+    m = NEW.month_end_frame(daily)
+    i = m.index.get_loc(pd.Period(sm, "M"))
+    adaa, _, _ = NEW.adaa_weights(m, i, un)
+    f2w, _ = NEW.f2r_weights(NEW.f2r_book(f2r), m, i)
+    return NEW.core_weights(adaa, f2w).to_dict()
+
+
+def author_core_rows(daily, un, f2r: dict | None, months: list[str], status: str = "OFFICIAL") -> dict:
+    return {(status, sm): engine_core(daily, un, f2r, sm) for sm in months}
+
+
 def default_adaptive_rows(official_2026_10: tuple | None = None) -> list[tuple]:
     rows = []
     for p in pd.period_range("2021-04", "2026-07", freq="M"):
@@ -113,6 +127,8 @@ def point(mod, tmp: Path, lock_init: list | None = None):
     if hasattr(mod, "REF_LEDGER_JSON"):
         mod.REF_LEDGER_JSON = out / "reference_adaptive.json"
         mod.DIAG_DIR = out / "diagnostic"
+    if hasattr(mod, "EVENTS_JSON"):
+        mod.EVENTS_JSON = out / "official_events.json"
     if lock_init is not None:
         mod.LOCK_JSON.write_text(json.dumps(lock_init, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
