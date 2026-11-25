@@ -780,9 +780,19 @@ def test_workflow_defaults_and_schedule():
 # ─────────────────────────────────────────────────────────────────────────────
 # live: real Yahoo / BLS / F2R / workbook, base vs new on identical inputs (network)
 # ─────────────────────────────────────────────────────────────────────────────
+def _fetch_into_tmp(tmp_path: Path):
+    """The real fetchers write the UNRATE cache next to the outputs: keep it out of docs/data
+    (a copy of the committed cache stays available as the last fallback)."""
+    out = H.point(NEW, tmp_path / "fetch")
+    cache = H.ROOT / "docs" / "data" / "unrate_cache.csv"
+    if cache.exists():
+        shutil.copy2(cache, out / "unrate_cache.csv")
+
+
 @pytest.mark.skipif(os.environ.get("PDS_LIVE_TEST") != "1", reason="set PDS_LIVE_TEST=1 (network)")
 def test_live_116_months_before_after(base, tmp_path):
     assert NEW.fetch_prices.__module__ == "run_pipeline"   # the real fetchers, not a test stub
+    _fetch_into_tmp(tmp_path)
     daily = NEW.fetch_prices()                       # includes the new integrity check on real data
     assert daily.index[-1] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=7)
     un, src = NEW.fetch_unrate()
@@ -814,6 +824,7 @@ def test_live_new_code_on_the_committed_lock(tmp_path):
     scheduled run after a merge would do), written to a temp dir."""
     real = json.loads((H.ROOT / "docs" / "data" / "official_history.json").read_text(encoding="utf-8"))
     assert NEW.fetch_prices.__module__ == "run_pipeline"
+    _fetch_into_tmp(tmp_path)
     daily = NEW.fetch_prices()
     assert daily.index[-1] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=7)
     un, _ = NEW.fetch_unrate()
