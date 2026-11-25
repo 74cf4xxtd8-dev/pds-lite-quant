@@ -118,12 +118,12 @@ TOL = 1e-9
 # ════════════════════════════════════════════════════════════════════════════
 # 2. DATA ACCESS (all network calls live here)
 # ════════════════════════════════════════════════════════════════════════════
-def _http_get(url: str, tries: int = 3) -> bytes:
+def _http_get(url: str, tries: int = 3, timeout: int = 60) -> bytes:
     last = None
     for k in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "pds-lite/1.0"})
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 return r.read()
         except Exception as e:  # noqa: BLE001
             last = e
@@ -154,12 +154,56 @@ def fetch_prices(start: str = PRICE_START) -> pd.DataFrame:
     raise RuntimeError(f"price download failed: {last}")
 
 
-def fetch_unrate() -> pd.Series:
-    df = pd.read_csv(io.BytesIO(_http_get(UNRATE_URL)))
+UNRATE_CACHE = OUT_DIR / "unrate_cache.csv"
+
+
+def _unrate_fred() -> pd.Series:
+    df = pd.read_csv(io.BytesIO(_http_get(UNRATE_URL, tries=2, timeout=30)))
     df.columns = ["date", "UNRATE"]
     s = pd.to_numeric(df["UNRATE"], errors="coerce")
     s.index = pd.to_datetime(df["date"]).dt.to_period("M")
     return s
+
+
+def _unrate_bls() -> pd.Series:
+    """BLS LNS14000000 = the series FRED republishes as UNRATE (seasonally adjusted)."""
+    now = datetime.now(timezone.utc).year
+    vals = {}
+    for y0 in range(int(PRICE_START[:4]) - 2, now + 1, 10):        # v1 API: <=10 years per call
+        body = json.dumps({"seriesid": ["LNS14000000"], "startyear": str(y0),
+                           "endyear": str(min(y0 + 9, now))}).encode()
+        req = urllib.request.Request("https://api.bls.gov/publicAPI/v1/timeseries/data/", data=body,
+                                     headers={"Content-Type": "application/json",
+                                              "User-Agent": "pds-lite/1.0"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            js = json.loads(r.read())
+        if js.get("status") != "REQUEST_SUCCEEDED":
+            raise RuntimeError(f"BLS: {js.get('message')}")
+        for d in js["Results"]["series"][0]["data"]:
+            if d["period"].startswith("M") and d["period"] != "M13":
+                vals[pd.Period(f"{d['year']}-{d['period'][1:]}", "M")] = pd.to_numeric(d["value"], errors="coerce")
+    s = pd.Series(vals).sort_index()
+    return s.reindex(pd.period_range(s.index.min(), s.index.max(), freq="M"))
+
+
+def fetch_unrate() -> tuple[pd.Series, str]:
+    """FRED -> BLS -> committed cache. Returns (series, source)."""
+    for name, fn in (("FRED", _unrate_fred), ("BLS", _unrate_bls)):
+        try:
+            s = fn()
+            if s.dropna().size < 24:
+                raise RuntimeError("too few observations")
+            OUT_DIR.mkdir(parents=True, exist_ok=True)
+            s.rename("UNRATE").to_frame().to_csv(UNRATE_CACHE, index_label="month")
+            return s, name
+        except Exception as e:  # noqa: BLE001
+            print(f"[warn] UNRATE via {name} failed: {e}")
+    if UNRATE_CACHE.exists():
+        c = pd.read_csv(UNRATE_CACHE)
+        s = pd.Series(pd.to_numeric(c["UNRATE"], errors="coerce").values,
+                      index=pd.PeriodIndex(c["month"], freq="M"))
+        return s, "CACHE"
+    raise RuntimeError("UNRATE unavailable from FRED, BLS and cache")
 
 
 def fetch_f2r_state() -> dict | None:
@@ -708,7 +752,9 @@ def run_reference(ref) -> dict:
 
 def run_engine(backfill_from: str, now_utc: datetime) -> dict:
     daily = fetch_prices()
-    unrate = fetch_unrate()
+    unrate, unrate_src = fetch_unrate()
+    print(f"[data] prices {daily.index[0].date()}..{daily.index[-1].date()}, UNRATE via {unrate_src} "
+          f"(last {unrate.dropna().index.max()})")
     f2r = f2r_book(fetch_f2r_state())
     ref = fetch_reference_workbook()
     ref_adapt = reference_adaptive(ref)
@@ -716,7 +762,7 @@ def run_engine(backfill_from: str, now_utc: datetime) -> dict:
     last_off, prev_p = split_clock(daily, now_utc)
 
     lock = {d["signal_month"]: d for d in load_lock()}
-    flags: list[str] = []
+    flags: list[str] = [] if unrate_src != "CACHE" else ["UNRATE_FROM_CACHE"]
     months = [p for p in m.index if str(p) >= backfill_from and p <= last_off]
     for p in months:
         sm = str(p)
