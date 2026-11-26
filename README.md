@@ -162,5 +162,6 @@ main에 쓸 수 있는 경로는 두 가지만 둔다.
 - **필수 통과(실패 시 병합 불가)**: Fail-safe, 10일 마감, 수동 해제·승인, 운영자 중지, 잠금·감사기록 추가 전용, 커밋된 잠금 파일 **바이트 불변**, 실데이터에서 원작자 공개 Core **116/116 일치**, 워크플로 안전 배선, 알림 전달.
 - **참고 정보(실패 조건 아님)**: 비교 기준 코드 대비 Core·Adaptive·공식 목표·잠금 항목 차이, 화면 JSON 키 변화(`regression_*.md`, 작업 요약). 원작자 데이터가 바뀌면 116/116 검증이 실패하고, 작업 요약과 아티팩트에 워크북 지문(행 수·해시)과 불일치 달이 남아 따로 검토할 수 있다.
 - **롤백 검증**: 파이프라인 경로(`run_pipeline.py`, `requirements.txt`, `tools/`, `update.yml`)가 바뀐 PR에서만 돈다. "이 PR을 되돌리면 대상 커밋의 코드가 이 브랜치의 파일을 읽고, 잠긴 달을 바꾸거나 비워 둔 달을 채우지 않는가"를 합성 데이터와 실데이터로 확인한다.
+- **운영 데이터 보호(`lock-guard`, 필수)**: PR은 `docs/data`를 바꿀 수 없다(봇만 쓴다). 위의 "잠금 바이트 불변"은 파이프라인이 커밋된 파일을 보존하는지를, 이 검사는 PR이 파일 자체를 바꾸지 않았는지를 본다. 검사는 대상 브랜치에 있는 `tools/lock_guard.py`로 돌므로 PR이 검사 코드를 고쳐도 판정이 바뀌지 않는다. 유일한 예외는 손상된 기록을 과거 봇 버전으로 되돌리는 **잠금 복구 PR**(브랜치 `restore/RESTORE-YYYYMMDD-N`, 라벨 `lock-restore`, `docs/data/lock_restores.json` 기록 1건, `LOCK_RESTORED` 사건 1건, `PDS_HALT` 중, 보호 환경 `pds-lock-restore` 승인)이며, 기록의 해시·개월 수·전후 비교를 모두 다시 계산해 대조한다. `ops-audit`도 main에 사람이 낸 `docs/data` 변경이 복구 PR 경유인지 매월 확인한다.
 - **v1.0 전환 검증(PR #1 근거, 7개)**: 기본 실행에서 빠져 있다. PR에 라벨 `v10-migration`을 붙이거나, Actions → tests → Run workflow에서 `v10_migration`을 켜거나, 로컬에서 `PDS_V10_MIGRATION=1 python -m pytest tests -m v10_migration`으로 실행한다.
 
