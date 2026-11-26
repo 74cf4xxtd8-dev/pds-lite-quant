@@ -210,21 +210,90 @@ def test_ledger_is_append_only(market, tmp_path):
     assert any(f.startswith("REFERENCE_REVISED 2026-09|FORWARD_MONITOR") for f in p["flags"])
 
 
-def test_real_committed_lock_is_preserved(market, tmp_path):
-    """The 116 months currently in docs/data/official_history.json survive byte-for-byte."""
-    real = json.loads((H.ROOT / "docs" / "data" / "official_history.json").read_text(encoding="utf-8"))
-    daily, un = H.synthetic_market(end="2026-11-30")
+COMMITTED_LOCK = H.ROOT / "docs" / "data" / "official_history.json"
+
+
+def _next_month(sm: str) -> str:
+    return str(pd.Period(sm, "M") + 1)
+
+
+def _assert_lock_extends(committed: bytes, tmp_path, label: str):
+    """Whatever the committed lock holds (any number of months, any last month): one more complete
+    month with official F2R and a matching author Core is appended, and nothing else changes - every
+    existing entry and the existing part of the file stay byte-for-byte as committed."""
+    real = json.loads(committed.decode("utf-8"))
+    sms = [d["signal_month"] for d in real]
+    assert real and sms == sorted(set(sms)), f"{label}: committed lock not unique / ordered"
+    new = _next_month(sms[-1])
+    daily, un = H.synthetic_market(end=str(pd.Period(new, "M").end_time.date()))
     months = sorted(set(daily.index.to_period("M")))
-    f2r = H.f2r_state(months, official="2026-11")
-    p, h, _ = H.run(NEW, "reference_only", DEC1, tmp_path, daily, un, f2r, wbc(daily, un, f2r, months=("2026-11",)),
+    f2r = H.f2r_state(months, official=new)
+    now = (pd.Period(new, "M") + 1).start_time.tz_localize("UTC").to_pydatetime()   # day 1 of the holding month
+    p, h, _ = H.run(NEW, "reference_only", now, tmp_path, daily, un, f2r, wbc(daily, un, f2r, months=(new,)),
                     lock_init=real)
-    assert len(h) == len(real) + 1 and h[-1]["signal_month"] == "2026-11"
+    assert len(h) == len(real) + 1 and h[-1]["signal_month"] == new, label          # exactly one month added
     for a, b in zip(real, h):
-        assert canon(a) == canon(b), a["signal_month"]
-    assert h[-1]["sources"]["adaptive"] == "CORE_DEFAULT_REFERENCE_NOT_PUBLISHED"
-    classes = {r["record_class"] for r in p["history"][:-1]}
-    assert classes == {"RECONSTRUCTED"}                                   # all 116 were filled in later
-    assert p["history"][-1]["record_class"] == "LIVE"
+        assert canon(a) == canon(b), f"{label}: {a['signal_month']} changed"         # none changed or removed
+    written = NEW.LOCK_JSON.read_bytes()
+    assert json.dumps(h[:len(real)], ensure_ascii=False, indent=1).encode("utf-8") == committed, label
+    assert written.startswith(committed[:-2]) and written != committed, label        # existing bytes kept
+    assert h[-1]["origin"] == "LIVE" and h[-1]["sources"]["adaptive"] == "CORE_DEFAULT_REFERENCE_NOT_PUBLISHED"
+    assert p["validation"]["new_official_locks"] == 1
+    assert [r["record_class"] for r in p["history"][:-1]] == [NEW.record_class(d) for d in real]
+    assert p["history"][-1]["record_class"] == "LIVE"                                # locked on time
+    return real, h
+
+
+def _assert_nothing_new(committed: bytes, tmp_path, label: str):
+    """A run with nothing new to lock rewrites the committed lock byte-for-byte."""
+    real = json.loads(committed.decode("utf-8"))
+    last = real[-1]["signal_month"]
+    daily, un = H.synthetic_market(end=str((pd.Period(last, "M")).end_time.date()))
+    months = sorted(set(daily.index.to_period("M")))
+    f2r = H.f2r_state(months, official=last)
+    now = pd.Period(last, "M").end_time.tz_localize("UTC").to_pydatetime() + timedelta(days=2)
+    p, h, _ = H.run(NEW, "reference_only", now, tmp_path, daily, un, f2r, wbc(daily, un, f2r, months=(last,)),
+                    lock_init=real)
+    assert len(h) == len(real) and NEW.LOCK_JSON.read_bytes() == committed, label
+    assert p["validation"]["new_official_locks"] == 0
+
+
+def _simulated_later_locks(committed: bytes, n: int) -> bytes:
+    """The committed lock plus n later months locked by the scheduled run (as from Dec 2026 on),
+    serialized exactly as the pipeline writes it."""
+    real = json.loads(committed.decode("utf-8"))
+    for _ in range(n):
+        d = json.loads(json.dumps(real[-1]))
+        sm = _next_month(d["signal_month"])
+        cutoff = pd.Period(sm, "M").end_time.date()
+        d.update(status="OFFICIAL", signal_month=sm, holding_month=_next_month(sm), state="NORMAL", risk_budget=1.0,
+                 adaptive=dict(d["core"]), origin="LIVE",
+                 locked_at_utc=f"{pd.Period(_next_month(sm), 'M').start_time.date() + timedelta(days=2)}T22:41:00+00:00")
+        d["sources"] = dict(d["sources"], asof=str(cutoff), adaptive="CORE_DEFAULT_REFERENCE_NOT_PUBLISHED",
+                            reference_seen=None)
+        real.append(d)
+    return json.dumps(real, ensure_ascii=False, indent=1).encode("utf-8")
+
+
+def test_real_committed_lock_is_preserved(tmp_path):
+    """The months currently in docs/data/official_history.json - however many and whichever is last -
+    survive byte-for-byte when the next month is locked."""
+    _assert_lock_extends(COMMITTED_LOCK.read_bytes(), tmp_path, "committed lock")
+
+
+@pytest.mark.parametrize("later", [1, 2])
+def test_lock_preserved_when_later_months_are_already_locked(tmp_path, later):
+    """Synthetic: 2026-11 (and 2026-12) already locked on top of today's committed lock, as after the
+    first live locks.  The next month still appends cleanly and nothing locked earlier changes; a run
+    with nothing new keeps the file byte-identical."""
+    committed = COMMITTED_LOCK.read_bytes()
+    sim = _simulated_later_locks(committed, later)
+    sms = [d["signal_month"] for d in json.loads(sim.decode("utf-8"))]
+    assert sms[-later:] == [str(pd.Period(json.loads(committed)[-1]["signal_month"], "M") + k)
+                            for k in range(1, later + 1)]
+    real, h = _assert_lock_extends(sim, tmp_path / "extend", f"+{later} locked")
+    assert NEW.record_class(real[-1]) == "LIVE"                     # the simulated live month keeps its class
+    _assert_nothing_new(sim, tmp_path / "same", f"+{later} locked, nothing new")
 
 
 @pytest.mark.v10_migration
@@ -1346,18 +1415,7 @@ def test_regression_vs_pr_merge_base_offline(market, pr_merge_base, tmp_path):
 
 def test_committed_lock_bytes_unchanged_when_nothing_new(tmp_path):
     """Mandatory: a run with nothing new to lock rewrites the committed lock byte-for-byte."""
-    path = H.ROOT / "docs" / "data" / "official_history.json"
-    committed = path.read_bytes()
-    real = json.loads(committed.decode("utf-8"))
-    last = real[-1]["signal_month"]
-    daily, un = H.synthetic_market(end=str((pd.Period(last, "M")).end_time.date()))
-    months = sorted(set(daily.index.to_period("M")))
-    f2r = H.f2r_state(months, official=last)
-    now = pd.Period(last, "M").end_time.tz_localize("UTC").to_pydatetime() + timedelta(days=2)
-    p, h, _ = H.run(NEW, "reference_only", now, tmp_path, daily, un, f2r, wbc(daily, un, f2r, months=(last,)),
-                    lock_init=real)
-    assert len(h) == len(real) and NEW.LOCK_JSON.read_bytes() == committed
-    assert p["validation"]["new_official_locks"] == 0
+    _assert_nothing_new(COMMITTED_LOCK.read_bytes(), tmp_path, "committed lock")
 
 
 def test_rollback_compare_detects_every_change():
