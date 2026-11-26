@@ -1104,7 +1104,20 @@ def release_auth_problems(auth: dict | None, month: str) -> list[str]:
                 if a.get("state") == "approved" and RELEASE_ENVIRONMENT in (a.get("environments") or [])]
     if not approved:
         probs.append(f"no approval recorded for environment {RELEASE_ENVIRONMENT} in this run")
+    elif env.get("prevent_self_review") and approval_type(auth) != "independent":
+        probs.append("prevent_self_review is on but the only approval is the requester's own")
     return probs
+
+
+def approval_type(auth: dict | None) -> str | None:
+    """'independent' if someone other than the requester approved, 'self-confirmation' if only the
+    requester did (the normal case in a one-person repository: a deliberate second step, not a
+    second person), None without an approval."""
+    users = {a.get("user") for a in (auth or {}).get("approvals") or []
+             if a.get("state") == "approved" and RELEASE_ENVIRONMENT in (a.get("environments") or [])}
+    if not users:
+        return None
+    return "independent" if users - {(auth or {}).get("actor")} else "self-confirmation"
 
 
 def release_input_problems(daily, now_utc: datetime, unrate_src: str, f2r_state, ref,
@@ -1242,6 +1255,7 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
                "actor": os.environ.get("GITHUB_ACTOR") or "local", "run_url": run_url,
                "reason": MANUAL_RELEASE_REASON, "outcome": None, "problems": probs,
                "authorization": {"actor_permission": auth.get("actor_permission"), "ref": auth.get("ref"),
+                                 "approval_type": approval_type(auth),
                                  "approvals": [{k: a.get(k) for k in ("user", "state", "comment", "at_utc")}
                                                for a in auth.get("approvals") or []],
                                  "environment": auth.get("environment")},
@@ -1325,11 +1339,15 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
             d["manual_release"] = {k: rel[k] for k in ("requested_at_utc", "actor", "run_url", "reason")}
             d["manual_release"]["approved_by"] = [a["user"] for a in rel["authorization"]["approvals"]
                                                   if a.get("state") == "approved"]
+            d["manual_release"]["approval_type"] = rel["authorization"]["approval_type"]
             rel["outcome"] = "LOCKED"
             rel["locked"] = {"state": d["state"], "risk_budget": d["risk_budget"],
                              "adaptive_source": d["sources"]["adaptive"]}
+            kind_ko = {"independent": "독립 승인", "self-confirmation": "본인 재확인(1인 승인)"}.get(
+                rel["authorization"]["approval_type"], "?")
             _event(oev, sm, "MANUAL_RELEASE", now_utc,
-                   f"by {rel['actor']}: {rel['reason']}; official F2R and author Core verified", once=False)
+                   f"by {rel['actor']}, {kind_ko} {d['manual_release']['approved_by']}: {rel['reason']}; "
+                   f"official F2R and author Core verified", once=False)
         else:
             d["origin"] = "LIVE"
         if kind == "LIVE":

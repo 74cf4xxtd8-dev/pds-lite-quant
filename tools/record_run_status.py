@@ -6,7 +6,9 @@
   a failed run has none, so it can never re-announce an older run's events.
 * Operator halt: the halt notice goes out once (not again while the previous successful run was
   already halted), and the report lists other update-portfolio runs still queued or running.
-* Step outputs: action=<FOLLOW_OFFICIAL|WAIT|HALTED|NONE>, notify=<true|false>.
+* Alerts an earlier run could not deliver (notify_pending, set by send_alert.py) are resent with
+  the next successful run and kept through failed runs.
+* Step outputs: action=<FOLLOW_OFFICIAL|WAIT|HALTED|NONE>, notify=<true|false>, halt=<true|false>.
 """
 from __future__ import annotations
 
@@ -71,6 +73,12 @@ def build(prev: dict | None, ok: bool, result: dict | None, log: list[str], even
     last = _last_ok(prev)
     if halt and last and last.get("operator_halt"):             # halt already announced
         notify = [e for e in notify if e.get("event") != "OPERATOR_HALT"]
+    # alerts an earlier run could not deliver: resend with the next successful run, keep otherwise
+    pending = [dict(e, resend=True) for e in (prev or {}).get("notify_pending") or []]
+    if ok:
+        notify, keep = pending + notify, []
+    else:
+        notify, keep = [], pending
     entry = {"at_utc": now_utc.isoformat(timespec="seconds"), "ok": ok, "event": event,
              "action": (action or {}).get("code"), "month": (action or {}).get("month"),
              "reason": (action or {}).get("reason"), "operator_halt": halt if ok else None,
@@ -80,7 +88,7 @@ def build(prev: dict | None, ok: bool, result: dict | None, log: list[str], even
     if rel:
         entry["manual_release"] = {k: rel.get(k) for k in ("signal_month", "actor", "outcome", "problems")}
     recent = ((prev or {}).get("recent") or [])[-(RECENT_KEEP - 1):] + [entry]
-    out = {"ok": ok, "action": action, "operator_halt": halt, "notify": notify,
+    out = {"ok": ok, "action": action, "operator_halt": halt, "notify": notify, "notify_pending": keep,
            "finished_utc": now_utc.isoformat(timespec="seconds").replace("+00:00", "Z"),
            "event": event, "run_url": run_url,
            "log_tail": [line for line in log if not line.startswith("[lock]")][-40:],

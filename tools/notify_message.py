@@ -63,21 +63,27 @@ def message(payload: dict | None, pages_url: str = "") -> str:
     events = (payload or {}).get("notify") or []
     if not events:
         return ""
-    body = "\n\n".join(_line(e, payload) for e in events)
+    body = "\n\n".join(("(재전송: 이전 실행에서 전달 실패) " if e.get("resend") else "") + _line(e, payload)
+                       for e in events)
     return f"[PDS-Lite]\n{body}" + (f"\n{pages_url}" if pages_url else "")
+
+
+def payload_from_status(status: dict, latest: Path = Path("docs/data/portfolio_latest.json")) -> dict:
+    """run_status.json carries this run's notify list and action; the official block (for the
+    'locked' line) comes from portfolio_latest.json, which a successful locking run just wrote."""
+    if "official" in status:
+        return status
+    full = json.loads(latest.read_text(encoding="utf-8")) if latest.exists() else {}
+    full["notify"] = status.get("notify") or []
+    full["action"] = status.get("action") or full.get("action")
+    full["halt_report"] = status.get("halt_report")
+    return full
 
 
 def main(argv: list[str]) -> None:
     path = Path(argv[1] if len(argv) > 1 else "docs/data/run_status.json")
-    p = json.loads(path.read_text(encoding="utf-8"))
-    if "official" not in p:                           # run_status.json: notify list + this run's payload
-        latest = Path("docs/data/portfolio_latest.json")
-        full = json.loads(latest.read_text(encoding="utf-8")) if latest.exists() else {}
-        full["notify"] = p.get("notify") or []
-        full["action"] = p.get("action") or full.get("action")      # this run's action
-        full["halt_report"] = p.get("halt_report")
-        p = full
-    print(message(p, argv[2] if len(argv) > 2 else ""))
+    print(message(payload_from_status(json.loads(path.read_text(encoding="utf-8"))),
+                  argv[2] if len(argv) > 2 else ""))
 
 
 if __name__ == "__main__":

@@ -57,6 +57,52 @@ def write_scopes(perms: dict) -> set[str]:
     return scopes
 
 
+BOT = "github-actions[bot]"
+PROVENANCE_DAYS = 35
+
+
+def main_commit_provenance(commits: list[dict], files: dict[str, list[str]],
+                           pulls: dict[str, list[dict]]) -> list[tuple[str, bool | None, str]]:
+    """Detective control for what the main rules cannot prevent: the bot may only have changed
+    docs/data, and every other change on main should have come through a merged pull request."""
+    bot_bad, direct = [], []
+    for c in commits:
+        sha = c["sha"]
+        who = (c.get("author") or {}).get("login") or (c.get("commit", {}).get("author") or {}).get("name")
+        msg = (c.get("commit", {}).get("message") or "").splitlines()[0][:60]
+        if who == BOT:
+            outside = [f for f in files.get(sha, []) if not f.startswith("docs/data/")]
+            if outside:
+                bot_bad.append(f"{sha[:7]} {outside[:3]}")
+        elif not any(p.get("merged_at") for p in pulls.get(sha, [])):
+            direct.append(f"{sha[:7]} {who}: {msg}")
+    n_bot = sum(1 for c in commits if ((c.get("author") or {}).get("login")
+                                       or (c.get("commit", {}).get("author") or {}).get("name")) == BOT)
+    return [(f"main 최근 {PROVENANCE_DAYS}일: 봇 커밋은 docs/data만 변경", not bot_bad,
+             "; ".join(bot_bad) if bot_bad else f"봇 커밋 {n_bot}건 모두 docs/data"),
+            (f"main 최근 {PROVENANCE_DAYS}일: 봇 외 변경은 모두 PR 병합 경유", not direct,
+             "; ".join(direct[:8]) + (f" 외 {len(direct) - 8}건" if len(direct) > 8 else "") if direct
+             else f"봇 외 커밋 {len(commits) - n_bot}건 모두 PR 경유")]
+
+
+def fetch_provenance(repo: str):
+    from datetime import datetime, timedelta, timezone
+    since = (datetime.now(timezone.utc) - timedelta(days=PROVENANCE_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    commits = api(f"/repos/{repo}/commits?sha=main&since={since}&per_page=100")
+    if not isinstance(commits, list):
+        return None
+    files, pulls = {}, {}
+    for c in commits:
+        who = (c.get("author") or {}).get("login") or (c.get("commit", {}).get("author") or {}).get("name")
+        if who == BOT:
+            d = api(f"/repos/{repo}/commits/{c['sha']}")
+            files[c["sha"]] = [f["filename"] for f in d.get("files", [])] if isinstance(d, dict) else []
+        else:
+            pr = api(f"/repos/{repo}/commits/{c['sha']}/pulls")
+            pulls[c["sha"]] = pr if isinstance(pr, list) else []
+    return commits, files, pulls
+
+
 def evaluate(collab, main_branch, main_rules, env, wf_perms, halt_seen) -> list[tuple[str, bool | None, str]]:
     """(item, ok? (None = cannot verify), detail)."""
     rows = []
@@ -82,6 +128,11 @@ def evaluate(collab, main_branch, main_rules, env, wf_perms, halt_seen) -> list[
         rv = [r for r in env.get("protection_rules") or [] if r.get("type") == "required_reviewers"]
         reviewers = [(x.get("reviewer") or {}).get("login") for r in rv for x in r.get("reviewers") or []]
         rows.append((f"환경 {ENVIRONMENT}: 필수 검토자", bool(reviewers), f"{reviewers}"))
+        psr = any(r.get("prevent_self_review") for r in rv)
+        rows.append((f"환경 {ENVIRONMENT}: 승인 형태", None,
+                     "독립 2인 승인(prevent self-review 켬)" if psr and len(reviewers) > 1 else
+                     "본인 재확인(요청자=승인자 가능) — 독립 승인 아님" if not psr else
+                     "prevent self-review 켬, 검토자 1명 → 그 검토자가 요청하면 아무도 승인 못 함"))
         rows.append((f"환경 {ENVIRONMENT}: 관리자 우회 끔", env.get("can_admins_bypass") is False,
                      f"can_admins_bypass={env.get('can_admins_bypass')}"))
         pol = env.get("deployment_branch_policy") or {}
@@ -112,6 +163,8 @@ def main(argv=None) -> int:
     rows = evaluate(api(f"/repos/{repo}/collaborators"), api(f"/repos/{repo}/branches/main"),
                     api(f"/repos/{repo}/rules/branches/main"), api(f"/repos/{repo}/environments/{ENVIRONMENT}"),
                     workflow_permissions(ROOT / ".github" / "workflows"), os.environ.get("PDS_HALT_SEEN", ""))
+    prov = fetch_provenance(repo)
+    rows += main_commit_provenance(*prov) if prov else [("main 커밋 출처", None, "조회 불가")]
     text = report(rows)
     print(text)
     if args.report:

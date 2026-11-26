@@ -86,23 +86,73 @@ Adaptive = RB·Core + (1−RB)·BIL        (NORMAL: RB=1, DEFENSIVE: 0.55 ≤ RB
 | 환경·규칙·Actions 설정, 협업자 관리 | 소유자 | – |
 | 쓰기 권한이 있는 GitHub App·토큰 | 앱/토큰 권한 범위 | 실행·push는 가능하지만 환경 승인은 검토자로 지정된 사람만 가능 → 앱 단독으로는 수동 해제를 잠글 수 없다 |
 
-### 수동 해제에 별도 승인이 필요한 이유
-실행 이력(`manual_releases.json`, Actions 기록)은 사후 기록이라 실행 자체를 막지 못한다. 수동 실행은 쓰기 권한만 있으면 누구나(협업자, 쓰기 권한 앱·토큰 포함) 할 수 있다. 그래서 요청과 승인을 나눴다: 요청(Run workflow + 사유) → 보호 환경에서 사람 검토자 승인 → 파이프라인이 GitHub API로 요청자 권한·승인 기록·환경 설정을 다시 확인 → 데이터 점검. 혼자 쓰는 저장소에서는 자기 승인이지만, 두 단계라 실수 실행이 바로 잠금으로 이어지지 않고 앱이나 토큰 단독으로는 잠금이 생기지 않는다. 한계: 소유자 계정이 탈취되면 막을 수 없다(2FA 필수). 검토자 본인의 개인 토큰(PAT)은 API로 승인할 수 있으므로 PAT는 만들지 않거나 최소 권한·만료일을 둔다.
+### 수동 해제 승인: 지금은 "본인 재확인"이지 독립 2인 승인이 아니다
+실행 이력(`manual_releases.json`, Actions 기록)은 사후 기록이라 실행 자체를 막지 못한다. 수동 실행은 쓰기 권한만 있으면 누구나(협업자, 쓰기 권한 앱·토큰 포함) 할 수 있다. 그래서 요청과 승인을 나눴다: 요청(Run workflow + 사유) → 보호 환경에서 사람 검토자 승인 → 파이프라인이 GitHub API로 요청자 권한·승인 기록·환경 설정을 다시 확인 → 데이터 점검.
+
+**현재(1인 저장소)의 성격과 한계**
+- 요청자와 승인자가 **같은 사람(소유자)** 이다. 이것은 독립적인 2인 승인이 아니라 **실행 전 본인 재확인 절차**다. 기록에도 `approval_type: "self-confirmation"`(본인 재확인)으로 남고, 알림에 "본인 재확인(1인 승인)"으로 표시된다.
+- 막아 주는 것: 실수로 누른 실행이 곧바로 잠금이 되는 것, 쓰기 권한 앱·토큰 **단독** 실행(승인은 검토자로 지정된 사람만 할 수 있다).
+- 막지 못하는 것: 소유자 본인의 잘못된 판단, 소유자 계정 탈취(2FA 필수), 소유자 개인 토큰(PAT) 유출(API로 승인 가능 → PAT를 만들지 않거나 최소 권한·짧은 만료).
+
+**나중에 별도 검토자를 둘 때 (독립 승인으로 바꾸기)**
+1. 검토자는 본인 GitHub 계정(2FA)을 쓴다. 검토자는 저장소 읽기 이상 권한이 필요하다. 개인 계정 저장소에서 사람을 지정하려면 협업자로 추가해야 하는데, 개인 저장소의 협업자는 **쓰기 권한**을 받는다(실행·push·`PDS_HALT` 변경 가능). 읽기 전용 검토자가 필요하면 저장소를 무료 조직(Organization)으로 옮겨 Read 역할로 두는 방법이 있다.
+2. Settings → Environments → `pds-manual-release` → Required reviewers에 검토자를 추가하고(소유자는 빼도 되고 둬도 된다), **Prevent self-review**를 켠다. 그러면 실행을 시작한 사람은 그 실행을 승인할 수 없다(GitHub가 막음).
+3. 코드도 이를 다시 확인한다: 환경에 prevent self-review가 켜져 있으면 요청자 외 다른 사람의 승인이 있어야만 잠긴다. 기록은 `approval_type: "independent"`(독립 승인), 승인자 계정이 함께 남는다.
+4. 요청은 계속 소유자(admin)만 할 수 있다(코드가 요청자 admin을 요구). 협업자 검토자는 승인만 한다.
+5. 검토자가 1명뿐인데 Prevent self-review를 켠 경우, 그 검토자가 요청자가 되면 아무도 승인할 수 없다(요청자는 admin이어야 하므로 보통 해당 없음). `ops-audit`가 승인 형태를 보여 준다.
 
 ### 권장 설정 체크리스트 (소유자, Settings)
 1. **계정**: 2단계 인증(패스키 권장). Settings → Applications에서 이 저장소에 쓰기 권한이 있는 GitHub App·OAuth 앱을 점검하고, 쓰지 않을 때는 저장소 접근을 빼거나 제거한다. classic PAT는 쓰지 않는다.
 2. **협업자**: 추가하지 않는다. 개인 저장소의 협업자는 쓰기 권한이라 실행·변수 변경이 가능하다.
 3. **Rules → Rulesets → New branch ruleset** `main-protect`: Enforcement **Active**, Target **Default branch**, Rules **Restrict deletions**와 **Block force pushes**, Bypass list 비움.
    - "Require a pull request before merging"와 "Require status checks"는 켜지 않는다. 매일의 데이터 커밋은 GITHUB_TOKEN 봇이 main에 직접 push하는데, 이 봇은 우회 목록에 넣을 수 없어 운영이 멈춘다. 코드 변경은 PR로만 하고(관행), PR마다 `tests` CI가 돈다.
+   - **한계**: 이 두 규칙은 이력 삭제·덮어쓰기만 막는다. 일반 push(빨리 감기)는 막지 못한다. 소유자, 협업자, 쓰기 권한 GitHub App·토큰·배포 키, `contents: write`를 가진 워크플로는 main에 직접 코드를 올릴 수 있다. 그래서 아래 "쓰기 경로 최소화"로 줄이고, `ops-audit`로 사후에 찾아낸다.
 4. **Actions → General**
    - Actions permissions: "Allow 소유자, and select non-소유자, actions and reusable workflows" + "Allow actions created by GitHub"(checkout·setup-python·upload-artifact만 사용).
    - Workflow permissions: **Read repository contents and packages permissions**(기본 읽기). update.yml만 `contents: write`를 직접 선언하고, 나머지 워크플로는 읽기 권한만 쓴다.
    - "Allow GitHub Actions to create and approve pull requests" **끔**.
    - Fork pull request workflows: **Require approval for all external contributors**.
 5. **Environments → New environment** `pds-manual-release` (없으면 수동 해제는 항상 거부된다)
-   - Required reviewers: 소유자. Prevent self-review: 혼자면 끔(켜면 아무도 승인 못 함), 검토자가 2명 이상이면 켬.
+   - Required reviewers: 소유자. Prevent self-review: 혼자면 끔(켜면 아무도 승인 못 함). 이 상태는 본인 재확인이다(위 설명). 별도 검토자를 두면 켠다.
    - Deployment branches and tags: Selected branches → `main`.
    - "Allow administrators to bypass configured protection rules" **끔**(우회하면 승인 기록이 없어 어차피 거부된다).
 6. **Secrets and variables → Actions**: Secrets는 `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`만. Variables는 `PDS_HALT`(평소에는 없음).
-7. **점검**: Actions → ops-audit(매월 11일 자동, 수동 실행 가능)이 협업자·main 규칙·환경 설정·워크플로 권한을 위 권장값과 비교해 보여 준다. Actions 기본 권한 등 GITHUB_TOKEN으로 읽을 수 없는 항목은 직접 확인한다.
+7. **점검**: Actions → ops-audit(매월 11일 자동, 수동 실행 가능)이 협업자·main 규칙·환경 설정·승인 형태·워크플로 권한·최근 35일 main 커밋 출처를 위 권장값과 비교해 보여 준다. Actions 기본 권한 등 GITHUB_TOKEN으로 읽을 수 없는 항목은 직접 확인한다.
+8. **실패 알림**: 계정 Settings → Notifications → Actions에서 "실패한 워크플로만" 이메일 알림을 켠다. 예약 실행의 알림은 워크플로를 처음 만든 사람(또는 다시 켠 사람)에게 간다. Telegram이 실패해도 이 경로로 실패가 보인다.
+
+### main 쓰기 경로 최소화 (운영 기준)
+main에 쓸 수 있는 경로는 두 가지만 둔다.
+| 경로 | 무엇을 | 통제 |
+|---|---|---|
+| 소유자의 PR 병합 | 코드·워크플로·README | 브랜치 → PR → `tests` CI 통과 → diff 확인 → 병합. main에 직접 push하지 않는다 |
+| update-portfolio 봇(GITHUB_TOKEN) | `docs/data`만 | 워크플로 기본 권한 `{}`, `run` 작업만 `contents: write`. 커밋 단계가 `docs/data` 밖 파일이 스테이징되면 커밋을 거부한다 |
+
+그 밖의 쓰기 수단은 없애거나 줄인다.
+- **다른 워크플로**: 모두 읽기 권한만(`tests`, `rollback-check`, `ops-audit`). 새 워크플로를 추가할 때도 `contents: write`를 주지 않는다(`ops-audit`가 검사).
+- **GitHub App**(예: Claude 연동): 설치 범위를 이 저장소로 한정하고, 작업이 없을 때는 이 저장소 접근을 빼거나 앱을 제거한다. 매월 Settings → Applications 확인.
+- **개인 토큰(PAT)**: 만들지 않는다. 꼭 필요하면 fine-grained, 이 저장소만, Contents 읽기 전용, 만료 30~90일. classic PAT(repo·workflow 범위)는 쓰지 않는다.
+- **배포 키(Deploy keys)**: 두지 않는다(필요하면 읽기 전용).
+- **협업자**: 두지 않는다(개인 저장소 협업자는 쓰기 권한).
+- **사후 탐지**: `ops-audit`가 최근 35일 main 커밋에서 ① 봇 커밋이 `docs/data` 밖을 바꿨는지, ② 봇 외 커밋이 PR 병합 없이 들어왔는지를 표시한다. 저장소를 만들 때의 초기 직접 push는 처음 한 번 경고로 보일 수 있다.
+- **더 강한 대안(나중에)**: 봇 데이터를 별도 브랜치(`data`)에 쓰고 Pages를 그 브랜치에서 배포하면, main에 "PR 필수 + CI 필수"를 걸 수 있다. Pages 설정과 화면 데이터 경로를 바꿔야 하므로 이번 범위에서는 하지 않았다.
+
+## 실행 결과 기록·전달
+매 실행 결과는 다음 네 곳에 남는다. ① `docs/data/run_status.json`(매 실행 커밋, 최근 60회 `recent`, git 이력에 영구 보존) ② Actions 작업 요약(Validation summary) ③ Actions 아티팩트 `pds-lite-run-<실행 ID>`(90일: `docs/data`, `run_result.json`, `run.log`, `release_auth.json`) ④ 필요할 때 Telegram. `run_result.json`은 파이프라인이 이번 실행에서 한 일을 워크플로에 넘기는 파일로, 커밋하지 않고 아티팩트에만 남는다.
+
+| 결과 | 기록되는 곳 | 전달(Telegram) |
+|---|---|---|
+| 정상(새 잠금 없음, FOLLOW_OFFICIAL) | `portfolio_latest.json`, `run_status.json` | 없음 |
+| 대기 WAIT | 첫날 `official_events.json` PENDING. 매일 `run_status.json` | 대기 시작 ⏳ 1회. 반복 확인은 없음 |
+| 원작자 Core 불일치 | `official_events.json` CORE_MISMATCH | ⚠️ 1회 |
+| 잠금 LOCKED | `official_history.json`, `official_events.json` LOCKED, `portfolio_latest.json` | ✅ (커밋 성공 후에만) |
+| 10일 마감 BLOCKED (HALTED) | `official_events.json` BLOCKED, `portfolio_latest.json` action, 화면 배너 | ⛔ 1회 |
+| 수동 해제·거부 | `manual_releases.json`, `official_events.json` | 🔓 / ✋ |
+| 운영자 중지 HALTED | `run_status.json`의 `halt_report`만(다른 파일 무변경), 화면 배너 | ⛔ 1회 |
+| 파이프라인 실패 | `run_status.json`(ok:false, 로그 끝 40줄)만, 데이터 무변경 | 실패 알림 |
+| 커밋·push 실패 | 저장소에는 남지 않음 → 아티팩트·작업 요약·실행 로그, 실행이 실패로 표시 | "커밋 실패: 결과 저장 안 됨" 알림(이번 판단 포함) |
+| Telegram 전달 실패 | `run_status.json`의 `delivery`(실패 사유)·`notify_pending`을 추가 커밋, 실행은 실패로 표시(GitHub 실패 알림) | 다음 성공 실행이 "(재전송)"으로 다시 보냄 |
+| Telegram 미설정 | `run_status.json`·아티팩트의 `delivery: skipped_no_telegram_secret` | 없음 |
+
+- 잠금 알림은 커밋이 성공한 뒤에만 보낸다. 저장되지 않은 잠금을 "확정"으로 알리는 일을 막기 위해서다.
+- 커밋과 Telegram이 둘 다 실패해도 ③ 아티팩트, ② 작업 요약, 실행 로그, GitHub 실패 알림으로 결과와 오류를 확인할 수 있다.
 

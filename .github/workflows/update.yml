@@ -35,9 +35,7 @@ on:
         type: boolean
         default: true
 
-permissions:
-  contents: write      # commit docs/data (the only thing this workflow writes)
-  actions: read        # release approvals and other runs (halt report); no other scope
+permissions: {}       # nothing by default; each job asks for what it needs
 
 jobs:
   # Manual release only: waits until a required reviewer approves this run in the protected
@@ -62,6 +60,9 @@ jobs:
     concurrency:
       group: update-portfolio
       cancel-in-progress: false
+    permissions:
+      contents: write  # commit docs/data only (the commit step refuses any other path)
+      actions: read    # release approvals and other runs (halt report)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -149,13 +150,6 @@ jobs:
           print(f"- flags: {d['flags']}")
           PY
 
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pds-lite-output
-          path: docs/data/
-          if-no-files-found: ignore
-
       - name: Commit if changed
         id: commit
         if: always() && github.event.inputs.commit != 'false'
@@ -176,6 +170,10 @@ jobs:
             git ls-files -z docs/data | { grep -zv 'run_status.json$' || true; } | xargs -0 -r git checkout --
             git add docs/data/run_status.json
           fi
+          # the bot writes data only: anything staged outside docs/data stops the commit
+          if git diff --cached --name-only | grep -v '^docs/data/'; then
+            echo "::error::refusing to commit files outside docs/data"; exit 1
+          fi
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -185,26 +183,48 @@ jobs:
           fi
 
       # Optional phone alert. Add repo secrets TELEGRAM_TOKEN and TELEGRAM_CHAT_ID to enable.
-      # Only state changes are sent (waiting started, Core mismatch, locked, day-10 block, manual
-      # release, operator halt); the repeated daily checks stay in run_status.json / official_events.json.
-      - name: Telegram alert (state changes only)
-        if: steps.run.outcome == 'success' && steps.status.outputs.notify == 'true' && env.TG_TOKEN != ''
+      # State changes only (waiting started, Core mismatch, locked, day-10 block, manual release,
+      # operator halt), and only after the commit succeeded, so a lock is never announced unless it
+      # was saved.  Delivery is checked; an undelivered alert is recorded and resent next run.
+      - name: Telegram alert (state changes, after a successful commit)
+        id: tg
+        if: steps.run.outcome == 'success' && steps.commit.outcome == 'success' && steps.status.outputs.notify == 'true' && env.TG_TOKEN != ''
         env:
           PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
-        run: |
-          MSG=$(python tools/notify_message.py docs/data/run_status.json "$PAGES_URL")
-          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TG_CHAT}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+        run: python tools/send_alert.py state --pages "$PAGES_URL"
 
       - name: Telegram alert on failure (pipeline or commit/push)
+        id: tgfail
         if: always() && (steps.run.outcome == 'failure' || steps.commit.outcome == 'failure') && env.TG_TOKEN != ''
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WHAT: ${{ steps.run.outcome == 'failure' && 'pipeline' || 'commit' }}
+        run: python tools/send_alert.py failure --what "$WHAT" --run-url "$RUN_URL"
+
+      # An alert that did not arrive is recorded in run_status.json (committed when possible) and
+      # the run is marked failed, so GitHub's own failure notification and the Actions list show it.
+      - name: Record alert delivery failure
+        if: always() && (steps.tg.outcome == 'failure' || steps.tgfail.outcome == 'failure')
+        env:
+          COMMIT_OUTCOME: ${{ steps.commit.outcome }}
         run: |
-          TAIL=$(tail -n 3 run.log 2>/dev/null | cut -c1-300)
-          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TG_CHAT}" \
-            --data-urlencode "text=[PDS-Lite] 실행 실패: 새 목표 비중 없음, 직전 Official 유지 (fail-closed)
-          ${TAIL}
-          ${RUN_URL}" > /dev/null
+          echo "::error::Telegram alert not delivered (see docs/data/run_status.json delivery)"
+          if [ "$COMMIT_OUTCOME" = "success" ]; then
+            git add docs/data/run_status.json
+            git commit -m "status: alert delivery failed $(date -u +%Y-%m-%dT%H:%MZ)" && git push || \
+              echo "::error::could not commit the delivery record; it is in the run artifact"
+          fi
+          exit 1
+
+      # Everything this run knew, kept 90 days even if the commit or the alert failed.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pds-lite-run-${{ github.run_id }}
+          path: |
+            docs/data/
+            run_result.json
+            run.log
+            release_auth.json
+          if-no-files-found: ignore
+          retention-days: 90

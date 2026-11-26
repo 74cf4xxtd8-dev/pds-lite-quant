@@ -27,6 +27,7 @@ sys.path.insert(0, str(H.ROOT / "tools"))
 import notify_message as NOTIFY  # noqa: E402
 import record_run_status as RUNSTATUS  # noqa: E402
 import rollback_check as ROLLBACK  # noqa: E402
+import send_alert  # noqa: E402,F401
 NOV1 = datetime(2026, 11, 1, 0, 0, tzinfo=timezone.utc)      # Oct-2026 complete -> last_off = 2026-10
 DEC1 = datetime(2026, 12, 1, 0, 0, tzinfo=timezone.utc)
 
@@ -501,7 +502,7 @@ def test_manual_release_needs_complete_official_data(dl_market, tmp_path, monkey
     assert h[-1]["signal_month"] == "2026-10" and h[-1]["origin"] == "MANUAL_RELEASE"
     assert h[-1]["manual_release"] == {"requested_at_utc": "2026-11-13T22:40:00+00:00", "actor": "owner",
                                        "run_url": "https://github.com/o/r/actions/runs/42", "reason": OK_REASON,
-                                       "approved_by": ["owner"]}
+                                       "approved_by": ["owner"], "approval_type": "self-confirmation"}
     assert h[-1]["sources"]["adaptive"] == "REFERENCE_OFFICIAL_AT_LOCK" and h[-1]["risk_budget"] == 0.7122398
     assert p["action"]["code"] == "FOLLOW_OFFICIAL" and p["history"][-1]["record_class"] == "RECONSTRUCTED"
     ev = [(e["signal_month"], e["event"]) for e in _events()]
@@ -517,6 +518,8 @@ def test_manual_release_needs_complete_official_data(dl_market, tmp_path, monkey
     assert rel[1]["checks"]["author_core_max_abs_diff"] > 0.5
     assert last["authorization"]["actor_permission"] == "admin" and last["authorization"]["ref"] == "refs/heads/main"
     assert last["authorization"]["approvals"][0]["user"] == "owner"
+    assert last["authorization"]["approval_type"] == "self-confirmation"              # 1-person repo
+    assert "본인 재확인(1인 승인)" in [e for e in _events() if e["event"] == "MANUAL_RELEASE"][-1]["detail"]
     # releasing a month that is not newer than the latest official is refused
     locked = NEW.LOCK_JSON.read_bytes()
     p, _, _ = _run_at(dl, tmp_path, _utc(11, 14), dl["oct"], ref, release="2026-09")
@@ -672,6 +675,228 @@ def test_release_authorization_rules(change, expect):
     auth = None if change == "missing" else H.release_auth("2026-10", **(change or {}))
     probs = NEW.release_auth_problems(auth, "2026-10")
     assert (probs == []) if expect is None else any(expect in x for x in probs), probs
+
+
+def test_self_confirmation_vs_independent_approval():
+    own = H.release_auth("2026-10")                                                 # owner asks and approves
+    assert NEW.approval_type(own) == "self-confirmation" and NEW.release_auth_problems(own, "2026-10") == []
+    env_psr = {"name": NEW.RELEASE_ENVIRONMENT, "required_reviewers": ["owner", "reviewer"],
+               "prevent_self_review": True}
+    strict_self = H.release_auth("2026-10", environment=env_psr)
+    assert any("requester's own" in x for x in NEW.release_auth_problems(strict_self, "2026-10"))
+    other = H.release_auth("2026-10", environment=env_psr, approvals=[
+        {"user": "reviewer", "state": "approved", "comment": "ok", "environments": [NEW.RELEASE_ENVIRONMENT]}])
+    assert NEW.approval_type(other) == "independent" and NEW.release_auth_problems(other, "2026-10") == []
+    assert NEW.approval_type(H.release_auth("2026-10", approvals=[])) is None
+
+
+def _alert_server(responses):
+    """Local stand-in for api.telegram.org: replies with the given (code, body) in turn."""
+    import http.server
+    import threading
+    seen, queue = [], list(responses)
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802
+            seen.append(self.rfile.read(int(self.headers["Content-Length"])).decode())
+            code, body = queue.pop(0) if queue else (200, {"ok": True})
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(body).encode())
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, seen
+
+
+def _status_with_lock(tmp_path):
+    data = tmp_path / "docs" / "data"
+    data.mkdir(parents=True)
+    (data / "portfolio_latest.json").write_text(json.dumps({"official": {
+        "signal_month": "2026-11", "holding_month": "2026-12", "state": "NORMAL", "risk_budget": 1.0,
+        "us": [{"ticker": "SPY", "adaptive": 0.3}]}}), encoding="utf-8")
+    st = data / "run_status.json"
+    st.write_text(json.dumps({"ok": True, "action": {"code": "FOLLOW_OFFICIAL", "month": "2026-11"},
+                              "notify": [{"signal_month": "2026-11", "event": "LOCKED", "detail": "x"}],
+                              "log_tail": ["a", "b", "boom"]}), encoding="utf-8")
+    return st
+
+
+@pytest.mark.parametrize("case", ["sent", "telegram_says_no", "http_500_twice", "unreachable", "no_secret"])
+def test_send_alert_checks_delivery_and_records_failures(tmp_path, monkeypatch, case):
+    import send_alert as SA
+    st = _status_with_lock(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("ALERT_RETRY_SECONDS", "0")
+    monkeypatch.setenv("TG_TOKEN", "t")
+    monkeypatch.setenv("TG_CHAT", "c")
+    srv = None
+    if case == "unreachable":
+        monkeypatch.setenv("TELEGRAM_API", "http://127.0.0.1:9")                     # nothing listens there
+    elif case == "no_secret":
+        monkeypatch.delenv("TG_TOKEN")
+    else:
+        replies = {"sent": [(200, {"ok": True})],
+                   "telegram_says_no": [(200, {"ok": False, "description": "chat not found"})] * 2,
+                   "http_500_twice": [(500, {"ok": False, "description": "oops"})] * 2}[case]
+        srv, seen = _alert_server(replies)
+        monkeypatch.setenv("TELEGRAM_API", f"http://127.0.0.1:{srv.server_port}")
+    try:
+        code = SA.main(["state", "--status", str(st), "--pages", "https://p/"])
+    finally:
+        if srv:
+            srv.shutdown()
+    rec = json.loads(st.read_text(encoding="utf-8"))
+    if case == "sent":
+        assert code == 0 and rec["delivery"]["status"] == "sent" and "notify_pending" not in rec
+        assert "%E2%9C%85" in seen[0] and len(seen) == 1                                 # ✅ line, one call
+    elif case == "no_secret":
+        assert code == 0 and rec["delivery"]["status"] == "skipped_no_telegram_secret"
+    else:
+        assert code == 3 and rec["delivery"]["status"] == "failed" and rec["delivery"]["error"]
+        assert rec["notify_pending"] == rec["notify"]                                    # resent next run
+        if case != "unreachable":
+            assert len(seen) == 2                                                        # one retry
+    assert {"telegram_says_no": "chat not found", "http_500_twice": "HTTP 500"}.get(case, "") in \
+        (rec["delivery"].get("error") or "")
+
+
+def test_commit_failure_alert_says_nothing_was_saved(tmp_path):
+    import send_alert as SA
+    st = json.loads(_status_with_lock(tmp_path).read_text(encoding="utf-8"))
+    t = SA.failure_text(st, "commit", "https://run/1")
+    assert "커밋 실패" in t and "저장되지 않았습니다" in t and "FOLLOW_OFFICIAL 2026-11" in t and "boom" in t
+    assert "https://run/1" in t and "pds-lite-run-" in t
+    assert "실행 실패" in SA.failure_text(st, "pipeline", "u")
+
+
+def test_undelivered_alerts_are_resent_and_survive_failed_runs():
+    now = datetime(2026, 12, 3, 22, 45, tzinfo=timezone.utc)
+    lost = [{"signal_month": "2026-11", "event": "LOCKED", "detail": "x"}]
+    prev = {"recent": [{"ok": True}], "notify_pending": lost}
+    failed = RUNSTATUS.build(prev, False, None, ["err"], "schedule", "u", now)
+    assert failed["notify"] == [] and failed["notify_pending"][0]["event"] == "LOCKED"   # kept
+    res = {"generated_at_utc": now.isoformat(), "action": {"code": "FOLLOW_OFFICIAL"}, "notify": [], "new_locks": 0}
+    ok = RUNSTATUS.build(failed, True, res, [], "schedule", "u", now)
+    assert ok["notify"][0]["resend"] is True and ok["notify_pending"] == []
+    assert NOTIFY.message(dict(ok, official={})).startswith("[PDS-Lite]\n(재전송: 이전 실행에서 전달 실패) ✅ 2026-11")
+
+
+def _git_repo_with_remote(tmp_path):
+    remote, work = tmp_path / "remote.git", tmp_path / "work"
+    g = lambda *a, cwd=work: subprocess.run(["git", *a], cwd=cwd, check=True, capture_output=True, text=True)  # noqa: E731
+    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    work.mkdir()
+    g("init", "-q", "-b", "main")
+    g("config", "user.email", "t@t"), g("config", "user.name", "t"), g("config", "commit.gpgsign", "false")
+    d = work / "docs" / "data"
+    d.mkdir(parents=True)
+    for f in ("official_history.json", "run_status.json"):
+        (d / f).write_text("old\n")
+    (work / "run_pipeline.py").write_text("code\n")
+    g("add", "."), g("commit", "-q", "-m", "init"), g("remote", "add", "origin", str(remote)), g("push", "-q", "-u", "origin", "main")
+    env = dict(os.environ, RUN_OUTCOME="success", RUN_MODE="engine", ADAPTIVE_MODE="reference_only", HALT="false",
+               GITHUB_OUTPUT=str(tmp_path / "gh_out"), GIT_CONFIG_COUNT="1",
+               GIT_CONFIG_KEY_0="commit.gpgsign", GIT_CONFIG_VALUE_0="false")
+    return remote, work, d, g, env
+
+
+def _run_commit_step(work, env):
+    return subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", _commit_step_script()],
+                          cwd=work, env=env, capture_output=True, text=True)
+
+
+def test_commit_step_push_rejected_fails_and_keeps_the_record(tmp_path):
+    if shutil.which("git") is None or shutil.which("bash") is None:
+        pytest.skip("git/bash unavailable")
+    remote, work, d, g, env = _git_repo_with_remote(tmp_path)
+    other = tmp_path / "other"                                                     # someone else pushed first
+    subprocess.run(["git", "clone", "-q", "-b", "main", str(remote), str(other)], check=True)
+    (other / "README").write_text("x")
+    for a in (["config", "user.email", "o@o"], ["config", "user.name", "o"], ["add", "."], ["commit", "-q", "-m", "x"],
+              ["push", "-q"]):
+        subprocess.run(["git", "-c", "commit.gpgsign=false", *a], cwd=other, check=True, capture_output=True)
+    (d / "official_history.json").write_text("new\n")
+    (d / "run_status.json").write_text('{"ok": true}\n')
+    r = _run_commit_step(work, env)
+    assert r.returncode != 0                                                        # -> failure alert + red run
+    assert (d / "run_status.json").read_text() == '{"ok": true}\n'                   # still there for the artifact
+    remote_files = subprocess.run(["git", "--git-dir", str(remote), "show", "--name-only", "--format=", "main"],
+                                  capture_output=True, text=True).stdout.split()
+    assert remote_files == ["README"]                                               # nothing of ours landed
+
+
+def test_commit_step_refuses_files_outside_docs_data(tmp_path):
+    if shutil.which("git") is None or shutil.which("bash") is None:
+        pytest.skip("git/bash unavailable")
+    remote, work, d, g, env = _git_repo_with_remote(tmp_path)
+    (work / "run_pipeline.py").write_text("tampered\n")
+    g("add", "run_pipeline.py")                                                     # staged by something else
+    (d / "official_history.json").write_text("new\n")
+    r = _run_commit_step(work, env)
+    assert r.returncode == 1 and "outside docs/data" in r.stdout
+    head = subprocess.run(["git", "--git-dir", str(remote), "log", "--format=%s", "main"],
+                          capture_output=True, text=True).stdout.split("\n")
+    assert head[0] == "init"                                                        # nothing pushed
+
+
+def test_alert_delivery_failure_end_to_end(tmp_path, monkeypatch):
+    """Workflow order: commit -> state alert (Telegram down) -> 'Record alert delivery failure'.
+    The failure lands in the repository's run_status.json, the run ends red, and the next run
+    resends the lost alert."""
+    if shutil.which("git") is None or shutil.which("bash") is None:
+        pytest.skip("git/bash unavailable")
+    import send_alert as SA
+    remote, work, d, g, env = _git_repo_with_remote(tmp_path)
+    (d / "portfolio_latest.json").write_text(json.dumps({"official": {
+        "signal_month": "2026-11", "holding_month": "2026-12", "state": "NORMAL", "risk_budget": 1.0, "us": []}}))
+    (d / "run_status.json").write_text(json.dumps({"ok": True, "recent": [{"ok": True}],
+                                                   "notify": [{"signal_month": "2026-11", "event": "LOCKED",
+                                                               "detail": "x"}]}))
+    assert _run_commit_step(work, env).returncode == 0                                  # data committed
+    srv, seen = _alert_server([(502, {"ok": False, "description": "bad gateway"})] * 2)
+    monkeypatch.chdir(work)
+    for k, v in {"ALERT_RETRY_SECONDS": "0", "TG_TOKEN": "t", "TG_CHAT": "c",
+                 "TELEGRAM_API": f"http://127.0.0.1:{srv.server_port}"}.items():
+        monkeypatch.setenv(k, v)
+    try:
+        assert SA.main(["state"]) == 3
+    finally:
+        srv.shutdown()
+    wf = yaml.safe_load((H.ROOT / ".github" / "workflows" / "update.yml").read_text(encoding="utf-8"))
+    step = next(x for x in wf["jobs"]["run"]["steps"] if x.get("name") == "Record alert delivery failure")
+    r = subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", step["run"]], cwd=work,
+                       env=dict(env, COMMIT_OUTCOME="success"), capture_output=True, text=True)
+    assert r.returncode == 1 and "not delivered" in r.stdout                           # run marked failed
+    pushed = json.loads(subprocess.run(["git", "--git-dir", str(remote), "show", "main:docs/data/run_status.json"],
+                                       capture_output=True, text=True, check=True).stdout)
+    assert pushed["delivery"]["status"] == "failed" and "HTTP 502" in pushed["delivery"]["error"]
+    assert pushed["notify_pending"][0]["event"] == "LOCKED"
+    nxt = RUNSTATUS.build(pushed, True, {"generated_at_utc": "x", "notify": [], "action": None}, [], "schedule", "u",
+                          datetime(2026, 12, 4, tzinfo=timezone.utc))
+    assert [(e["event"], e.get("resend")) for e in nxt["notify"]] == [("LOCKED", True)]
+
+
+def test_ops_audit_commit_provenance():
+    sys.path.insert(0, str(H.ROOT / "tools"))
+    import ops_audit as OA
+    bot = {"login": OA.BOT}
+    commits = [{"sha": "a" * 40, "author": bot, "commit": {"message": "data: x"}},
+               {"sha": "b" * 40, "author": bot, "commit": {"message": "data: y"}},
+               {"sha": "c" * 40, "author": {"login": "owner"}, "commit": {"message": "Merge pull request #1"}},
+               {"sha": "d" * 40, "author": {"login": "owner"}, "commit": {"message": "hotfix on main"}}]
+    files = {"a" * 40: ["docs/data/run_status.json"], "b" * 40: ["docs/data/x.json", "run_pipeline.py"]}
+    pulls = {"c" * 40: [{"merged_at": "2026-12-01T00:00:00Z"}], "d" * 40: []}
+    rows = {i: (ok, detail) for i, ok, detail in OA.main_commit_provenance(commits, files, pulls)}
+    bot_row = rows[f"main 최근 {OA.PROVENANCE_DAYS}일: 봇 커밋은 docs/data만 변경"]
+    pr_row = rows[f"main 최근 {OA.PROVENANCE_DAYS}일: 봇 외 변경은 모두 PR 병합 경유"]
+    assert bot_row[0] is False and "bbbbbbb" in bot_row[1] and "run_pipeline.py" in bot_row[1]
+    assert pr_row[0] is False and "ddddddd owner: hotfix on main" in pr_row[1] and "ccccccc" not in pr_row[1]
+    clean = OA.main_commit_provenance(commits[:1] + commits[2:3], files, pulls)
+    assert all(ok for _, ok, _ in clean)
 
 
 def test_release_auth_reads_environment_protection():
@@ -895,14 +1120,27 @@ def test_workflow_defaults_and_schedule():
     assert daily and int(daily[0][1]) >= NEW.LOCK_FINAL_CHECK_UTC_HOUR and daily[0][4] == "*"
     steps = {s.get("name", ""): s for s in wf["jobs"]["run"]["steps"]}
     tg = [n for n in steps if n.startswith("Telegram")]
-    assert tg == ["Telegram alert (state changes only)", "Telegram alert on failure (pipeline or commit/push)"]
+    assert tg == ["Telegram alert (state changes, after a successful commit)",
+                  "Telegram alert on failure (pipeline or commit/push)"]
     assert "steps.status.outputs.notify == 'true'" in steps[tg[0]]["if"]
+    assert "steps.commit.outcome == 'success'" in steps[tg[0]]["if"]                 # never announce unsaved
+    assert "send_alert.py state" in steps[tg[0]]["run"] and "send_alert.py failure" in steps[tg[1]]["run"]
     assert "steps.commit.outcome == 'failure'" in steps[tg[1]]["if"]
+    rec = steps["Record alert delivery failure"]
+    assert "steps.tg.outcome == 'failure'" in rec["if"] and rec["run"].rstrip().endswith("exit 1")
+    names = [s.get("name") or s.get("uses") for s in wf["jobs"]["run"]["steps"]]
+    order = [names.index(n) for n in ("Record run status (readable without Actions UI; keeps the last 60 runs)",
+                                      "Commit if changed", tg[0], tg[1], "Record alert delivery failure",
+                                      "actions/upload-artifact@v4")]
+    assert order == sorted(order) and names[-1] == "actions/upload-artifact@v4"
+    art = wf["jobs"]["run"]["steps"][-1]
+    assert art["if"] == "always()" and art["with"]["retention-days"] == 90
+    assert {"docs/data/", "run_result.json", "run.log"} <= set(art["with"]["path"].split())
     assert "record_run_status.py" in steps["Record run status (readable without Actions UI; keeps the last 60 runs)"]["run"]
     # job-level concurrency: runs are serialized (halt barrier) and a pending approval blocks nothing
     assert "concurrency" not in wf and wf["jobs"]["run"]["concurrency"] == {"group": "update-portfolio",
                                                                           "cancel-in-progress": False}
-    assert wf["permissions"] == {"contents": "write", "actions": "read"}
+    assert wf["permissions"] == {} and wf["jobs"]["run"]["permissions"] == {"contents": "write", "actions": "read"}
     gate = wf["jobs"]["release-gate"]
     assert gate["environment"] == NEW.RELEASE_ENVIRONMENT and gate["permissions"] == {}
     assert "release_month != ''" in gate["if"] and wf["jobs"]["run"]["needs"] == "release-gate"
