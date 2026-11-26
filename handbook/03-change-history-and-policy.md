@@ -1,6 +1,6 @@
 # ③ PDS-Lite 변경 이력 및 운영 정책서
 
-- 기준: main `4c747f3`(코드 = `00521d2`), 2026-11-26
+- 기준: main `e6b1822`(PR #4 병합, 2026-11-27). 운영 데이터(`docs/data`)는 `4c747f3`과 같다.
 - 근거 표기와 용어는 [handbook/README.md](README.md)를 따른다.
 - 설계 근거 문서(프로젝트 문서, 저장소 밖): `reference_only_변경검토서.md`(PR #1·#2 검토·병합 기록), `PDS_역추적_결과.md`, `Adaptive_원작자_역추적_보고서.md`, `Adaptive_운용적용_권고안.md`. 이 문서와 그 문서들이 다르면 **현재 main의 구현을 기준으로 이 문서가 맞다.** 차이는 7장에 적었다.
 
@@ -24,11 +24,13 @@
 | 10:05 | `a847bfa` | 봇 | 병합 직후 자동 실행. 신규 잠금 0 |
 | 10:50 ~ 11:15 | `9edca03`, `77f27fb`, `55660cd` | Claude(브랜치 `fix-flag-scope`) | PR #2 작업 |
 | 11:48 (20:48) | `00521d2` | 소유자 병합 | **PR #2 병합** |
-| 11:50 | `4c747f3` | 봇 | 병합 직후 자동 실행. 신규 잠금 0 (이 문서의 기준 커밋) |
+| 11:50 | `4c747f3` | 봇 | 병합 직후 자동 실행. 신규 잠금 0 (이 문서의 운영 데이터 기준) |
+| 13:05 (22:05) | `007d22e` | Claude(브랜치 `fix-lock-test-generalize`) | PR #4 작업 |
+| 23:04 (11-27 08:04) | `e6b1822` | 소유자 승인 병합 | **PR #4 병합**(테스트만. update-portfolio 자동 실행 없음, Pages 재배포만) |
 
-- 잠금 파일 `official_history.json`은 `88decb7` 이후 바이트 단위로 바뀌지 않았다(blob `241dd18`, `88decb7` = `a847bfa` = `4c747f3`).
+- 잠금 파일 `official_history.json`은 `88decb7` 이후 바이트 단위로 바뀌지 않았다(blob `241dd18`, `88decb7` = `a847bfa` = `4c747f3` = `e6b1822`).
 - 연구 브랜치 `adaptive-research`(원작자 Adaptive 역추적·시뮬레이션 코드 `research/adaptive/`)는 원격 저장소에 없다. 세션 권한 문제로 git bundle 파일로만 전달됐다 [데이터: 원격 브랜치 목록에 없음].
-- 원격에 남은 임시 브랜치: `probe-token-permissions`(권한 확인용), `reference-only-failsafe`(PR #1, 병합됨), `fix-flag-scope`(PR #2, 병합됨). 삭제 대상이다.
+- 원격에 남은 임시 브랜치: `probe-token-permissions`(권한 확인용), `reference-only-failsafe`(PR #1, 병합됨), `fix-flag-scope`(PR #2, 병합됨), `fix-lock-test-generalize`(PR #4, 병합됨). 삭제 대상이다. 문서 PR 브랜치(`docs-handbook`, `docs-lock-backup-restore`)는 병합 뒤 삭제한다.
 
 ---
 
@@ -55,6 +57,7 @@
 | 마지막③ | 결과 기록을 4곳(`run_status.json`, 작업 요약, 아티팩트 90일, Telegram)에 남기고, **잠금 알림은 커밋 성공 뒤에만**, 전달 확인·재전송 | 기존 `curl -s`는 실패를 숨겼고, 커밋 실패에도 "확정" 알림이 나갈 수 있었다 | – | `send_alert.py`, `update.yml` |
 | PR #2-① | Preview의 입력 메모(F2R 추정 등)는 **Preview 탭에서만 정보로** 표시 | Official 카드에 "F2R_PREVIEW" 경고가 떠 공식 목표에 문제가 있는 것처럼 보였다(iPhone 확인) | 메모 삭제 | `flags_scoped`, `flagView` |
 | PR #2-② | 회귀 비교 기준을 **PR마다 그 PR의 대상 커밋·분기점으로 고정**, v1.0 비교 7개는 옵션으로 보존 | 과거 버전(v1.0)과의 비교가 이후 모든 PR에 강제되면 정상적인 기능 변경도 막힌다 | v1.0 고정 비교 유지 | `tests.yml` `baseline`, `v10_migration` 표시 |
+| PR #4 | 커밋된 잠금 테스트는 **특정 잠금 월·개월 수를 고정하지 않고** 테스트 시점의 커밋된 잠금을 기준으로 검증 | 2026-10 고정 전제로는 첫 실시간 잠금(2026-11) 뒤 모든 CI가 실패한다 | 테스트 기대값을 달마다 수정 | `_assert_lock_extends` (tests) |
 | Node | Actions 버전 갱신(Node 24)은 **별도 PR** | 경고뿐이고 기능 문제가 아니다. 주 버전 변경이 봇 push 동작에 영향을 줄 수 있어 원인 분리 필요 | PR #1에 포함 | 미착수 |
 
 ---
@@ -92,6 +95,18 @@
 | README | "테스트·회귀 검증 구조" 절 |
 
 병합 확인: 자동 실행 성공, 잠금 바이트 동일, 공식·Preview·이력 수치 동일(`flags_scoped`만 추가), 공개 JSON에서 Official 메모 없음·Preview `F2R_PREVIEW`.
+
+### 3.3 PR #4 — 커밋된 잠금 테스트 일반화
+
+- 병합 `e6b1822`(2026-11-26 23:04 UTC, 소유자 승인, head `007d22e`). 1개 파일(`tests/test_reference_only.py`) +82/−24. 테스트만 바뀌어 update-portfolio는 실행되지 않았다.
+
+| 테스트 | 변경 |
+|---|---|
+| `test_real_committed_lock_is_preserved` | "마지막 잠금 = 2026-10" 전제 제거. 커밋된 잠금의 다음 달을 잠그며 정확히 1개월 추가, 기존 항목 동일, 기존 부분 바이트 동일, 기존 분류 불변, 새 달 LIVE를 확인 |
+| `test_lock_preserved_when_later_months_are_already_locked` (2가지) | 2026-11(·2026-12)이 이미 잠긴 합성 상황에서 다음 달 추가, 신규 없음(바이트 동일) |
+| `test_committed_lock_bytes_unchanged_when_nothing_new` | 같은 helper 사용(동작 동일) |
+
+병합 확인: 오프라인 79 passed·10 skipped, 실데이터 2 passed·1 skipped(116/116, 잠금 바이트 동일, 신규 잠금 0), 2026-11·12 잠금 복사본에서도 79 passed, 잠금 파일 형식을 바꾸면 잠금 테스트 4개가 실패(검사 작동). main `docs/data` 불변.
 
 ---
 
@@ -201,7 +216,7 @@
 | C2 | `tests/_harness.py` 설명 | `load_base()`: 기본 main | 기본은 v1.0 고정 커밋 `88decb7`(`V10_BASELINE`) | 표현만 |
 | C3 | `tests/test_equivalence.py` | 원작자 Python과 슬리브 비교 | 원작자 FAA를 canonical 방식으로 부르는데 엔진 기본은 legacy → `ADAA_REPO`를 주면 FAA 비교가 실패할 수 있음. 환경변수가 없으면 메시지만 출력하고 통과로 끝남 | 옵션 테스트 신뢰도 [미확인: 실행 안 함] |
 | V1 | 검토서 §3·§3-E | 운영자 중지 알림 "월 1회" | **중지가 시작될 때 1회**(직전 성공 실행이 중지가 아닐 때) | 알림 횟수 |
-| V2 | 검토서 §5-1 | 오프라인 78 passed, 2 skipped | PR #1 시점 수치. 현재 main: 77 passed, 10 skipped(v1.0 옵션 7·실데이터 2·롤백 대상 1 건너뜀) | 수치 갱신 |
+| V2 | 검토서 §5-1 | 오프라인 78 passed, 2 skipped | PR #1 시점 수치. 현재 main(`e6b1822`): 79 passed, 10 skipped(v1.0 옵션 7·실데이터 2·롤백 대상 1 건너뜀) | 수치 갱신 |
 | V3 | 검토서 §6 | 예약 실행 월 약 18회 | 같은 시각 cron이 겹치는 날 중복 실행 여부 [미확인] | 거의 없음 |
 | V4 | 권고안 R1~R5 | `core_only`+경보+입력 검증, `reference_deferred`, 꼬리위험 경보, 회전율 60% 보류 | 반영: `reference_only` 기본, `core_only` 모드, 가격 무결성 검사, 원작자 행 검사. **미반영**: `reference_deferred`(대신 잠금 자체를 공식 자료까지 대기), 꼬리위험 경보(`tail_alert`), 회전율 60% 보류, 원작자 공개물 일일 스냅샷 수집기, IRP 별도 `core_only` | 권고안을 현재 기능으로 오해 |
 | V5 | `PDS_역추적_결과.md` "운영 상태" | Preview 2026-11은 원작자 공개 Preview 기준, `reference_then_proxy` 운영 | PR #1 이후 Preview는 항상 RB = 1(`CORE_DEFAULT_PREVIEW`), 기본 `reference_only` | 문서 시점 차이 |
@@ -210,14 +225,14 @@
 
 ## 8. 미해결 과제
 
-| 우선 | 과제 | 담당 | 상태(2026-11-26) |
+| 우선 | 과제 | 담당 | 상태(2026-11-27) |
 |---|---|---|---|
-| 1 | **테스트 시한성 결함**: `test_real_committed_lock_is_preserved`가 "마지막 잠금 = 2026-10"을 전제(새 달이 반드시 1개 추가된다고 기대). 2026-11이 실제로 잠기면(12월 초 예상) 이후 모든 브랜치·PR CI에서 이 테스트가 실패한다. 임시 복사본에 2026-11 잠금을 추가해 재현함(1 failed, 76 passed). 운영 실행에는 영향 없음. 수정은 테스트 변경이라 별도 PR·승인 필요 | 승인 후 | 확인됨, 미수정 |
+| 1 | 테스트 시한성 결함: `test_real_committed_lock_is_preserved`의 "마지막 잠금 = 2026-10" 전제(2026-11 실제 잠금 뒤 모든 CI 실패 예정) | – | **해결 완료**: PR #4(`e6b1822`, 2026-11-27 병합). 커밋된 잠금 기준으로 일반화, 2026-11·12 잠금 복사본에서 79 passed(3.3절) |
 | 1 | Telegram 시크릿 등록·시험(② 6장). **12/1 07:40 KST 전** | 소유자 | 미설정 |
 | 2 | Actions 실패 이메일 알림 | 소유자 | 미확인 |
 | 3 | Ruleset `main-protect`, 환경 `pds-manual-release` | 소유자 | 미설정 |
 | 4 | Actions 기본 권한 읽기 전용 + 설정 뒤 봇 커밋 확인 | 소유자 | 미확인 |
-| 5 | 임시 브랜치 3개 삭제 | 소유자 | 남아 있음 |
+| 5 | 임시 브랜치 4개 삭제(1장) | 소유자 | 남아 있음 |
 | 6 | `ops-audit` 수동 실행, 전체 ✅ 확인 | 소유자 | – |
 | 7 | 첫 실제 운영 검증 12/1~12/11(② 3.2절 체크리스트) | 소유자 | 예정 |
 | 8 | 7장 차이 R1~R8, D1~D2, C1~C3 정정 여부 결정(정정하면 별도 PR) | 소유자 결정 | 미결 |

@@ -1,6 +1,6 @@
 # ② PDS-Lite 사용자·운영자 매뉴얼
 
-- 기준: main `4c747f3`(코드 = `00521d2`), 2026-11-26
+- 기준: main `e6b1822`(PR #4 병합, 2026-11-27). 운영 데이터(`docs/data`)는 `4c747f3`과 같다.
 - 근거 표기와 용어는 [handbook/README.md](README.md), 동작 원리는 [① 설계서](01-system-design.md)를 따른다.
 - 이 매뉴얼의 설정 화면 경로는 GitHub 웹 기준이다. GitHub 화면 문구는 바뀔 수 있다.
 
@@ -388,7 +388,7 @@ Settings → Environments → New environment `pds-manual-release`
 | 3 | Ruleset `main-protect`: Active, 기본 브랜치, Restrict deletions + Block force pushes, 우회 없음. PR 필수·상태 검사 필수는 켜지 않음(봇 커밋이 막힘) | Settings → Rules → Rulesets | 미설정 |
 | 4 | 환경 `pds-manual-release`(8.2절) | Settings → Environments | 미설정 |
 | 5 | Actions 기본 권한 "Read repository contents", PR 생성·승인 허용 끔, 허용 액션 제한, 포크 PR 승인 필요 | Settings → Actions → General | 미확인 |
-| 6 | 임시 브랜치 삭제: `probe-token-permissions`, `reference-only-failsafe`, `fix-flag-scope` | Branches | 남아 있음 |
+| 6 | 임시 브랜치 삭제: `probe-token-permissions`, `reference-only-failsafe`, `fix-flag-scope`, `fix-lock-test-generalize` | Branches | 남아 있음 |
 | 7 | `ops-audit` 수동 실행 → 모두 ✅ 확인 | Actions → ops-audit | – |
 | 8 | 계정 2단계 인증, classic PAT 사용 안 함 | 계정 설정 | 미확인 |
 

@@ -1,6 +1,6 @@
 # ① PDS-Lite 시스템 분석·설계서
 
-- 기준: main `4c747f3`(코드는 PR #2 병합 커밋 `00521d2`와 동일), 2026-11-26
+- 기준: main `e6b1822`(PR #4 병합, 2026-11-27). 운영 데이터(`docs/data`)는 `4c747f3`과 같다.
 - 근거 표기([코드]·[데이터]·[원작자]·[추정]·[미확인])와 공통 용어는 [handbook/README.md](README.md)를 따른다.
 - 이 문서는 "지금 main에 있는 것"을 설명한다. 문서·화면과 구현이 다른 곳은 [③ 7장](03-change-history-and-policy.md#7-문서화면과-실제-구현의-차이)에 모았다.
 
@@ -81,7 +81,7 @@ flowchart LR
 | `.github/workflows/tests.yml` | 180 | 브랜치·PR CI(읽기 전용) |
 | `.github/workflows/rollback-check.yml` | 33 | 롤백 사전 점검 수동 실행 |
 | `.github/workflows/ops-audit.yml` | 28 | 권한 점검(매월 11일·수동) |
-| `tests/` | 1,951 | `test_reference_only.py`(58개 함수), `test_equivalence.py`(4개), `_harness.py`, `conftest.py` |
+| `tests/` | 2,009 | `test_reference_only.py`(59개 함수), `test_equivalence.py`(4개), `_harness.py`, `conftest.py` |
 | `requirements.txt` | 4 | pandas≥2.2, numpy≥1.26, openpyxl≥3.1, yfinance≥0.2.50 (상한 없음) |
 | `handbook/` | – | 이 문서들 |
 
@@ -511,7 +511,7 @@ flowchart TD
 | 영역 | 테스트(함수) |
 |---|---|
 | Adaptive 규칙 | `test_rb_is_one_before_publication`, `test_preview_is_core_and_author_preview_is_reference_only`, `test_core_only_never_applies_author`, `test_invalid_author_row_is_rejected`, `test_late_publication_goes_to_ledger_not_lock` |
-| 잠금·원장 불변 | `test_ledger_is_append_only`, `test_real_committed_lock_is_preserved`, `test_lock_guard_rejects_any_rewrite`, `test_committed_lock_bytes_unchanged_when_nothing_new` |
+| 잠금·원장 불변 | `test_ledger_is_append_only`, `test_real_committed_lock_is_preserved`, `test_lock_guard_rejects_any_rewrite`, `test_committed_lock_bytes_unchanged_when_nothing_new`, `test_lock_preserved_when_later_months_are_already_locked`(2가지: 2026-11, 2026-11·12가 이미 잠긴 합성 상황) |
 | Fail-safe | `test_price_integrity_checks`, `test_failures_write_nothing`, `test_reference_workbook_unavailable_defaults_to_core`, `test_diagnostic_and_mirror_modes_never_touch_operational_files` |
 | 잠금 조건·마감 | `test_month_lock_waits_for_f2r_publication`, `test_pending_month_takes_the_preview_slot_early_next_month`, `test_f2r_api_failure_does_not_lock_with_proxy`, `test_core_mismatch_with_author_holds_the_lock`, `test_month_lock_requires_the_authors_core`, `test_lock_deadlines_are_day_10_of_the_holding_month`, `test_daily_check_until_day_10_then_block`, `test_no_automatic_lock_after_day_10_even_with_complete_data` |
 | 수동 해제·승인 | `test_manual_release_needs_complete_official_data`, `test_manual_release_requires_healthy_inputs`(4가지), `test_release_authorization_rules`(10가지), `test_self_confirmation_vs_independent_approval`, `test_release_auth_reads_environment_protection` |
@@ -529,17 +529,20 @@ flowchart TD
 ### 8.3 결과 [데이터]
 | 실행 | 결과 |
 |---|---|
-| 로컬, main `4c747f3`, 기본(오프라인) | **77 passed, 10 skipped**(v1.0 옵션 7, 실데이터 2, 롤백 대상 1(변경 없음)), 2026-11-26 |
-| 로컬, `PDS_V10_MIGRATION=1 -m v10_migration` | 6 passed, 1 skipped(실데이터) |
+| 로컬, main `e6b1822`(PR #4 병합 후), 기본(오프라인) | **79 passed, 10 skipped**(v1.0 옵션 7, 실데이터 2, 롤백 대상 1(변경 없음)), 2026-11-27 |
+| 로컬, `PDS_V10_MIGRATION=1 -m v10_migration` | 6 passed, 1 skipped(실데이터), 2026-11-27 |
+| PR #4 CI(head `007d22e`) | offline 79 passed·10 skipped, live 2 passed·1 skipped(원작자 Core 116/116, 잠금 바이트 동일, 신규 잠금 0) |
+| 임시 복사본: 2026-11(117개월)·2026-12(118개월)까지 잠긴 상태 | 각각 79 passed, 10 skipped(PR #4 코드) |
 | PR #2 CI(head `55660cd`) | offline·live 통과(PR #2 병합 보고) |
 | 운영 실행 #45813957432(2026-11-26 11:50 UTC) | 원작자 Core 116/116, 최대 오차 3.9e-16, 신규 잠금 0, 잠금 파일 blob `241dd18` 불변 |
 
 이 문서 작성 세션에서는 네트워크 제한으로 실데이터 테스트를 직접 돌리지 못했다. 실데이터 결과는 위 CI·운영 실행 기록을 인용했다.
 
+**2026-11 잠금 뒤 테스트 결함(해결)**: PR #4 이전의 `test_real_committed_lock_is_preserved`는 "마지막 잠금 = 2026-10"을 전제로 합성 2026-11을 정확히 1개 더 잠그길 기대해, 실제로 2026-11이 잠기면 모든 CI에서 실패할 예정이었다(임시 복사본 재현: 1 failed). PR #4(`e6b1822`)에서 커밋된 잠금의 다음 달을 대상으로 일반화하고(기존 항목·기존 바이트 동일, 기존 분류 불변 검사 유지), 2026-11·12가 이미 잠긴 합성 테스트를 추가했다(③ 3.3절).
+
 ### 8.4 테스트가 다루지 않는 것
 - 실제 GitHub 환경 승인 화면, Telegram 실서버 전송(로컬 HTTP 서버로 대체), Pages 렌더링(화면 함수 단위만), 예약 실행 시각.
 - 백테스트 성과. 이 저장소는 목표 비중만 재현하고 성과를 계산하지 않는다.
-- **시한성 결함**: `test_real_committed_lock_is_preserved`는 커밋된 잠금 위에 합성 2026-11을 1개 더 잠그는 것을 기대한다. 실제 운영에서 2026-11이 잠기면 새로 잠글 달이 없어 이 테스트가 실패한다. 임시 복사본에 2026-11 잠금을 추가해 오프라인 전체를 돌린 결과 이 테스트만 실패했다(1 failed, 76 passed, 10 skipped) [데이터]. 운영 실행에는 영향이 없고, 수정은 별도 PR 과제다(③ 8장).
 - `test_equivalence.py`의 원작자 슬리브 비교는 원작자 FAA를 canonical 방식(`self_exclude=True, exact_n=True`)으로 부르는데, 엔진 기본은 legacy다. 켜면 FAA 비교가 실패할 수 있다 [코드 판독, 실행 안 함 → 미확인].
 
 ---
@@ -585,7 +588,7 @@ flowchart TD
 | IRP 대체 ETF의 규정상 위험·안전 분류, 매수 가능 여부 | 증권사·퇴직연금 규정 확인 |
 | 원작자 2026-11 이후 공개 시각 | 12/1~12/11 운영 관찰 |
 | `test_equivalence.py` 원작자 비교 | 신뢰하는 원작자 저장소 사본으로 실행 |
-| 2026-11 잠금 뒤 CI의 `test_real_committed_lock_is_preserved` 실패(재현은 임시 복사본) | 12월 잠금 뒤 PR CI에서 확인 |
+| 실제 2026-11 잠금 뒤의 CI 통과(임시 복사본에서는 PR #4로 통과 확인) | 12월 잠금 뒤 첫 PR CI |
 | 실데이터 테스트(이 세션) | CI live 작업 |
 
 ---
