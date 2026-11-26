@@ -4,7 +4,10 @@ on:
   schedule:
     # Times are UTC. 22:40 UTC = 07:40 KST next morning, after the US close (20:00/21:00 UTC).
     - cron: "40 22 28-31 * *"   # month-end window: the run after the last session locks OFFICIAL
-    - cron: "40 22 1-3 * *"     # first days of the month: safety re-run (holidays, Yahoo delays)
+    - cron: "40 22 1-10 * *"    # days 1-10: daily check until the month locks (official F2R Top-4 and the
+                                #   author's Core, published 2-8 days after month-end).  The day-10 run
+                                #   is the final check: still incomplete -> BLOCKED (no lock, keep
+                                #   holdings, alert); never locked automatically afterwards.
     - cron: "40 22 * * 5"       # weekly Friday monitoring (PREVIEW refresh)
   push:                         # recompute when the engine or workflow changes (bot commits don't retrigger)
     branches: [main]
@@ -15,30 +18,61 @@ on:
         description: "engine | reference"
         default: "engine"
       adaptive_mode:
-        description: "reference_then_proxy (운용) | proxy (대체 규칙 검증용)"
+        description: "reference_only (운용) | core_only (운용, 원작자 값 미반영) | reference_then_proxy·proxy (진단 전용, 커밋 안 함)"
         type: choice
-        options: [reference_then_proxy, proxy, reference_only]
-        default: reference_then_proxy
+        options: [reference_only, core_only, reference_then_proxy, proxy]
+        default: reference_only
+      release_month:
+        description: "수동 해제 (YYYY-MM): 10일 마감으로 BLOCKED 된 신호월. 공식 F2R·원작자 Core 일치·입력 정상일 때만 잠김. 평소에는 비워 두세요."
+        type: string
+        default: ""
+      release_reason:
+        description: "수동 해제 승인 사유 (release_month와 함께 필수, manual_releases.json에 실행자·실행 URL과 함께 기록)"
+        type: string
+        default: ""
       commit:
-        description: "결과를 저장소에 커밋 (proxy 검증 실행은 false 권장)"
+        description: "결과를 저장소에 커밋 (운용 모드 + engine 실행 + 성공일 때만 실제로 커밋됨)"
         type: boolean
         default: true
 
-permissions:
-  contents: write
-
-concurrency:
-  group: update-portfolio
-  cancel-in-progress: false
+permissions: {}       # nothing by default; each job asks for what it needs
 
 jobs:
+  # Manual release only: waits until a required reviewer approves this run in the protected
+  # environment "pds-manual-release" (README: GitHub 권한·설정).  Rejected -> nothing runs.
+  release-gate:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_month != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: pds-manual-release
+    permissions: {}
+    steps:
+      - name: Approved
+        env:
+          MONTH: ${{ github.event.inputs.release_month }}
+        run: echo "manual release of ${MONTH} approved for this run"
+
   run:
+    needs: release-gate
+    if: ${{ !cancelled() && (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped') }}
+    # Job-level so a release waiting for approval never blocks the scheduled checks.  Runs are
+    # serialized: a run started after PDS_HALT=1 begins only when every earlier run has finished.
+    concurrency:
+      group: update-portfolio
+      cancel-in-progress: false
+    permissions:
+      contents: write  # commit docs/data only (the commit step refuses any other path)
+      actions: read    # release approvals and other runs (halt report)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
+      - name: Mark start
+        id: start
+        run: echo "t=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -49,29 +83,36 @@ jobs:
       - name: Install
         run: pip install -r requirements.txt
 
+      - name: Release authorization (who requested, who approved; only with release_month)
+        if: github.event.inputs.release_month != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_RELEASE_MONTH: ${{ github.event.inputs.release_month }}
+        run: python tools/release_auth.py
+
       - name: Run pipeline (fails closed; JSON is only written if every check passes)
         id: run
         env:
-          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_then_proxy' }}
+          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_only' }}
+          OFFICIAL_REQUIRES_F2R_PUBLISHED: "1"   # keep "1": a live month locks only with official F2R
+          OFFICIAL_REQUIRES_AUTHOR_CORE: "1"     # keep "1": ... and only when the author's Core matches ours
+          MANUAL_RELEASE_MONTH: ${{ github.event.inputs.release_month || '' }}
+          MANUAL_RELEASE_REASON: ${{ github.event.inputs.release_reason || '' }}
+          PDS_HALT: ${{ vars.PDS_HALT || '' }}     # repository variable: operator halt (read-only run)
+          RUN_MODE: ${{ github.event.inputs.mode || 'engine' }}
         run: |
           set -o pipefail
-          python run_pipeline.py --mode "${{ github.event.inputs.mode || 'engine' }}" 2>&1 | tee run.log
+          python run_pipeline.py --mode "$RUN_MODE" 2>&1 | tee run.log
 
-      - name: Record run status (readable without Actions UI)
+      - name: Record run status (readable without Actions UI; keeps the last 60 runs)
+        id: status
         if: always()
         env:
           RUN_OUTCOME: ${{ steps.run.outcome }}
+          RUN_STARTED_UTC: ${{ steps.start.outputs.t }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          python - <<'PY'
-          import json, os, datetime
-          log = open("run.log", encoding="utf-8", errors="replace").read().splitlines() if os.path.exists("run.log") else []
-          json.dump({"ok": os.environ["RUN_OUTCOME"] == "success",
-                     "finished_utc": datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z",
-                     "event": os.environ.get("GITHUB_EVENT_NAME"), "run_url": os.environ["RUN_URL"],
-                     "log_tail": [l for l in log if not l.startswith("[lock]")][-40:]},
-                    open("docs/data/run_status.json", "w"), ensure_ascii=False, indent=1)
-          PY
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/record_run_status.py
 
       - name: Validation summary
         if: always()
@@ -83,6 +124,13 @@ jobs:
           p = "docs/data/portfolio_latest.json"
           if os.environ["RUN_OUTCOME"] != "success" or not os.path.exists(p):
               print("## 실행 실패: 새 JSON 미생성 (fail-closed). Run pipeline 단계 로그를 확인하세요."); raise SystemExit
+          r = json.load(open("run_result.json")) if os.path.exists("run_result.json") else {}
+          if r.get("operator_halt"):
+              hr = r.get("halt_report") or {}
+              print("## ⛔ 운영자 중지(PDS_HALT): 읽기 전용 실행 — 신규 잠금·목표 비중·운영 데이터 변경 없음")
+              print(f"- 직전 실행: {hr.get('previous_run')}")
+              print(f"- 최근 72시간 잠금: {hr.get('locks_last_72h') or '없음'}")
+              raise SystemExit
           d = json.load(open(p)); v = d.get("validation", {})
           print(f"## PDS-Lite {d['mode']} · ADAPTIVE_MODE={d['config']['adaptive_mode']}")
           if v.get("months_checked"):
@@ -90,6 +138,9 @@ jobs:
               for m in v.get("mismatches", []):
                   print(f"  - 불일치 {m['signal_month']}: {m['max_abs_diff']:.4f}")
           o = d["official"]
+          a = d.get("action") or {}
+          if a:
+              print(f"- **{a['code']}** {a['month']}: {a['message']}")
           print(f"- Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']:.2%}")
           lock = "docs/data/official_history.json"
           if os.path.exists(lock):
@@ -99,20 +150,30 @@ jobs:
           print(f"- flags: {d['flags']}")
           PY
 
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pds-lite-output
-          path: docs/data/
-          if-no-files-found: ignore
-
       - name: Commit if changed
         id: commit
         if: always() && github.event.inputs.commit != 'false'
+        env:
+          RUN_OUTCOME: ${{ steps.run.outcome }}
+          RUN_MODE: ${{ github.event.inputs.mode || 'engine' }}
+          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_only' }}
+          HALT: ${{ steps.status.outputs.halt }}     # the pipeline's own view of PDS_HALT in this run
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data
+          if [ "$RUN_OUTCOME" = "success" ] && [ "$RUN_MODE" = "engine" ] && [ "$HALT" != "true" ] && \
+             { [ "$ADAPTIVE_MODE" = "reference_only" ] || [ "$ADAPTIVE_MODE" = "core_only" ]; }; then
+            git add docs/data
+          else
+            # fail-safe: a failed, diagnostic or halted run may only record its status; anything
+            # else it touched under docs/data is discarded so the last good official stays in force
+            git ls-files -z docs/data | { grep -zv 'run_status.json$' || true; } | xargs -0 -r git checkout --
+            git add docs/data/run_status.json
+          fi
+          # the bot writes data only: anything staged outside docs/data stops the commit
+          if git diff --cached --name-only | grep -v '^docs/data/'; then
+            echo "::error::refusing to commit files outside docs/data"; exit 1
+          fi
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -122,23 +183,48 @@ jobs:
           fi
 
       # Optional phone alert. Add repo secrets TELEGRAM_TOKEN and TELEGRAM_CHAT_ID to enable.
-      - name: Telegram alert
-        if: steps.run.outcome == 'success' && steps.commit.outputs.changed == 'true' && env.TG_TOKEN != ''
+      # State changes only (waiting started, Core mismatch, locked, day-10 block, manual release,
+      # operator halt), and only after the commit succeeded, so a lock is never announced unless it
+      # was saved.  Delivery is checked; an undelivered alert is recorded and resent next run.
+      - name: Telegram alert (state changes, after a successful commit)
+        id: tg
+        if: steps.run.outcome == 'success' && steps.commit.outcome == 'success' && steps.status.outputs.notify == 'true' && env.TG_TOKEN != ''
         env:
           PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: python tools/send_alert.py state --pages "$PAGES_URL"
+
+      - name: Telegram alert on failure (pipeline or commit/push)
+        id: tgfail
+        if: always() && (steps.run.outcome == 'failure' || steps.commit.outcome == 'failure') && env.TG_TOKEN != ''
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WHAT: ${{ steps.run.outcome == 'failure' && 'pipeline' || 'commit' }}
+        run: python tools/send_alert.py failure --what "$WHAT" --run-url "$RUN_URL"
+
+      # An alert that did not arrive is recorded in run_status.json (committed when possible) and
+      # the run is marked failed, so GitHub's own failure notification and the Actions list show it.
+      - name: Record alert delivery failure
+        if: always() && (steps.tg.outcome == 'failure' || steps.tgfail.outcome == 'failure')
+        env:
+          COMMIT_OUTCOME: ${{ steps.commit.outcome }}
         run: |
-          MSG=$(python - <<'PY'
-          import json
-          p = json.load(open("docs/data/portfolio_latest.json"))
-          o = p["official"]; v = p.get("preview")
-          top = ", ".join(f"{r['ticker']} {r['adaptive']*100:.1f}%" for r in o["us"][:5])
-          s = f"[PDS-Lite] Official {o['signal_month']}→{o['holding_month']}: {o['state']} RB {o['risk_budget']*100:.0f}%\n{top}"
-          if v: s += f"\nPreview {v['signal_month']}: {v['state']} RB {v['risk_budget']*100:.0f}%"
-          if p["flags"]: s += "\n⚠ " + "; ".join(p["flags"])
-          print(s)
-          PY
-          )
-          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TG_CHAT}" \
-            --data-urlencode "text=${MSG}
-          ${PAGES_URL}" > /dev/null
+          echo "::error::Telegram alert not delivered (see docs/data/run_status.json delivery)"
+          if [ "$COMMIT_OUTCOME" = "success" ]; then
+            git add docs/data/run_status.json
+            git commit -m "status: alert delivery failed $(date -u +%Y-%m-%dT%H:%MZ)" && git push || \
+              echo "::error::could not commit the delivery record; it is in the run artifact"
+          fi
+          exit 1
+
+      # Everything this run knew, kept 90 days even if the commit or the alert failed.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pds-lite-run-${{ github.run_id }}
+          path: |
+            docs/data/
+            run_result.json
+            run.log
+            release_auth.json
+          if-no-files-found: ignore
+          retention-days: 90

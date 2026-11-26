@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 docs/data/*.tmp
+docs/data/diagnostic/
+run_result.json
+release_auth.json
+run.log
