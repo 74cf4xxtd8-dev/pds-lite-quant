@@ -175,13 +175,14 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const COL = () => ({"Equity":css("--series-1"),"Fixed Income":css("--series-2"),"Real Assets / Other":css("--series-3"),"Cash":css("--series-4")});
 const pct = (x,d=1) => x==null ? "–" : (100*x).toFixed(d)+"%";
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let D=null, view="official", basis="adaptive", range=36, acChart=null, rbChart=null;
+let D=null, S=null, view="official", basis="adaptive", range=36, acChart=null, rbChart=null;
 
 async function load(){
   try{
     const r = await fetch("data/portfolio_latest.json?ts="+Date.now(), {cache:"no-store"});
     if(!r.ok) throw new Error(r.status);
     D = await r.json();
+    try{ const st = await fetch("data/run_status.json?ts="+Date.now(), {cache:"no-store"}); if(st.ok) S = await st.json(); }catch(e){ S = null; }
     if(!D.preview){ document.querySelector('[data-view="preview"]').disabled = true; }
     renderAll();
   }catch(e){
@@ -197,8 +198,10 @@ function renderStatus(){
   const PV = {PENDING:"잠금 대기 (공식 데이터 미확보 · 실행 금지)", BLOCKED:"잠금 보류 (10일 마감 경과 · 실행 금지)"};
   document.getElementById("stLabel").textContent = view==="preview" ? (PV[b.status] || "월중 추정 (Preview · 실행 금지)") : "공식 목표 (Official)";
   const act = document.getElementById("action"), A = D.action;
-  act.classList.toggle("hidden", !A || A.code==="FOLLOW_OFFICIAL");
-  act.textContent = A && A.code!=="FOLLOW_OFFICIAL" ? (A.code==="HALTED" ? "" : "⏳ ") + A.message : "";
+  const halted = S && S.operator_halt;            // operator halt: run_status.json is the only file a halted run writes
+  act.classList.toggle("hidden", !halted && (!A || A.code==="FOLLOW_OFFICIAL"));
+  act.textContent = halted ? "⛔ 운영자 중지(PDS_HALT): 신규 잠금·자동 리밸런싱 없음. 현재 보유 자산을 그대로 유지하세요. (" + (S.finished_utc||"") + ")"
+    : (A && A.code!=="FOLLOW_OFFICIAL" ? (A.code==="HALTED" ? "" : "⏳ ") + A.message : "");
   document.getElementById("stMonths").textContent = `신호 ${b.signal_month} → 보유 ${b.holding_month}`;
   const def = b.state==="DEFENSIVE";
   const badge = document.getElementById("stBadge");

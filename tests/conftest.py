@@ -14,7 +14,7 @@ import _harness as H  # noqa: E402
 _PATCHED = ("fetch_prices", "fetch_unrate", "fetch_f2r_state", "fetch_reference_workbook",
             "OUT_DIR", "LATEST_JSON", "LOCK_JSON", "UNRATE_CACHE", "REF_LEDGER_JSON", "DIAG_DIR",
             "EVENTS_JSON", "RELEASES_JSON", "ADAPTIVE_MODE", "MANUAL_RELEASE_MONTH", "MANUAL_RELEASE_REASON",
-            "OPERATOR_HALT", "OFFICIAL_REQUIRES_AUTHOR_CORE",
+            "OPERATOR_HALT", "OFFICIAL_REQUIRES_AUTHOR_CORE", "STATUS_JSON", "RUN_RESULT_PATH", "RELEASE_AUTH_PATH",
             "OFFICIAL_REQUIRES_F2R_PUBLISHED", "assert_lock_append_only")
 ORIGINAL = {k: getattr(H.NEW, k) for k in _PATCHED}
 

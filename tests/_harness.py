@@ -71,6 +71,17 @@ def author_workbook(adaptive_rows: list[tuple], core_rows: dict | None = None) -
     return {"Core Portfolio": c, "Adaptive Portfolio": a}
 
 
+def release_auth(month: str, **over) -> dict:
+    """Authorization as tools/release_auth.py gathers it for an approved admin release on main."""
+    auth = {"release_month": month, "ref": "refs/heads/main", "actor": "owner", "actor_permission": "admin",
+            "environment": {"name": NEW.RELEASE_ENVIRONMENT, "required_reviewers": ["owner"],
+                            "can_admins_bypass": False, "branch_policy": "protected_or_custom"},
+            "approvals": [{"user": "owner", "state": "approved", "comment": "checked",
+                           "environments": [NEW.RELEASE_ENVIRONMENT], "at_utc": "2026-11-13T22:41:00Z"}]}
+    auth.update(over)
+    return auth
+
+
 def engine_core(daily, un, f2r: dict | None, sm: str) -> dict:
     """Core weights the engine computes for signal month sm (what the author publishes when the
     reconstruction is exact) - used to build an author workbook whose Core row matches."""
@@ -131,6 +142,10 @@ def point(mod, tmp: Path, lock_init: list | None = None):
         mod.EVENTS_JSON = out / "official_events.json"
     if hasattr(mod, "RELEASES_JSON"):
         mod.RELEASES_JSON = out / "manual_releases.json"
+    if hasattr(mod, "STATUS_JSON"):
+        mod.STATUS_JSON = out / "run_status.json"
+        mod.RUN_RESULT_PATH = tmp / "run_result.json"
+        mod.RELEASE_AUTH_PATH = tmp / "release_auth.json"
     if lock_init is not None:
         mod.LOCK_JSON.write_text(json.dumps(lock_init, ensure_ascii=False, indent=1), encoding="utf-8")
     return out

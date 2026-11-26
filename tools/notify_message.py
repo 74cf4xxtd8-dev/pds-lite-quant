@@ -42,7 +42,20 @@ def _line(e: dict, payload: dict) -> str:
     if kind == "MANUAL_RELEASE_REJECTED":
         return f"✋ {sm} 수동 해제 거부: {detail}"
     if kind == "OPERATOR_HALT":
-        return "⛔ 운영자 중지(PDS_HALT): 신규 잠금·자동 리밸런싱 없음. 현재 보유 자산을 그대로 유지하세요."
+        s = ("⛔ 운영자 중지(PDS_HALT) 확인: 신규 잠금·목표 비중 변경·운영 데이터 변경 없음. "
+             "현재 보유 자산을 그대로 유지하세요.")
+        hr = payload.get("halt_report") or {}
+        prev = hr.get("previous_run") or {}
+        if prev:
+            s += (f"\n직전 실행: {prev.get('at_utc')} {prev.get('action') or '실패'}"
+                  f", 신규 잠금 {prev.get('new_locks') if prev.get('new_locks') is not None else '-'}")
+        locks = hr.get("locks_last_72h") or []
+        s += "\n최근 72시간 잠금: " + (", ".join(f"{x['signal_month']}({x['locked_at_utc']})" for x in locks)
+                                     if locks else "없음")
+        other = hr.get("other_active_runs")
+        s += ("\n대기·실행 중인 다른 update-portfolio 실행: 확인 불가" if other is None else
+              f"\n대기·실행 중인 다른 update-portfolio 실행: {len(other)}건")
+        return s
     return f"ℹ️ {sm} {kind}: {detail}"
 
 
@@ -61,6 +74,8 @@ def main(argv: list[str]) -> None:
         latest = Path("docs/data/portfolio_latest.json")
         full = json.loads(latest.read_text(encoding="utf-8")) if latest.exists() else {}
         full["notify"] = p.get("notify") or []
+        full["action"] = p.get("action") or full.get("action")      # this run's action
+        full["halt_report"] = p.get("halt_report")
         p = full
     print(message(p, argv[2] if len(argv) > 2 else ""))
 

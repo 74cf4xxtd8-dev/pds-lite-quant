@@ -38,6 +38,9 @@ jobs:
   live:
     needs: offline
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +71,12 @@ jobs:
       - name: Rollback dry run on real data (main's code vs the committed lock)
         if: always()
         run: python tools/rollback_check.py --ref origin/main --report test-report/rollback_check.md
+      - name: Operations permission audit (read-only)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PDS_HALT_SEEN: ${{ vars.PDS_HALT || '' }}
+        run: python tools/ops_audit.py --report test-report/ops_audit.md
       - name: Print the live report (also in the job summary)
         if: always()
         run: |
@@ -83,6 +92,9 @@ jobs:
               print(f"- months whose Adaptive target changes (old default -> reference_only): {len(ch)}")
               for _, x in ch.iterrows():
                   print(f"  - {x.signal_month}: {x.before_state} {x.before_rb:.4f} ({x.before_source}) -> {x.after_state} {x.after_rb:.4f} ({x.after_source}), one-way {x.adaptive_one_way_diff:.2%}")
+          oa = r / "ops_audit.md"
+          if oa.exists():
+              print(oa.read_text(encoding="utf-8"))
           rb = r / "rollback_check.md"
           if rb.exists():
               print(rb.read_text(encoding="utf-8"))

@@ -115,7 +115,15 @@ MANUAL_RELEASE_REASON = os.environ.get("MANUAL_RELEASE_REASON", "").strip()   # 
 RELEASE_MAX_PRICE_AGE_DAYS = 5   # a manual release needs prices no older than this (calendar days)
 # Operator halt (repository variable PDS_HALT=1): no new month is locked at all, the current holdings
 # stay, every run reports HALTED.  Step 1 of any rollback or incident; cleared by removing the variable.
-OPERATOR_HALT = os.environ.get("PDS_HALT", "").strip().lower() in ("1", "true", "yes", "on")
+# Any value other than empty/0/false/no/off counts as halted (a typo halts rather than runs).
+OPERATOR_HALT = os.environ.get("PDS_HALT", "").strip().lower() not in ("", "0", "false", "no", "off")
+# A manual release must also pass the authorization gathered by tools/release_auth.py in the workflow:
+# run on main, requested by a repository admin, approved in the protected environment below.
+RELEASE_ENVIRONMENT = "pds-manual-release"
+RELEASE_AUTH_PATH = Path(os.environ.get("RELEASE_AUTH_PATH", "release_auth.json"))
+# What this run did, for the workflow's status/alert steps (outside docs/data, never committed).
+RUN_RESULT_PATH = Path(os.environ.get("RUN_RESULT_PATH", "run_result.json"))
+STATUS_JSON = OUT_DIR / "run_status.json"         # written by the workflow; read here for the halt report
 EVENTS_JSON = OUT_DIR / "official_events.json"   # append-only audit: PENDING / BLOCKED / LOCKED / releases
 RELEASES_JSON = OUT_DIR / "manual_releases.json"  # append-only: every manual release request and its checks
 LIVE_LOCK_MAX_DAYS = 14          # a lock this many days after the cutoff counts as a live record
@@ -269,8 +277,9 @@ def fetch_unrate() -> tuple[pd.Series, str]:
             s = fn()
             if s.dropna().size < 24:
                 raise RuntimeError("too few observations")
-            OUT_DIR.mkdir(parents=True, exist_ok=True)
-            s.rename("UNRATE").to_frame().to_csv(UNRATE_CACHE, index_label="month")
+            if not OPERATOR_HALT:                     # a halted run changes nothing under docs/data
+                OUT_DIR.mkdir(parents=True, exist_ok=True)
+                s.rename("UNRATE").to_frame().to_csv(UNRATE_CACHE, index_label="month")
             return s, name
         except Exception as e:  # noqa: BLE001
             print(f"[warn] UNRATE via {name} failed: {e}")
@@ -1069,12 +1078,41 @@ def load_releases() -> list[dict]:
     return []
 
 
+def load_release_auth() -> dict | None:
+    try:
+        return json.loads(RELEASE_AUTH_PATH.read_text(encoding="utf-8")) if RELEASE_AUTH_PATH.exists() else None
+    except ValueError:
+        return None
+
+
+def release_auth_problems(auth: dict | None, month: str) -> list[str]:
+    """Who asked and who approved, as gathered from the GitHub API by tools/release_auth.py.
+    Missing or unreadable authorization rejects the release (fail closed)."""
+    if not auth:
+        return ["release authorization not available (run from the update-portfolio workflow on main)"]
+    probs = []
+    if auth.get("release_month") != month:
+        probs.append(f"authorization is for {auth.get('release_month')!r}, not {month}")
+    if auth.get("ref") != "refs/heads/main":
+        probs.append(f"must run from main, ran from {auth.get('ref')}")
+    if auth.get("actor_permission") != "admin":
+        probs.append(f"requester {auth.get('actor')} has {auth.get('actor_permission')!r} permission, admin required")
+    env = auth.get("environment") or {}
+    if not env.get("required_reviewers"):
+        probs.append(f"environment {RELEASE_ENVIRONMENT} has no required reviewers configured")
+    approved = [a for a in auth.get("approvals") or []
+                if a.get("state") == "approved" and RELEASE_ENVIRONMENT in (a.get("environments") or [])]
+    if not approved:
+        probs.append(f"no approval recorded for environment {RELEASE_ENVIRONMENT} in this run")
+    return probs
+
+
 def release_input_problems(daily, now_utc: datetime, unrate_src: str, f2r_state, ref,
                            lock_before: list[dict]) -> list[str]:
     """Checks a manual release needs on top of official F2R + matching author Core: the approval
     reason, every public input fetched live, fresh prices (integrity was already checked in
     fetch_prices) and the author's published Core history still equal to our locked Core."""
-    probs = []
+    probs = release_auth_problems(load_release_auth(), MANUAL_RELEASE_MONTH)
     if not MANUAL_RELEASE_REASON:
         probs.append("approval reason missing (workflow input release_reason)")
     if OPERATOR_HALT:
@@ -1146,6 +1184,21 @@ def official_hold_reason(d: dict, ref, sm: str, live: bool) -> str | None:
     return None
 
 
+def halt_report(lock: list[dict], events: list[dict], now_utc: datetime) -> dict:
+    """What happened just before / around an operator halt, so the owner can see whether a run that
+    started before PDS_HALT was set still locked something (variables are read once per run)."""
+    try:
+        prev = json.loads(STATUS_JSON.read_text(encoding="utf-8")) if STATUS_JSON.exists() else {}
+    except ValueError:
+        prev = {}
+    recent = [r for r in prev.get("recent") or [] if isinstance(r, dict)]
+    since = now_utc - timedelta(hours=72)
+    locks = [{"signal_month": d["signal_month"], "locked_at_utc": d.get("locked_at_utc"), "origin": d.get("origin")}
+             for d in lock if d.get("locked_at_utc") and datetime.fromisoformat(d["locked_at_utc"]) >= since]
+    last_lock = next((e for e in reversed(events) if e.get("event") == "LOCKED"), None)
+    return {"previous_run": recent[-1] if recent else None, "locks_last_72h": locks, "last_lock_event": last_lock}
+
+
 def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -> tuple[dict, dict]:
     """Compute everything in memory.  Returns (payload, files) where files maps a path to the
     object to write; main() writes them only after this function has returned without error."""
@@ -1184,9 +1237,14 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
             probs.insert(0, f"not newer than the latest official {latest}")
         run_url = (f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/"
                    f"{os.environ['GITHUB_RUN_ID']}") if os.environ.get("GITHUB_RUN_ID") else None
+        auth = load_release_auth() or {}
         rel = {"signal_month": release, "requested_at_utc": now_utc.isoformat(timespec="seconds"),
                "actor": os.environ.get("GITHUB_ACTOR") or "local", "run_url": run_url,
                "reason": MANUAL_RELEASE_REASON, "outcome": None, "problems": probs,
+               "authorization": {"actor_permission": auth.get("actor_permission"), "ref": auth.get("ref"),
+                                 "approvals": [{k: a.get(k) for k in ("user", "state", "comment", "at_utc")}
+                                               for a in auth.get("approvals") or []],
+                                 "environment": auth.get("environment")},
                "checks": {"price_integrity": "passed", "prices_last_close": str(daily.index[-1].date()),
                           "unrate_source": unrate_src, "f2r_endpoint": f2r_state is not None,
                           "author_workbook": bool(ref), "author_core_history": None}}
@@ -1201,7 +1259,7 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
     if OPERATOR_HALT:
         months = []                                     # nothing is locked while the operator halt is on
         live = ("OPERATOR_HALT", str(last_off))
-        flags.append("OPERATOR_HALT: PDS_HALT is set; no new lock, keep current holdings")
+        flags.append("OPERATOR_HALT: PDS_HALT is set; no new lock, no file under docs/data except run_status.json")
         _event(oev, str(last_off), "OPERATOR_HALT", now_utc, "PDS_HALT set; no new locks")
     for p in months:
         sm = str(p)
@@ -1265,6 +1323,8 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
         elif release == sm:
             d["origin"] = "MANUAL_RELEASE"
             d["manual_release"] = {k: rel[k] for k in ("requested_at_utc", "actor", "run_url", "reason")}
+            d["manual_release"]["approved_by"] = [a["user"] for a in rel["authorization"]["approvals"]
+                                                  if a.get("state") == "approved"]
             rel["outcome"] = "LOCKED"
             rel["locked"] = {"state": d["state"], "risk_budget": d["risk_budget"],
                              "adaptive_source": d["sources"]["adaptive"]}
@@ -1349,12 +1409,29 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
     payload["notify"] = oev[len(oev_before):]           # state changes of this run -> Telegram
     payload["manual_release"] = rel
     payload["config"]["operator_halt"] = OPERATOR_HALT
+    if OPERATOR_HALT:                                   # strictly read-only: nothing under docs/data changes
+        payload["halt_report"] = halt_report(lock_before, oev_before, now_utc)
+        return payload, {}
     if mode in LOCKING_MODES:
         files = {LOCK_JSON: history, REF_LEDGER_JSON: ledger, EVENTS_JSON: oev, RELEASES_JSON: releases,
                  LATEST_JSON: payload}
     else:                                               # diagnostic: never touch operational files
         files = {DIAG_DIR / f"portfolio_{mode}.json": payload}
     return payload, files
+
+
+def write_run_result(payload: dict, files: dict, now_utc: datetime) -> None:
+    """This run's outcome for the workflow (status file, Telegram); lives outside docs/data."""
+    o = payload.get("official") or {}
+    save_json(RUN_RESULT_PATH, {
+        "generated_at_utc": now_utc.isoformat(timespec="seconds"), "mode": payload.get("mode"),
+        "adaptive_mode": (payload.get("config") or {}).get("adaptive_mode"),
+        "operator_halt": bool((payload.get("config") or {}).get("operator_halt")),
+        "action": payload.get("action"), "notify": payload.get("notify") or [],
+        "new_locks": (payload.get("validation") or {}).get("new_official_locks"),
+        "files_written": sorted(Path(p).name for p in files),
+        "official": {k: o.get(k) for k in ("signal_month", "holding_month", "state", "risk_budget")},
+        "halt_report": payload.get("halt_report"), "manual_release": payload.get("manual_release")})
 
 
 def main(argv=None):
@@ -1373,6 +1450,7 @@ def main(argv=None):
         payload, files = run_engine(args.backfill_from, now)
     for path, obj in files.items():                     # only reached if every check passed
         save_json(path, obj)
+    write_run_result(payload, files, now)
     o = payload["official"]
     print(f"OK {payload['mode']} ({payload['config']['adaptive_mode']}): official {o['signal_month']}->"
           f"{o['holding_month']} {o['state']} RB={o['risk_budget']:.2%}; wrote {[p.name for p in files]}; "

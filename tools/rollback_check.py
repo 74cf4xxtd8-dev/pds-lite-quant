@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_ATTRS = {"OUT_DIR": "", "LATEST_JSON": "portfolio_latest.json", "LOCK_JSON": "official_history.json",
                 "UNRATE_CACHE": "unrate_cache.csv", "REF_LEDGER_JSON": "reference_adaptive.json",
                 "DIAG_DIR": "diagnostic", "EVENTS_JSON": "official_events.json",
-                "RELEASES_JSON": "manual_releases.json"}
+                "RELEASES_JSON": "manual_releases.json", "STATUS_JSON": "run_status.json"}
 
 
 def load_ref(ref: str, name: str = "pds_rollback_target"):

@@ -36,14 +36,32 @@ on:
         default: true
 
 permissions:
-  contents: write
-
-concurrency:
-  group: update-portfolio
-  cancel-in-progress: false
+  contents: write      # commit docs/data (the only thing this workflow writes)
+  actions: read        # release approvals and other runs (halt report); no other scope
 
 jobs:
+  # Manual release only: waits until a required reviewer approves this run in the protected
+  # environment "pds-manual-release" (README: GitHub 권한·설정).  Rejected -> nothing runs.
+  release-gate:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_month != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: pds-manual-release
+    permissions: {}
+    steps:
+      - name: Approved
+        env:
+          MONTH: ${{ github.event.inputs.release_month }}
+        run: echo "manual release of ${MONTH} approved for this run"
+
   run:
+    needs: release-gate
+    if: ${{ !cancelled() && (needs.release-gate.result == 'success' || needs.release-gate.result == 'skipped') }}
+    # Job-level so a release waiting for approval never blocks the scheduled checks.  Runs are
+    # serialized: a run started after PDS_HALT=1 begins only when every earlier run has finished.
+    concurrency:
+      group: update-portfolio
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -64,6 +82,13 @@ jobs:
       - name: Install
         run: pip install -r requirements.txt
 
+      - name: Release authorization (who requested, who approved; only with release_month)
+        if: github.event.inputs.release_month != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_RELEASE_MONTH: ${{ github.event.inputs.release_month }}
+        run: python tools/release_auth.py
+
       - name: Run pipeline (fails closed; JSON is only written if every check passes)
         id: run
         env:
@@ -72,10 +97,11 @@ jobs:
           OFFICIAL_REQUIRES_AUTHOR_CORE: "1"     # keep "1": ... and only when the author's Core matches ours
           MANUAL_RELEASE_MONTH: ${{ github.event.inputs.release_month || '' }}
           MANUAL_RELEASE_REASON: ${{ github.event.inputs.release_reason || '' }}
-          PDS_HALT: ${{ vars.PDS_HALT || '' }}     # repository variable: operator halt (no new locks)
+          PDS_HALT: ${{ vars.PDS_HALT || '' }}     # repository variable: operator halt (read-only run)
+          RUN_MODE: ${{ github.event.inputs.mode || 'engine' }}
         run: |
           set -o pipefail
-          python run_pipeline.py --mode "${{ github.event.inputs.mode || 'engine' }}" 2>&1 | tee run.log
+          python run_pipeline.py --mode "$RUN_MODE" 2>&1 | tee run.log
 
       - name: Record run status (readable without Actions UI; keeps the last 60 runs)
         id: status
@@ -84,6 +110,7 @@ jobs:
           RUN_OUTCOME: ${{ steps.run.outcome }}
           RUN_STARTED_UTC: ${{ steps.start.outputs.t }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
         run: python tools/record_run_status.py
 
       - name: Validation summary
@@ -96,6 +123,13 @@ jobs:
           p = "docs/data/portfolio_latest.json"
           if os.environ["RUN_OUTCOME"] != "success" or not os.path.exists(p):
               print("## 실행 실패: 새 JSON 미생성 (fail-closed). Run pipeline 단계 로그를 확인하세요."); raise SystemExit
+          r = json.load(open("run_result.json")) if os.path.exists("run_result.json") else {}
+          if r.get("operator_halt"):
+              hr = r.get("halt_report") or {}
+              print("## ⛔ 운영자 중지(PDS_HALT): 읽기 전용 실행 — 신규 잠금·목표 비중·운영 데이터 변경 없음")
+              print(f"- 직전 실행: {hr.get('previous_run')}")
+              print(f"- 최근 72시간 잠금: {hr.get('locks_last_72h') or '없음'}")
+              raise SystemExit
           d = json.load(open(p)); v = d.get("validation", {})
           print(f"## PDS-Lite {d['mode']} · ADAPTIVE_MODE={d['config']['adaptive_mode']}")
           if v.get("months_checked"):
@@ -129,15 +163,16 @@ jobs:
           RUN_OUTCOME: ${{ steps.run.outcome }}
           RUN_MODE: ${{ github.event.inputs.mode || 'engine' }}
           ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || 'reference_only' }}
+          HALT: ${{ steps.status.outputs.halt }}     # the pipeline's own view of PDS_HALT in this run
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ "$RUN_OUTCOME" = "success" ] && [ "$RUN_MODE" = "engine" ] && \
+          if [ "$RUN_OUTCOME" = "success" ] && [ "$RUN_MODE" = "engine" ] && [ "$HALT" != "true" ] && \
              { [ "$ADAPTIVE_MODE" = "reference_only" ] || [ "$ADAPTIVE_MODE" = "core_only" ]; }; then
             git add docs/data
           else
-            # fail-safe: a failed or diagnostic run may only record its status; anything else it
-            # touched under docs/data is discarded so the last good official stays in force
+            # fail-safe: a failed, diagnostic or halted run may only record its status; anything
+            # else it touched under docs/data is discarded so the last good official stays in force
             git ls-files -z docs/data | { grep -zv 'run_status.json$' || true; } | xargs -0 -r git checkout --
             git add docs/data/run_status.json
           fi

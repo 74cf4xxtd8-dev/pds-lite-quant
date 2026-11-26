@@ -393,8 +393,13 @@ def dl_market():
 OK_REASON = "공식 F2R·원작자 Core 일치 직접 확인"
 
 
-def _run_at(dl, tmp, now, f2r, ref, release=None, reason=OK_REASON, px_until=None, after_feed=None):
+def _run_at(dl, tmp, now, f2r, ref, release=None, reason=OK_REASON, px_until=None, after_feed=None, auth="ok"):
     daily = dl["daily"].loc[:pd.Timestamp(px_until or now.date())]
+    auth_file = Path(tmp) / "release_auth.json"
+    auth_file.unlink(missing_ok=True)
+    if release and auth is not None:
+        auth_file.parent.mkdir(parents=True, exist_ok=True)
+        auth_file.write_text(json.dumps(H.release_auth(release) if auth == "ok" else auth), encoding="utf-8")
     NEW.MANUAL_RELEASE_MONTH = release or ""
     NEW.MANUAL_RELEASE_REASON = reason if release else ""
     try:
@@ -495,7 +500,8 @@ def test_manual_release_needs_complete_official_data(dl_market, tmp_path, monkey
     p, h, _ = _run_at(dl, tmp_path, _utc(11, 13), dl["oct"], ref, release="2026-10")
     assert h[-1]["signal_month"] == "2026-10" and h[-1]["origin"] == "MANUAL_RELEASE"
     assert h[-1]["manual_release"] == {"requested_at_utc": "2026-11-13T22:40:00+00:00", "actor": "owner",
-                                       "run_url": "https://github.com/o/r/actions/runs/42", "reason": OK_REASON}
+                                       "run_url": "https://github.com/o/r/actions/runs/42", "reason": OK_REASON,
+                                       "approved_by": ["owner"]}
     assert h[-1]["sources"]["adaptive"] == "REFERENCE_OFFICIAL_AT_LOCK" and h[-1]["risk_budget"] == 0.7122398
     assert p["action"]["code"] == "FOLLOW_OFFICIAL" and p["history"][-1]["record_class"] == "RECONSTRUCTED"
     ev = [(e["signal_month"], e["event"]) for e in _events()]
@@ -509,6 +515,8 @@ def test_manual_release_needs_complete_official_data(dl_market, tmp_path, monkey
     assert last["checks"]["unrate_source"] == "TEST" and last["checks"]["price_integrity"] == "passed"
     assert last["checks"]["author_core_history"] == "0/0" and last["locked"]["risk_budget"] == 0.7122398
     assert rel[1]["checks"]["author_core_max_abs_diff"] > 0.5
+    assert last["authorization"]["actor_permission"] == "admin" and last["authorization"]["ref"] == "refs/heads/main"
+    assert last["authorization"]["approvals"][0]["user"] == "owner"
     # releasing a month that is not newer than the latest official is refused
     locked = NEW.LOCK_JSON.read_bytes()
     p, _, _ = _run_at(dl, tmp_path, _utc(11, 14), dl["oct"], ref, release="2026-09")
@@ -548,19 +556,136 @@ def test_operator_halt_stops_every_new_lock(dl_market, tmp_path):
     lock0 = _start_with_october_pending(dl, tmp_path)
     ref = _core_wb(dl, dl["oct"], ["2026-10"])
     NEW.OPERATOR_HALT = True
-    p, _, _ = _run_at(dl, tmp_path, _utc(11, 3), dl["oct"], ref)                    # complete, but halted
-    assert NEW.LOCK_JSON.read_bytes() == lock0
+    p, _, files = _run_at(dl, tmp_path, _utc(11, 3), dl["oct"], ref)                # complete, but halted
+    assert files == {} and NEW.LOCK_JSON.read_bytes() == lock0                     # read-only run
     assert p["action"]["code"] == "HALTED" and "PDS_HALT" in p["action"]["message"]
-    assert [e["event"] for e in p["notify"]] == ["OPERATOR_HALT"]
-    p, _, _ = _run_at(dl, tmp_path, _utc(11, 4), dl["oct"], ref)
-    assert p["notify"] == [] and NEW.LOCK_JSON.read_bytes() == lock0               # no repeated alert
-    p, _, _ = _run_at(dl, tmp_path, _utc(11, 4, 23, 0), dl["oct"], ref, release="2026-10")
-    assert NEW.LOCK_JSON.read_bytes() == lock0
-    assert "operator halt is active (PDS_HALT)" in _releases()[-1]["problems"]
+    assert [e["event"] for e in p["notify"]] == ["OPERATOR_HALT"]                    # de-duplicated in run_status
+    rel0 = NEW.RELEASES_JSON.read_bytes()
+    p, _, files = _run_at(dl, tmp_path, _utc(11, 4, 23, 0), dl["oct"], ref, release="2026-10")
+    assert files == {} and NEW.LOCK_JSON.read_bytes() == lock0 and NEW.RELEASES_JSON.read_bytes() == rel0
+    assert p["manual_release"]["outcome"] == "REJECTED"
+    assert "operator halt is active (PDS_HALT)" in p["manual_release"]["problems"]
     NEW.OPERATOR_HALT = False                                                       # variable removed
     p, h, _ = _run_at(dl, tmp_path, _utc(11, 5), dl["oct"], ref)
     assert h[-1]["signal_month"] == "2026-10" and h[-1]["origin"] == "LIVE"
     assert [e["event"] for e in p["notify"]] == ["LOCKED"]
+
+
+@pytest.mark.parametrize("value,halted", [("1", True), ("true", True), ("Y", True), ("0", False), ("", False),
+                                          ("off", False)])
+def test_pds_halt_values(monkeypatch, value, halted):
+    import importlib.util
+    monkeypatch.setenv("PDS_HALT", value)
+    spec = importlib.util.spec_from_file_location("rp_halt_probe", H.ROOT / "run_pipeline.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["rp_halt_probe"] = mod
+    spec.loader.exec_module(mod)
+    assert mod.OPERATOR_HALT is halted                                              # a typo halts, never runs
+
+
+def test_operator_halt_changes_no_operational_data(dl_market, tmp_path):
+    """Halted run through main(): complete official data, a new author publication and a release
+    request are all present, yet no byte under docs/data changes; only run_result.json (outside)."""
+    dl = dl_market
+    _start_with_october_pending(dl, tmp_path)
+    out = tmp_path / "docs" / "data"
+    (out / "run_status.json").write_text(json.dumps({"recent": [
+        {"at_utc": "2026-11-02T22:44:00+00:00", "ok": True, "action": "FOLLOW_OFFICIAL", "new_locks": 1,
+         "operator_halt": False}]}), encoding="utf-8")
+    before = {f.name: f.read_bytes() for f in out.rglob("*") if f.is_file()}
+    rows = H.default_adaptive_rows(("DEFENSIVE", 0.8))                                # newly published by the author
+    ref = wb(None, H.author_core_rows(dl["daily"], dl["un"], dl["oct"], ["2026-10"]))
+    ref["Adaptive Portfolio"] = H.author_workbook(rows)["Adaptive Portfolio"]
+    H.point(NEW, tmp_path)
+    H.feed(NEW, dl["daily"].loc[:"2026-11-03"], dl["un"], dl["oct"], ref)
+    (tmp_path / "release_auth.json").write_text(json.dumps(H.release_auth("2026-10")), encoding="utf-8")
+    NEW.ADAPTIVE_MODE, NEW.OPERATOR_HALT = "reference_only", True
+    NEW.MANUAL_RELEASE_MONTH, NEW.MANUAL_RELEASE_REASON = "2026-10", OK_REASON
+    NEW.main([])
+    after = {f.name: f.read_bytes() for f in out.rglob("*") if f.is_file()}
+    assert after == before                                                          # nothing under docs/data
+    res = json.loads((tmp_path / "run_result.json").read_text(encoding="utf-8"))
+    assert res["operator_halt"] is True and res["files_written"] == [] and res["new_locks"] == 0
+    assert res["action"]["code"] == "HALTED" and res["official"]["signal_month"] == "2026-09"
+    assert res["manual_release"]["outcome"] == "REJECTED"
+    assert res["halt_report"]["previous_run"]["new_locks"] == 1                     # what ran just before
+    assert {e["event"] for e in res["notify"]} == {"OPERATOR_HALT", "MANUAL_RELEASE_REJECTED"}
+
+
+def test_halt_notice_once_and_active_run_report():
+    now = datetime(2026, 11, 3, 22, 45, tzinfo=timezone.utc)
+    res = {"generated_at_utc": now.isoformat(), "operator_halt": True, "new_locks": 0,
+           "action": {"code": "HALTED", "month": "2026-10", "reason": "operator halt (PDS_HALT)"},
+           "notify": [{"signal_month": "2026-10", "event": "OPERATOR_HALT", "detail": "x"}],
+           "halt_report": {"previous_run": {"at_utc": "2026-11-02T22:44:00+00:00", "action": "FOLLOW_OFFICIAL",
+                                            "new_locks": 1}, "locks_last_72h": [
+                               {"signal_month": "2026-10", "locked_at_utc": "2026-11-02T22:44:00+00:00"}]}}
+    first = RUNSTATUS.build({"recent": [{"ok": True, "operator_halt": False}]}, True, res, [], "workflow_dispatch",
+                            "u", now, active_runs=[])
+    assert [e["event"] for e in first["notify"]] == ["OPERATOR_HALT"] and first["operator_halt"] is True
+    assert first["halt_report"]["other_active_runs"] == []
+    msg = NOTIFY.message(dict(first, official={}))
+    assert "직전 실행: 2026-11-02T22:44:00+00:00 FOLLOW_OFFICIAL, 신규 잠금 1" in msg
+    assert "최근 72시간 잠금: 2026-10(2026-11-02T22:44:00+00:00)" in msg and "다른 update-portfolio 실행: 0건" in msg
+    again = RUNSTATUS.build(first, True, res, [], "schedule", "u", now)              # still halted
+    assert again["notify"] == [] and again["recent"][-1]["operator_halt"] is True
+    runs = [{"id": 1, "status": "in_progress"}, {"id": 2, "status": "completed"}, {"id": 3, "status": "queued"}]
+    assert [r["id"] for r in RUNSTATUS.other_active_runs(runs, "3")] == [1]
+
+
+def test_ops_audit_flags_settings_against_the_readme():
+    sys.path.insert(0, str(H.ROOT / "tools"))
+    import ops_audit as OA
+    perms = OA.workflow_permissions(H.ROOT / ".github" / "workflows")
+    assert set(perms) >= {"update.yml", "tests.yml", "rollback-check.yml", "ops-audit.yml"}
+    for name, p in perms.items():                    # only update.yml writes, and only contents
+        assert OA.write_scopes(p) <= OA.WRITE_SCOPES_ALLOWED.get(name, set()), (name, p)
+    owner = [{"login": "owner", "role_name": "admin", "permissions": {"admin": True}}]
+    good_env = {"name": "pds-manual-release", "can_admins_bypass": False,
+                "protection_rules": [{"type": "required_reviewers", "reviewers": [{"reviewer": {"login": "owner"}}]}],
+                "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+    rows = OA.evaluate(owner, {"protected": True}, [{"type": "deletion"}, {"type": "non_fast_forward"}],
+                       good_env, perms, "")
+    assert all(ok is not False for _, ok, _ in rows), [r for r in rows if r[1] is False]
+    today = OA.evaluate(owner, {"protected": False}, [], {"_http_error": 404}, perms, "")   # as found today
+    bad = {item for item, ok, _ in today if ok is False}
+    assert {"main: 삭제 금지(deletion)", "main: 강제 푸시 금지(non_fast_forward)",
+            "환경 pds-manual-release 존재"} <= bad
+    pr_rule = OA.evaluate(owner, {"protected": True}, [{"type": "pull_request"}], good_env, perms, "")
+    assert ("main: 봇 데이터 커밋을 막는 규칙 없음", False) in {(i, ok) for i, ok, _ in pr_rule}
+    assert "| 항목 | 상태 | 내용 |" in OA.report(rows)
+
+
+@pytest.mark.parametrize("change,expect", [
+    (None, None),
+    ("missing", "release authorization not available"),
+    ({"ref": "refs/heads/feature"}, "must run from main"),
+    ({"actor_permission": "write"}, "admin required"),
+    ({"environment": {"name": "pds-manual-release", "required_reviewers": []}}, "no required reviewers"),
+    ({"environment": None}, "no required reviewers"),
+    ({"approvals": []}, "no approval recorded"),
+    ({"approvals": [{"user": "o", "state": "rejected", "environments": ["pds-manual-release"]}]}, "no approval"),
+    ({"approvals": [{"user": "o", "state": "approved", "environments": ["other"]}]}, "no approval"),
+    ({"release_month": "2026-09"}, "authorization is for"),
+])
+def test_release_authorization_rules(change, expect):
+    auth = None if change == "missing" else H.release_auth("2026-10", **(change or {}))
+    probs = NEW.release_auth_problems(auth, "2026-10")
+    assert (probs == []) if expect is None else any(expect in x for x in probs), probs
+
+
+def test_release_auth_reads_environment_protection():
+    sys.path.insert(0, str(H.ROOT / "tools"))
+    import release_auth as RA
+    env = {"name": "pds-manual-release", "can_admins_bypass": False,
+           "protection_rules": [{"type": "required_reviewers", "prevent_self_review": False,
+                                 "reviewers": [{"type": "User", "reviewer": {"login": "owner"}}]},
+                                {"type": "branch_policy"}],
+           "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+    assert RA.environment_summary(env) == {"name": "pds-manual-release", "required_reviewers": ["owner"],
+                                           "prevent_self_review": False, "can_admins_bypass": False,
+                                           "branch_policy": "custom"}
+    assert RA.environment_summary(None) is None
 
 
 def test_notifications_only_on_state_changes(dl_market, tmp_path):
@@ -599,7 +724,7 @@ def test_blocked_month_alerts_once(dl_market, tmp_path):
 def test_run_status_keeps_a_rolling_log_and_ignores_stale_payloads(tmp_path):
     now = datetime(2026, 12, 3, 22, 45, tzinfo=timezone.utc)
     payload = {"generated_at_utc": now.isoformat(), "action": {"code": "WAIT", "month": "2026-11", "reason": "x"},
-               "notify": [], "validation": {"new_official_locks": 0}}
+               "notify": [], "new_locks": 0}
     prev = {"recent": [{"i": k} for k in range(RUNSTATUS.RECENT_KEEP)]}
     out = RUNSTATUS.build(prev, True, payload, ["[lock] a", "b"], "schedule", "u", now)
     assert len(out["recent"]) == RUNSTATUS.RECENT_KEEP and out["recent"][-1]["action"] == "WAIT"
@@ -608,8 +733,8 @@ def test_run_status_keeps_a_rolling_log_and_ignores_stale_payloads(tmp_path):
     assert fail["action"] is None and fail["recent"][-1]["ok"] is False
     f = tmp_path / "p.json"
     f.write_text(json.dumps(payload))
-    assert RUNSTATUS.this_runs_payload(f, now) is not None
-    assert RUNSTATUS.this_runs_payload(f, datetime(2026, 12, 3, 23, 0, tzinfo=timezone.utc)) is None
+    assert RUNSTATUS.this_runs_result(f, now) is not None
+    assert RUNSTATUS.this_runs_result(f, datetime(2026, 12, 3, 23, 0, tzinfo=timezone.utc)) is None
 
 
 def test_rollback_dry_run_flags_a_gap_fill(dl_market, base, tmp_path):
@@ -715,14 +840,15 @@ def _commit_step_script():
     return step["run"]
 
 
-@pytest.mark.parametrize("outcome,run_mode,adaptive,expect", [
-    ("failure", "engine", "reference_only", {"docs/data/run_status.json"}),
-    ("success", "engine", "proxy", {"docs/data/run_status.json"}),
-    ("success", "reference", "reference_only", {"docs/data/run_status.json"}),
-    ("success", "engine", "reference_only", {"docs/data/run_status.json", "docs/data/official_history.json",
-                                             "docs/data/reference_adaptive.json"}),
+@pytest.mark.parametrize("outcome,run_mode,adaptive,halt,expect", [
+    ("failure", "engine", "reference_only", "false", {"docs/data/run_status.json"}),
+    ("success", "engine", "proxy", "false", {"docs/data/run_status.json"}),
+    ("success", "reference", "reference_only", "false", {"docs/data/run_status.json"}),
+    ("success", "engine", "reference_only", "true", {"docs/data/run_status.json"}),      # operator halt
+    ("success", "engine", "reference_only", "false", {"docs/data/run_status.json", "docs/data/official_history.json",
+                                                      "docs/data/reference_adaptive.json"}),
 ])
-def test_workflow_commit_step_is_fail_safe(tmp_path, outcome, run_mode, adaptive, expect):
+def test_workflow_commit_step_is_fail_safe(tmp_path, outcome, run_mode, adaptive, halt, expect):
     if shutil.which("git") is None or shutil.which("bash") is None:
         pytest.skip("git/bash unavailable")
     remote, work = tmp_path / "remote.git", tmp_path / "work"
@@ -739,7 +865,7 @@ def test_workflow_commit_step_is_fail_safe(tmp_path, outcome, run_mode, adaptive
     for f in ("official_history.json", "run_status.json"):
         (d / f).write_text("new\n")
     (d / "reference_adaptive.json").write_text("new\n")
-    env = dict(os.environ, RUN_OUTCOME=outcome, RUN_MODE=run_mode, ADAPTIVE_MODE=adaptive,
+    env = dict(os.environ, RUN_OUTCOME=outcome, RUN_MODE=run_mode, ADAPTIVE_MODE=adaptive, HALT=halt,
                GITHUB_OUTPUT=str(tmp_path / "gh_out"), GIT_CONFIG_COUNT="1",
                GIT_CONFIG_KEY_0="commit.gpgsign", GIT_CONFIG_VALUE_0="false")
     # same shell flags GitHub Actions uses for run steps: bash --noprofile --norc -eo pipefail
@@ -747,7 +873,7 @@ def test_workflow_commit_step_is_fail_safe(tmp_path, outcome, run_mode, adaptive
                    cwd=work, env=env, check=True, capture_output=True)
     changed = set(g("show", "--name-only", "--format=", "HEAD").stdout.split())
     assert changed == expect
-    if outcome == "failure":
+    if outcome == "failure" or halt == "true":
         assert (d / "official_history.json").read_text() == "old\n"           # restored on disk too
 
 
@@ -773,6 +899,20 @@ def test_workflow_defaults_and_schedule():
     assert "steps.status.outputs.notify == 'true'" in steps[tg[0]]["if"]
     assert "steps.commit.outcome == 'failure'" in steps[tg[1]]["if"]
     assert "record_run_status.py" in steps["Record run status (readable without Actions UI; keeps the last 60 runs)"]["run"]
+    # job-level concurrency: runs are serialized (halt barrier) and a pending approval blocks nothing
+    assert "concurrency" not in wf and wf["jobs"]["run"]["concurrency"] == {"group": "update-portfolio",
+                                                                          "cancel-in-progress": False}
+    assert wf["permissions"] == {"contents": "write", "actions": "read"}
+    gate = wf["jobs"]["release-gate"]
+    assert gate["environment"] == NEW.RELEASE_ENVIRONMENT and gate["permissions"] == {}
+    assert "release_month != ''" in gate["if"] and wf["jobs"]["run"]["needs"] == "release-gate"
+    assert "!cancelled()" in wf["jobs"]["run"]["if"] and "skipped" in wf["jobs"]["run"]["if"]
+    auth = next(s for s in wf["jobs"]["run"]["steps"] if s.get("name", "").startswith("Release authorization"))
+    assert "release_auth.py" in auth["run"] and auth["env"]["GH_TOKEN"] == "${{ github.token }}"
+    assert steps["Commit if changed"]["env"]["HALT"] == "${{ steps.status.outputs.halt }}"
+    for job in wf["jobs"].values():                      # no workflow input is pasted into a shell script
+        for st in job["steps"]:
+            assert "github.event.inputs" not in st.get("run", ""), st.get("name")
     rb = yaml.safe_load((H.ROOT / ".github" / "workflows" / "rollback-check.yml").read_text(encoding="utf-8"))
     assert rb["permissions"] == {"contents": "read"} and list(rb[True]) == ["workflow_dispatch"]
 

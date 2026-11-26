@@ -1,0 +1,28 @@
+name: ops-audit
+
+# Read-only check of who can change PDS-Lite operations (README "GitHub 권한·설정").
+# Monthly on the 11th (after the lock deadline) and on demand.  Never writes anything.
+on:
+  schedule:
+    - cron: "17 3 11 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - name: Audit (report in the job summary)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PDS_HALT_SEEN: ${{ vars.PDS_HALT || '' }}
+        run: python tools/ops_audit.py --report "$GITHUB_STEP_SUMMARY"
