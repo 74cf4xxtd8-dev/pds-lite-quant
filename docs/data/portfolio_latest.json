@@ -2,8 +2,8 @@
  "schema": "pds-lite/1",
  "engine": "pds-lite-1.1.0",
  "mode": "engine",
- "generated_at_utc": "2026-11-26T10:05:09+00:00",
- "generated_at_kst": "2026-11-26 19:05 KST",
+ "generated_at_utc": "2026-11-26T11:50:41+00:00",
+ "generated_at_kst": "2026-11-26 20:50 KST",
  "market_asof": "2026-11-25",
  "flags": [
   "2026-11: F2R_PREVIEW"
@@ -3341,6 +3341,13 @@
   "ledger_rows": 68,
   "last_fetch_ok": true,
   "events": []
+ },
+ "flags_scoped": {
+  "official": [],
+  "preview": [
+   "F2R_PREVIEW"
+  ],
+  "run": []
  },
  "action": {
   "code": "FOLLOW_OFFICIAL",
