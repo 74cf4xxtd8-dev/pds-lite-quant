@@ -13,11 +13,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lock_manifest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ENVIRONMENT = "pds-manual-release"
@@ -148,6 +152,27 @@ def evaluate(collab, main_branch, main_rules, env, wf_perms, halt_seen) -> list[
     return rows
 
 
+def lock_backup_rows(m: dict, last_commit: dict | None, repo: str) -> list[tuple[str, bool | None, str]]:
+    """The same lock manifest the alerts and run_status.json show, for the monthly backup check."""
+    rows = [("잠금 매니페스트(main)", None if m.get("readable") else False, lock_manifest.line(m))]
+    if last_commit and last_commit.get("sha"):
+        sha = last_commit["sha"]
+        rows.append(("잠금 마지막 변경 커밋", None,
+                     f"{sha} ({last_commit.get('date')}) · "
+                     f"{lock_manifest.raw_url(repo, sha, 'docs/data/official_history.json')}"))
+    else:
+        rows.append(("잠금 마지막 변경 커밋", None, "조회 불가 → official_history.json History에서 확인"))
+    rows.append(("월간 외부 백업", None, lock_manifest.RULE))
+    return rows
+
+
+def fetch_last_lock_commit(repo: str) -> dict | None:
+    r = api(f"/repos/{repo}/commits?sha=main&path=docs/data/official_history.json&per_page=1")
+    if isinstance(r, list) and r:
+        return {"sha": r[0].get("sha"), "date": (r[0].get("commit", {}).get("committer") or {}).get("date")}
+    return None
+
+
 def report(rows) -> str:
     mark = {True: "✅", False: "⚠️", None: "❔"}
     lines = ["## PDS-Lite 운영 권한 점검", "", "| 항목 | 상태 | 내용 |", "|---|---|---|"]
@@ -165,6 +190,8 @@ def main(argv=None) -> int:
                     workflow_permissions(ROOT / ".github" / "workflows"), os.environ.get("PDS_HALT_SEEN", ""))
     prov = fetch_provenance(repo)
     rows += main_commit_provenance(*prov) if prov else [("main 커밋 출처", None, "조회 불가")]
+    rows += lock_backup_rows(lock_manifest.manifest(ROOT / "docs" / "data" / "official_history.json"),
+                             fetch_last_lock_commit(repo), repo)
     text = report(rows)
     print(text)
     if args.report:

@@ -182,6 +182,14 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Monthly external backup of the lock (handbook manual 12.2): the manifest line on every run, the
+      # full checklist with the data commit when this run saved a new lock.  Visible without Telegram.
+      - name: Backup checklist (job summary)
+        if: always() && steps.commit.outcome == 'success'
+        env:
+          DUE: ${{ steps.status.outputs.backup_due }}
+        run: python tools/lock_manifest.py --summary --due "$DUE" >> "$GITHUB_STEP_SUMMARY" || true
+
       # Optional phone alert. Add repo secrets TELEGRAM_TOKEN and TELEGRAM_CHAT_ID to enable.
       # State changes only (waiting started, Core mismatch, locked, day-10 block, manual release,
       # operator halt), and only after the commit succeeded, so a lock is never announced unless it

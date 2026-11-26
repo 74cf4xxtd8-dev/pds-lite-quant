@@ -8,15 +8,23 @@
   already halted), and the report lists other update-portfolio runs still queued or running.
 * Alerts an earlier run could not deliver (notify_pending, set by send_alert.py) are resent with
   the next successful run and kept through failed runs.
-* Step outputs: action=<FOLLOW_OFFICIAL|WAIT|HALTED|NONE>, notify=<true|false>, halt=<true|false>.
+* "lock_manifest": the lock's months, range, SHA-256 and git blob on every run (also halted and
+  failed runs), and whether this run saved a new lock - the monthly backup check works without
+  Telegram (backup needed <=> the external manifest's last SHA-256 differs).
+* Step outputs: action=<FOLLOW_OFFICIAL|WAIT|HALTED|NONE>, notify=<true|false>, halt=<true|false>,
+  backup_due=<true|false>.
 """
 from __future__ import annotations
 
 import json
 import os
+import sys
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lock_manifest  # noqa: E402
 
 RECENT_KEEP = 60
 DATA = Path("docs/data")
@@ -113,6 +121,8 @@ def main() -> None:
     active = fetch_active_runs() if (result or {}).get("operator_halt") else None
     out = build(prev, ok, result, log, os.environ.get("GITHUB_EVENT_NAME"), os.environ.get("RUN_URL"),
                 datetime.now(timezone.utc), active)
+    out["lock_manifest"] = lock_manifest.status_record(DATA / "official_history.json", out["notify"],
+                                                       lock_manifest.head_commit())
     status.parent.mkdir(parents=True, exist_ok=True)
     status.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     if os.environ.get("GITHUB_OUTPUT"):
@@ -120,6 +130,7 @@ def main() -> None:
             f.write(f"action={(out['action'] or {}).get('code', 'NONE')}\n")
             f.write(f"notify={'true' if out['notify'] else 'false'}\n")
             f.write(f"halt={'true' if out['operator_halt'] else 'false'}\n")
+            f.write(f"backup_due={'true' if out['lock_manifest'].get('changed_this_run') else 'false'}\n")
 
 
 if __name__ == "__main__":
