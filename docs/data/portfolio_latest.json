@@ -1,14 +1,15 @@
 {
  "schema": "pds-lite/1",
- "engine": "pds-lite-1.0.0",
+ "engine": "pds-lite-1.1.0",
  "mode": "engine",
- "generated_at_utc": "2026-11-25T15:59:32+00:00",
- "generated_at_kst": "2026-11-26 00:59 KST",
+ "generated_at_utc": "2026-11-26T10:05:09+00:00",
+ "generated_at_kst": "2026-11-26 19:05 KST",
  "market_asof": "2026-11-25",
  "flags": [
   "2026-11: F2R_PREVIEW"
  ],
  "official": {
+  "status": "OFFICIAL",
   "signal_month": "2026-10",
   "holding_month": "2026-11",
   "state": "NORMAL",
@@ -491,21 +492,29 @@
   }
  },
  "preview": {
+  "status": "PREVIEW",
   "signal_month": "2026-11",
   "holding_month": "2026-12",
   "state": "NORMAL",
   "risk_budget": 1.0,
   "sources": {
    "f2r": "F2R_PREVIEW",
-   "adaptive": "REFERENCE_PREVIEW",
+   "adaptive": "CORE_DEFAULT_PREVIEW",
+   "adaptive_mode": "reference_only",
    "unrate_carried": false,
    "asof": "2026-11-25",
+   "reference_seen": {
+    "status": "PREVIEW",
+    "state": "NORMAL",
+    "rb": 1.0,
+    "problems": []
+   },
    "proxy": {
     "state": "NORMAL",
     "rb": 1.0,
-    "sigma": 0.072152,
+    "sigma": 0.070402,
     "vol_budget": 1.0,
-    "trend12_excess": -0.001662
+    "trend12_excess": 0.022756
    },
    "sleeves": {
     "HAA": {
@@ -516,9 +525,8 @@
      "BIL": 0.666667
     },
     "ADM": {
-     "TLT": 0.166667,
      "VNQ": 0.166667,
-     "BIL": 0.666667
+     "BIL": 0.833333
     },
     "FAA": {
      "DBC": 0.166667,
@@ -535,15 +543,15 @@
     }
    }
   },
-  "turnover_one_way": 0.35625000000000007,
-  "est_cost": 0.0007125000000000001,
+  "turnover_one_way": 0.38250000000000006,
+  "est_cost": 0.0007650000000000002,
   "us": [
    {
     "ticker": "BIL",
     "name": "T-Bill 1-3M",
-    "core": 0.525,
-    "adaptive": 0.525,
-    "delta": 0.35625,
+    "core": 0.55125,
+    "adaptive": 0.55125,
+    "delta": 0.3825,
     "class": "Cash"
    },
    {
@@ -603,14 +611,6 @@
     "class": "Equity"
    },
    {
-    "ticker": "TLT",
-    "name": "UST 20Y+",
-    "core": 0.02625,
-    "adaptive": 0.02625,
-    "delta": 0.0,
-    "class": "Fixed Income"
-   },
-   {
     "ticker": "IWM",
     "name": "Russell 2000",
     "core": 0.025,
@@ -651,6 +651,14 @@
     "class": "Fixed Income"
    },
    {
+    "ticker": "TLT",
+    "name": "UST 20Y+",
+    "core": 0.0,
+    "adaptive": 0.0,
+    "delta": -0.02625,
+    "class": "Fixed Income"
+   },
+   {
     "ticker": "LQD",
     "name": "IG Corp",
     "core": 0.0,
@@ -662,15 +670,15 @@
   "asset_class": {
    "core": {
     "Equity": 0.21250000000000002,
-    "Fixed Income": 0.0825,
+    "Fixed Income": 0.05625,
     "Real Assets / Other": 0.18,
-    "Cash": 0.525
+    "Cash": 0.55125
    },
    "adaptive": {
     "Equity": 0.21250000000000002,
-    "Fixed Income": 0.0825,
+    "Fixed Income": 0.05625,
     "Real Assets / Other": 0.18,
-    "Cash": 0.525
+    "Cash": 0.55125
    }
   },
   "irp": {
@@ -680,7 +688,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.525,
+      "weight": 0.55125,
       "from": [
        "BIL"
       ],
@@ -751,18 +759,6 @@
        "EWY"
       ],
       "notes": []
-     },
-     {
-      "code": "458250",
-      "name": "TIGER 미국30년국채스트립액티브(합성H)",
-      "class": "SAFE",
-      "weight": 0.02625,
-      "from": [
-       "TLT"
-      ],
-      "notes": [
-       "TLT: 듀레이션이 TLT보다 김"
-      ]
      },
      {
       "code": "195980",
@@ -787,7 +783,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.525,
+      "weight": 0.55125,
       "from": [
        "BIL"
       ],
@@ -858,18 +854,6 @@
        "EWY"
       ],
       "notes": []
-     },
-     {
-      "code": "458250",
-      "name": "TIGER 미국30년국채스트립액티브(합성H)",
-      "class": "SAFE",
-      "weight": 0.02625,
-      "from": [
-       "TLT"
-      ],
-      "notes": [
-       "TLT: 듀레이션이 TLT보다 김"
-      ]
      },
      {
       "code": "195980",
@@ -896,6 +880,8 @@
    "holding_month": "2017-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.63825,
     "Fixed Income": 0.184,
@@ -914,6 +900,8 @@
    "holding_month": "2017-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.78375,
     "Fixed Income": 0.13375,
@@ -932,6 +920,8 @@
    "holding_month": "2017-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.78375,
     "Fixed Income": 0.16,
@@ -950,6 +940,8 @@
    "holding_month": "2017-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.55875,
     "Fixed Income": 0.16,
@@ -968,6 +960,8 @@
    "holding_month": "2017-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.55875,
     "Fixed Income": 0.16,
@@ -986,6 +980,8 @@
    "holding_month": "2017-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7574999999999998,
     "Fixed Income": 0.16,
@@ -1004,6 +1000,8 @@
    "holding_month": "2017-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.54825,
     "Fixed Income": 0.08775,
@@ -1022,6 +1020,8 @@
    "holding_month": "2017-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7937500000000001,
     "Fixed Income": 0.07875,
@@ -1040,6 +1040,8 @@
    "holding_month": "2017-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7825,
     "Fixed Income": 0.10875,
@@ -1058,6 +1060,8 @@
    "holding_month": "2018-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7975,
     "Fixed Income": 0.05625,
@@ -1076,6 +1080,8 @@
    "holding_month": "2018-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6224999999999999,
     "Fixed Income": 0.15375,
@@ -1094,6 +1100,8 @@
    "holding_month": "2018-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.37,
     "Fixed Income": 0.0825,
@@ -1112,6 +1120,8 @@
    "holding_month": "2018-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.5994999999999999,
     "Fixed Income": 0.08775,
@@ -1130,6 +1140,8 @@
    "holding_month": "2018-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.35425,
     "Fixed Income": 0.08775,
@@ -1148,6 +1160,8 @@
    "holding_month": "2018-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.4675000000000001,
     "Fixed Income": 0.16125,
@@ -1166,6 +1180,8 @@
    "holding_month": "2018-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.4675,
     "Fixed Income": 0.20625,
@@ -1184,6 +1200,8 @@
    "holding_month": "2018-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6025,
     "Fixed Income": 0.1875,
@@ -1202,6 +1220,8 @@
    "holding_month": "2018-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.43000000000000005,
     "Fixed Income": 0.27,
@@ -1220,6 +1240,8 @@
    "holding_month": "2018-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.3175,
     "Fixed Income": 0.135,
@@ -1238,6 +1260,8 @@
    "holding_month": "2018-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.23875000000000002,
     "Fixed Income": 0.0825,
@@ -1256,6 +1280,8 @@
    "holding_month": "2018-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.21250000000000002,
     "Fixed Income": 0.05625,
@@ -1274,6 +1300,8 @@
    "holding_month": "2019-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1875,
     "Fixed Income": 0.70375,
@@ -1292,6 +1320,8 @@
    "holding_month": "2019-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.31499999999999995,
     "Fixed Income": 0.42374999999999996,
@@ -1310,6 +1340,8 @@
    "holding_month": "2019-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.31375,
     "Fixed Income": 0.45000000000000007,
@@ -1328,6 +1360,8 @@
    "holding_month": "2019-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.5650000000000001,
     "Fixed Income": 0.2625,
@@ -1346,6 +1380,8 @@
    "holding_month": "2019-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.63,
     "Fixed Income": 0.25,
@@ -1364,6 +1400,8 @@
    "holding_month": "2019-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.26249999999999996,
     "Fixed Income": 0.50125,
@@ -1382,6 +1420,8 @@
    "holding_month": "2019-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.54,
     "Fixed Income": 0.22375,
@@ -1400,6 +1440,8 @@
    "holding_month": "2019-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.34125,
     "Fixed Income": 0.4225,
@@ -1418,6 +1460,8 @@
    "holding_month": "2019-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.28874999999999995,
     "Fixed Income": 0.4645,
@@ -1436,6 +1480,8 @@
    "holding_month": "2019-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.34125,
     "Fixed Income": 0.3975000000000001,
@@ -1454,6 +1500,8 @@
    "holding_month": "2019-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.47625,
     "Fixed Income": 0.2875,
@@ -1472,6 +1520,8 @@
    "holding_month": "2019-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.66675,
     "Fixed Income": 0.15675,
@@ -1490,6 +1540,8 @@
    "holding_month": "2020-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7357499999999999,
     "Fixed Income": 0.11275,
@@ -1508,6 +1560,8 @@
    "holding_month": "2020-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.3425,
     "Fixed Income": 0.4225,
@@ -1526,6 +1580,8 @@
    "holding_month": "2020-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.3275,
     "Fixed Income": 0.50125,
@@ -1544,6 +1600,8 @@
    "holding_month": "2020-04",
    "state": "DEFENSIVE",
    "risk_budget": 0.5599679637607782,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.3,
     "Fixed Income": 0.52875,
@@ -1562,6 +1620,8 @@
    "holding_month": "2020-05",
    "state": "DEFENSIVE",
    "risk_budget": 0.55,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.3225,
     "Fixed Income": 0.50625,
@@ -1580,6 +1640,8 @@
    "holding_month": "2020-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.405,
     "Fixed Income": 0.42375000000000007,
@@ -1598,6 +1660,8 @@
    "holding_month": "2020-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.56625,
     "Fixed Income": 0.2625,
@@ -1616,6 +1680,8 @@
    "holding_month": "2020-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.63,
     "Fixed Income": 0.19874999999999998,
@@ -1634,6 +1700,8 @@
    "holding_month": "2020-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.69375,
     "Fixed Income": 0.135,
@@ -1652,6 +1720,8 @@
    "holding_month": "2020-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7475,
     "Fixed Income": 0.1075,
@@ -1670,6 +1740,8 @@
    "holding_month": "2020-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.5745,
     "Fixed Income": 0.2805,
@@ -1688,6 +1760,8 @@
    "holding_month": "2020-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7825,
     "Fixed Income": 0.135,
@@ -1706,6 +1780,8 @@
    "holding_month": "2021-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7825,
     "Fixed Income": 0.10875,
@@ -1724,6 +1800,8 @@
    "holding_month": "2021-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6257499999999999,
     "Fixed Income": 0.20925000000000002,
@@ -1742,6 +1820,8 @@
    "holding_month": "2021-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.5325,
     "Fixed Income": 0.19874999999999998,
@@ -1760,6 +1840,8 @@
    "holding_month": "2021-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "PROXY_VOL_TREND",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.55875,
     "Fixed Income": 0.1275,
@@ -1778,6 +1860,8 @@
    "holding_month": "2021-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.49624999999999997,
     "Fixed Income": 0.1275,
@@ -1796,6 +1880,8 @@
    "holding_month": "2021-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.49624999999999997,
     "Fixed Income": 0.10125,
@@ -1814,6 +1900,8 @@
    "holding_month": "2021-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6825,
     "Fixed Income": 0.0825,
@@ -1832,6 +1920,8 @@
    "holding_month": "2021-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.49499999999999994,
     "Fixed Income": 0.19874999999999998,
@@ -1850,6 +1940,8 @@
    "holding_month": "2021-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.655,
     "Fixed Income": 0.135,
@@ -1868,6 +1960,8 @@
    "holding_month": "2021-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.45299999999999996,
     "Fixed Income": 0.26175000000000004,
@@ -1886,6 +1980,8 @@
    "holding_month": "2021-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.48374999999999996,
     "Fixed Income": 0.24,
@@ -1904,6 +2000,8 @@
    "holding_month": "2021-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.405,
     "Fixed Income": 0.34125,
@@ -1922,6 +2020,8 @@
    "holding_month": "2022-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.4362499999999999,
     "Fixed Income": 0.23875,
@@ -1940,6 +2040,8 @@
    "holding_month": "2022-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.215,
     "Fixed Income": 0.1275,
@@ -1958,6 +2060,8 @@
    "holding_month": "2022-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.26375,
     "Fixed Income": 0.19125,
@@ -1976,6 +2080,8 @@
    "holding_month": "2022-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.19,
     "Fixed Income": 0.0825,
@@ -1994,6 +2100,8 @@
    "holding_month": "2022-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
@@ -2012,6 +2120,8 @@
    "holding_month": "2022-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
@@ -2030,6 +2140,8 @@
    "holding_month": "2022-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
@@ -2048,6 +2160,8 @@
    "holding_month": "2022-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.215,
     "Fixed Income": 0.13375,
@@ -2066,6 +2180,8 @@
    "holding_month": "2022-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1875,
     "Fixed Income": 0.05625,
@@ -2084,6 +2200,8 @@
    "holding_month": "2022-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1875,
     "Fixed Income": 0.05625,
@@ -2102,6 +2220,8 @@
    "holding_month": "2022-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.1625,
     "Fixed Income": 0.05625,
@@ -2120,6 +2240,8 @@
    "holding_month": "2022-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.4275,
     "Fixed Income": 0.0825,
@@ -2138,6 +2260,8 @@
    "holding_month": "2023-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.34375,
     "Fixed Income": 0.0825,
@@ -2156,6 +2280,8 @@
    "holding_month": "2023-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.48925,
     "Fixed Income": 0.114,
@@ -2174,6 +2300,8 @@
    "holding_month": "2023-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.265,
     "Fixed Income": 0.0825,
@@ -2192,6 +2320,8 @@
    "holding_month": "2023-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7450000000000001,
     "Fixed Income": 0.10875,
@@ -2210,6 +2340,8 @@
    "holding_month": "2023-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.5462500000000001,
     "Fixed Income": 0.21749999999999997,
@@ -2228,6 +2360,8 @@
    "holding_month": "2023-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.39625,
     "Fixed Income": 0.10875,
@@ -2246,6 +2380,8 @@
    "holding_month": "2023-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.4225,
     "Fixed Income": 0.1275,
@@ -2264,6 +2400,8 @@
    "holding_month": "2023-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.46975,
     "Fixed Income": 0.05625,
@@ -2282,6 +2420,8 @@
    "holding_month": "2023-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.37,
     "Fixed Income": 0.10875,
@@ -2300,6 +2440,8 @@
    "holding_month": "2023-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.3175,
     "Fixed Income": 0.0825,
@@ -2318,6 +2460,8 @@
    "holding_month": "2023-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.24,
     "Fixed Income": 0.0825,
@@ -2336,6 +2480,8 @@
    "holding_month": "2023-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.73575,
     "Fixed Income": 0.08775,
@@ -2354,6 +2500,8 @@
    "holding_month": "2024-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.69375,
     "Fixed Income": 0.10875,
@@ -2372,6 +2520,8 @@
    "holding_month": "2024-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.49375,
     "Fixed Income": 0.34124999999999994,
@@ -2390,6 +2540,8 @@
    "holding_month": "2024-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6225,
     "Fixed Income": 0.15375,
@@ -2408,6 +2560,8 @@
    "holding_month": "2024-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6925,
     "Fixed Income": 0.10875,
@@ -2426,6 +2580,8 @@
    "holding_month": "2024-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.41325,
     "Fixed Income": 0.05625,
@@ -2444,6 +2600,8 @@
    "holding_month": "2024-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7095,
     "Fixed Income": 0.0825,
@@ -2462,6 +2620,8 @@
    "holding_month": "2024-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.672,
     "Fixed Income": 0.05625,
@@ -2480,6 +2640,8 @@
    "holding_month": "2024-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6825,
     "Fixed Income": 0.0825,
@@ -2498,6 +2660,8 @@
    "holding_month": "2024-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.68125,
     "Fixed Income": 0.0825,
@@ -2516,6 +2680,8 @@
    "holding_month": "2024-10",
    "state": "DEFENSIVE",
    "risk_budget": 0.55,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6562500000000001,
     "Fixed Income": 0.0825,
@@ -2534,6 +2700,8 @@
    "holding_month": "2024-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.49500000000000005,
     "Fixed Income": 0.15375,
@@ -2552,6 +2720,8 @@
    "holding_month": "2024-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.453,
     "Fixed Income": 0.23024999999999998,
@@ -2570,6 +2740,8 @@
    "holding_month": "2025-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.303,
     "Fixed Income": 0.114,
@@ -2588,6 +2760,8 @@
    "holding_month": "2025-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6675,
     "Fixed Income": 0.10875,
@@ -2606,6 +2780,8 @@
    "holding_month": "2025-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.56625,
     "Fixed Income": 0.135,
@@ -2624,6 +2800,8 @@
    "holding_month": "2025-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.31124999999999997,
     "Fixed Income": 0.34500000000000003,
@@ -2642,6 +2820,8 @@
    "holding_month": "2025-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.33749999999999997,
     "Fixed Income": 0.45375,
@@ -2660,6 +2840,8 @@
    "holding_month": "2025-06",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.55875,
     "Fixed Income": 0.135,
@@ -2678,6 +2860,8 @@
    "holding_month": "2025-07",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7199999999999999,
     "Fixed Income": 0.10875,
@@ -2696,6 +2880,8 @@
    "holding_month": "2025-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.74625,
     "Fixed Income": 0.0825,
@@ -2714,6 +2900,8 @@
    "holding_month": "2025-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.74625,
     "Fixed Income": 0.0825,
@@ -2732,6 +2920,8 @@
    "holding_month": "2025-10",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7357499999999999,
     "Fixed Income": 0.08775,
@@ -2750,6 +2940,8 @@
    "holding_month": "2025-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.71875,
     "Fixed Income": 0.10875,
@@ -2768,6 +2960,8 @@
    "holding_month": "2025-12",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.71875,
     "Fixed Income": 0.0825,
@@ -2786,6 +2980,8 @@
    "holding_month": "2026-01",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.72,
     "Fixed Income": 0.0825,
@@ -2804,6 +3000,8 @@
    "holding_month": "2026-02",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6562499999999999,
     "Fixed Income": 0.10875,
@@ -2822,6 +3020,8 @@
    "holding_month": "2026-03",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.6812499999999999,
     "Fixed Income": 0.0825,
@@ -2840,6 +3040,8 @@
    "holding_month": "2026-04",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.4282499999999999,
     "Fixed Income": 0.144,
@@ -2858,6 +3060,8 @@
    "holding_month": "2026-05",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.66875,
     "Fixed Income": 0.0825,
@@ -2876,6 +3080,8 @@
    "holding_month": "2026-06",
    "state": "DEFENSIVE",
    "risk_budget": 0.5812204962094375,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.72,
     "Fixed Income": 0.0825,
@@ -2894,6 +3100,8 @@
    "holding_month": "2026-07",
    "state": "DEFENSIVE",
    "risk_budget": 0.55,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.7732499999999999,
     "Fixed Income": 0.08775,
@@ -2912,6 +3120,8 @@
    "holding_month": "2026-08",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_HISTORY",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.49624999999999997,
     "Fixed Income": 0.0825,
@@ -2930,6 +3140,8 @@
    "holding_month": "2026-09",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_FORWARD_MONITOR",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.40875,
     "Fixed Income": 0.05625,
@@ -2948,6 +3160,8 @@
    "holding_month": "2026-10",
    "state": "DEFENSIVE",
    "risk_budget": 0.7122398018836975,
+   "adaptive_source": "REFERENCE_FORWARD_MONITOR",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.37250000000000005,
     "Fixed Income": 0.05625,
@@ -2966,6 +3180,8 @@
    "holding_month": "2026-11",
    "state": "NORMAL",
    "risk_budget": 1.0,
+   "adaptive_source": "REFERENCE_OFFICIAL",
+   "record_class": "RECONSTRUCTED",
    "core": {
     "Equity": 0.41624999999999995,
     "Fixed Income": 0.135,
@@ -3076,7 +3292,8 @@
      "2026-09"
     ]
    }
-  }
+  },
+  "new_official_locks": 0
  },
  "config": {
   "sleeve_mix": {
@@ -3090,10 +3307,50 @@
    "ADAA": 0.9,
    "F2R": 0.1
   },
-  "adaptive_mode": "reference_then_proxy",
+  "adaptive_mode": "reference_only",
   "adaptive_floor": 0.55,
   "irp_cap": 0.7,
-  "irp_cap_buffer": 0.02
+  "irp_cap_buffer": 0.02,
+  "official_requires_f2r_published": true,
+  "official_requires_author_core": true,
+  "lock_deadline_day": 10,
+  "lock_final_check_utc_hour": 22,
+  "operator_halt": false
  },
- "disclaimer": "Research reconstruction for personal monitoring. Not investment advice."
+ "disclaimer": "Research reconstruction for personal monitoring. Not investment advice.",
+ "reference": {
+  "note": "Author-published Adaptive values for reference only. They are applied to a month only if already published when that month was locked (see official.sources.adaptive).",
+  "official": {
+   "signal_month": "2026-10",
+   "status": "OFFICIAL",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true
+  },
+  "applied_to_official": true,
+  "preview": {
+   "signal_month": "2026-11",
+   "status": "PREVIEW",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true
+  },
+  "pending": null,
+  "ledger_rows": 68,
+  "last_fetch_ok": true,
+  "events": []
+ },
+ "action": {
+  "code": "FOLLOW_OFFICIAL",
+  "month": "2026-10",
+  "in_force": "2026-10",
+  "reason": null,
+  "message": "공식 목표 2026-10→2026-11 유효. 신규 잠금 대상 월 없음."
+ },
+ "unlocked_gaps": [],
+ "official_events": [],
+ "notify": [],
+ "manual_release": null
 }

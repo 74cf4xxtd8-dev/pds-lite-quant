@@ -1,15 +1,40 @@
 {
  "ok": true,
- "finished_utc": "2026-11-25T15:59:32Z",
+ "action": {
+  "code": "FOLLOW_OFFICIAL",
+  "month": "2026-10",
+  "in_force": "2026-10",
+  "reason": null,
+  "message": "공식 목표 2026-10→2026-11 유효. 신규 잠금 대상 월 없음."
+ },
+ "operator_halt": false,
+ "notify": [],
+ "notify_pending": [],
+ "finished_utc": "2026-11-26T10:05:09Z",
  "event": "push",
- "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45650019380",
+ "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45797724776",
  "log_tail": [
   "[warn] UNRATE via FRED failed: GET failed: https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE: The read operation timed out",
   "[data] prices 2015-01-02..2026-11-25, UNRATE via BLS (last 2026-10)",
   "[diag] FAA canonical_v016: 77/116 exact",
   "[diag] FAA legacy_v011: 116/116 exact",
   "[diag] FAA peer_rank: 84/116 exact",
-  "OK engine: official 2026-10->2026-11 NORMAL RB=100.00%; flags=['2026-11: F2R_PREVIEW']",
+  "OK engine (reference_only): official 2026-10->2026-11 NORMAL RB=100.00%; wrote ['official_history.json', 'reference_adaptive.json', 'official_events.json', 'manual_releases.json', 'portfolio_latest.json']; flags=['2026-11: F2R_PREVIEW']",
+  "ACTION FOLLOW_OFFICIAL 2026-10: 공식 목표 2026-10→2026-11 유효. 신규 잠금 대상 월 없음.",
   "validation: 116/116 months exact, max diff 3.89e-16"
+ ],
+ "recent": [
+  {
+   "at_utc": "2026-11-26T10:05:09+00:00",
+   "ok": true,
+   "event": "push",
+   "action": "FOLLOW_OFFICIAL",
+   "month": "2026-10",
+   "reason": null,
+   "operator_halt": false,
+   "new_locks": 0,
+   "notified": [],
+   "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45797724776"
+  }
  ]
 }

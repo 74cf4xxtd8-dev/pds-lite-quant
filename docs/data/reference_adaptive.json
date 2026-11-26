@@ -1,0 +1,689 @@
+{
+ "schema": "pds-lite/reference-adaptive/1",
+ "source": "https://raw.githubusercontent.com/slackquant80/slackquant-research/main/public/assets/systems/pds/PDS_Portfolio_History_Current_Definition.xlsx",
+ "note": "Author-published Adaptive rows, reference only. Never used to rewrite official_history.json.",
+ "rows": {
+  "2021-04|HISTORY": {
+   "signal_month": "2021-04",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-05|HISTORY": {
+   "signal_month": "2021-05",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-06|HISTORY": {
+   "signal_month": "2021-06",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-07|HISTORY": {
+   "signal_month": "2021-07",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-08|HISTORY": {
+   "signal_month": "2021-08",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-09|HISTORY": {
+   "signal_month": "2021-09",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-10|HISTORY": {
+   "signal_month": "2021-10",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-11|HISTORY": {
+   "signal_month": "2021-11",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2021-12|HISTORY": {
+   "signal_month": "2021-12",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-01|HISTORY": {
+   "signal_month": "2022-01",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-02|HISTORY": {
+   "signal_month": "2022-02",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-03|HISTORY": {
+   "signal_month": "2022-03",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-04|HISTORY": {
+   "signal_month": "2022-04",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-05|HISTORY": {
+   "signal_month": "2022-05",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-06|HISTORY": {
+   "signal_month": "2022-06",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-07|HISTORY": {
+   "signal_month": "2022-07",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-08|HISTORY": {
+   "signal_month": "2022-08",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-09|HISTORY": {
+   "signal_month": "2022-09",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-10|HISTORY": {
+   "signal_month": "2022-10",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-11|HISTORY": {
+   "signal_month": "2022-11",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2022-12|HISTORY": {
+   "signal_month": "2022-12",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-01|HISTORY": {
+   "signal_month": "2023-01",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-02|HISTORY": {
+   "signal_month": "2023-02",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-03|HISTORY": {
+   "signal_month": "2023-03",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-04|HISTORY": {
+   "signal_month": "2023-04",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-05|HISTORY": {
+   "signal_month": "2023-05",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-06|HISTORY": {
+   "signal_month": "2023-06",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-07|HISTORY": {
+   "signal_month": "2023-07",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-08|HISTORY": {
+   "signal_month": "2023-08",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-09|HISTORY": {
+   "signal_month": "2023-09",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-10|HISTORY": {
+   "signal_month": "2023-10",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-11|HISTORY": {
+   "signal_month": "2023-11",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2023-12|HISTORY": {
+   "signal_month": "2023-12",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-01|HISTORY": {
+   "signal_month": "2024-01",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-02|HISTORY": {
+   "signal_month": "2024-02",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-03|HISTORY": {
+   "signal_month": "2024-03",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-04|HISTORY": {
+   "signal_month": "2024-04",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-05|HISTORY": {
+   "signal_month": "2024-05",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-06|HISTORY": {
+   "signal_month": "2024-06",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-07|HISTORY": {
+   "signal_month": "2024-07",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-08|HISTORY": {
+   "signal_month": "2024-08",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-09|HISTORY": {
+   "signal_month": "2024-09",
+   "status": "HISTORY",
+   "state": "DEFENSIVE",
+   "risk_budget": 0.55,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-10|HISTORY": {
+   "signal_month": "2024-10",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-11|HISTORY": {
+   "signal_month": "2024-11",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2024-12|HISTORY": {
+   "signal_month": "2024-12",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-01|HISTORY": {
+   "signal_month": "2025-01",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-02|HISTORY": {
+   "signal_month": "2025-02",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-03|HISTORY": {
+   "signal_month": "2025-03",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-04|HISTORY": {
+   "signal_month": "2025-04",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-05|HISTORY": {
+   "signal_month": "2025-05",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-06|HISTORY": {
+   "signal_month": "2025-06",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-07|HISTORY": {
+   "signal_month": "2025-07",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-08|HISTORY": {
+   "signal_month": "2025-08",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-09|HISTORY": {
+   "signal_month": "2025-09",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-10|HISTORY": {
+   "signal_month": "2025-10",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-11|HISTORY": {
+   "signal_month": "2025-11",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2025-12|HISTORY": {
+   "signal_month": "2025-12",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-01|HISTORY": {
+   "signal_month": "2026-01",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-02|HISTORY": {
+   "signal_month": "2026-02",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-03|HISTORY": {
+   "signal_month": "2026-03",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-04|HISTORY": {
+   "signal_month": "2026-04",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-05|HISTORY": {
+   "signal_month": "2026-05",
+   "status": "HISTORY",
+   "state": "DEFENSIVE",
+   "risk_budget": 0.5812205011430843,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-06|HISTORY": {
+   "signal_month": "2026-06",
+   "status": "HISTORY",
+   "state": "DEFENSIVE",
+   "risk_budget": 0.55,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-07|HISTORY": {
+   "signal_month": "2026-07",
+   "status": "HISTORY",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-08|FORWARD_MONITOR": {
+   "signal_month": "2026-08",
+   "status": "FORWARD_MONITOR",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-09|FORWARD_MONITOR": {
+   "signal_month": "2026-09",
+   "status": "FORWARD_MONITOR",
+   "state": "DEFENSIVE",
+   "risk_budget": 0.712239682674408,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-10|OFFICIAL": {
+   "signal_month": "2026-10",
+   "status": "OFFICIAL",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  },
+  "2026-11|PREVIEW": {
+   "signal_month": "2026-11",
+   "status": "PREVIEW",
+   "state": "NORMAL",
+   "risk_budget": 1.0,
+   "first_seen_utc": "2026-11-26T10:03:53+00:00",
+   "last_seen_utc": "2026-11-26T10:03:53+00:00",
+   "seeded": true,
+   "revisions": []
+  }
+ },
+ "last_fetch_utc": "2026-11-26T10:03:53+00:00",
+ "last_fetch_ok": true
+}
