@@ -3,6 +3,7 @@ Restore them after each test so that no test - in particular the live real-data 
 on another test's synthetic inputs or settings."""
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -20,6 +21,22 @@ ORIGINAL = {k: getattr(H.NEW, k) for k in _PATCHED}
 
 
 REAL_DATA = H.ROOT / "docs" / "data"
+V10_ENABLED = os.environ.get("PDS_V10_MIGRATION") == "1"
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "v10_migration: v1.0 -> PR #1 migration evidence; runs only with "
+                                       "PDS_V10_MIGRATION=1")
+
+
+def pytest_collection_modifyitems(config, items):
+    """The v1.0 migration tests are kept as PR #1's evidence but are not part of the default CI."""
+    if V10_ENABLED:
+        return
+    skip = pytest.mark.skip(reason="v1.0 migration evidence (PR #1); set PDS_V10_MIGRATION=1 to run")
+    for item in items:
+        if "v10_migration" in item.keywords:
+            item.add_marker(skip)
 
 
 def _real_data_state():

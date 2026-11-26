@@ -110,26 +110,79 @@ def default_adaptive_rows(official_2026_10: tuple | None = None) -> list[tuple]:
     return rows
 
 
-# The v1.0 pipeline as it ran before PR #1 (main 88decb7).  Before/after and rollback tests compare
-# against this fixed baseline; "main" stopped being v1.0 when PR #1 was merged.
+# The v1.0 pipeline as it ran before PR #1 (main 88decb7).  Only the opt-in v1.0 migration tests
+# (marker v10_migration, PDS_V10_MIGRATION=1) compare against it; they are PR #1's evidence.
 V10_BASELINE = "88decb746f5776209724e1c6aeef1be1b8910675"
+# Paths whose change can alter what the pipeline locks or writes; rollback tests only run if one
+# of them differs from the PR's previous code.
+PIPELINE_PATHS = ("run_pipeline.py", "requirements.txt", "tools", ".github/workflows/update.yml")
+
+
+def _git(*args) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True)
+
+
+def _sha(ref: str) -> str | None:
+    r = _git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+
+def pr_target_sha() -> str | None:
+    """The target branch commit this PR is checked against: pinned by CI (PDS_PR_TARGET_SHA) so a
+    main that moves during the run cannot change the comparison; locally main/origin/main."""
+    if os.environ.get("PDS_PR_TARGET_SHA"):
+        return _sha(os.environ["PDS_PR_TARGET_SHA"])
+    for ref in ("origin/main", "main"):
+        if _sha(ref):
+            return _sha(ref)
+    return None
+
+
+def pr_merge_base_sha() -> str | None:
+    """Where this PR branched off the target (PDS_PR_MERGE_BASE pinned by CI, else computed)."""
+    if os.environ.get("PDS_PR_MERGE_BASE"):
+        return _sha(os.environ["PDS_PR_MERGE_BASE"])
+    target = pr_target_sha()
+    if not target:
+        return None
+    r = _git("merge-base", target, "HEAD")
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+
+def pr_compare_sha() -> str | None:
+    """The code this run's code is compared with.  CI pins it: the target commit for pull_request
+    runs (they test the PR merged into the target) and the merge-base for branch pushes (they test
+    the branch head).  Locally: the merge-base."""
+    if os.environ.get("PDS_PR_COMPARE_SHA"):
+        return _sha(os.environ["PDS_PR_COMPARE_SHA"])
+    return pr_merge_base_sha()
+
+
+def pipeline_changed_since(ref: str) -> bool:
+    """True if any pipeline path differs between ref and the working tree."""
+    return _git("diff", "--quiet", ref, "--", *PIPELINE_PATHS).returncode != 0
+
+
+def load_ref(ref: str | None, name: str):
+    """run_pipeline.py as it was at ref, imported as module `name` (None if unavailable)."""
+    if not ref:
+        return None
+    r = _git("show", f"{ref}:run_pipeline.py")
+    if r.returncode != 0 or "def run_engine" not in r.stdout:
+        return None
+    tmp = Path(os.environ.get("TMPDIR", "/tmp")) / f"{name}_{ref[:12]}.py"
+    tmp.write_text(r.stdout, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location(name, tmp)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod                              # dataclasses need the module registered
+    spec.loader.exec_module(mod)
+    mod.__base_ref__ = ref
+    return mod
 
 
 def load_base():
-    """The 'before' pipeline: run_pipeline.py at PDS_BASE_REF, default the v1.0 baseline commit."""
-    refs = [os.environ["PDS_BASE_REF"]] if os.environ.get("PDS_BASE_REF") else [V10_BASELINE]
-    for ref in refs:
-        r = subprocess.run(["git", "-C", str(ROOT), "show", f"{ref}:run_pipeline.py"], capture_output=True, text=True)
-        if r.returncode == 0 and "def run_engine" in r.stdout:
-            tmp = Path(os.environ.get("TMPDIR", "/tmp")) / f"run_pipeline_base_{abs(hash(ref))}.py"
-            tmp.write_text(r.stdout, encoding="utf-8")
-            spec = importlib.util.spec_from_file_location("run_pipeline_base", tmp)
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules["run_pipeline_base"] = mod          # dataclasses need the module registered
-            spec.loader.exec_module(mod)
-            mod.__base_ref__ = ref
-            return mod
-    return None
+    """v1.0 baseline (opt-in migration tests only; PDS_BASE_REF may point elsewhere)."""
+    return load_ref(os.environ.get("PDS_BASE_REF") or V10_BASELINE, "run_pipeline_base")
 
 
 def point(mod, tmp: Path, lock_init: list | None = None):
