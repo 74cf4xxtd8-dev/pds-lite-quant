@@ -1386,13 +1386,22 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
                              kind="PREVIEW", mode=mode).to_json()
         except RuntimeError as e:
             flags.append(f"PREVIEW_UNAVAILABLE: {e}")
-    for d in [history[-1]] + ([preview] if preview else []):
+    # Input notes of one block (which estimate it rests on).  They stay in `flags` as before and are
+    # also scoped, so the dashboard shows a preview's notes on the Preview tab only.
+    scoped = {"official": [], "preview": [], "run": []}
+    block_flags = set()
+    for scope, d in [("official", history[-1])] + ([("preview", preview)] if preview else []):
+        codes = []
         if d["sources"]["f2r"] != "F2R_PUBLISHED":
-            flags.append(f"{d['signal_month']}: {d['sources']['f2r']}")
+            codes.append(d["sources"]["f2r"])
         if d["sources"]["adaptive"].startswith("PROXY"):
-            flags.append(f"{d['signal_month']}: ADAPTIVE_PROXY")
+            codes.append("ADAPTIVE_PROXY")
         if d["sources"]["unrate_carried"]:
-            flags.append(f"{d['signal_month']}: UNRATE_CARRIED")
+            codes.append("UNRATE_CARRIED")
+        for c in codes:
+            flags.append(f"{d['signal_month']}: {c}")
+            block_flags.add(f"{d['signal_month']}: {c}")
+            scoped[scope].append(c)
 
     ledger, events = update_ref_ledger(load_ref_ledger(), ref, now_utc)
     flags += [e for e in events if not e.startswith("REFERENCE_NEW")]
@@ -1418,8 +1427,10 @@ def run_engine(backfill_from: str, now_utc: datetime, mode: str | None = None) -
     validation["faa_variant"] = FAA_VARIANT
     validation["faa_variant_match"] = diagnose_faa_variants(m, unrate, f2r, ref, backfill_from, last_off)
     validation["new_official_locks"] = n_new
+    scoped["run"] = [f for f in flags if f not in block_flags]   # run-level: apply to both tabs
     payload = build_payload(history, preview, validation, "engine", str(daily.index[-1].date()), flags,
                             reference=reference)
+    payload["flags_scoped"] = scoped
     payload["config"]["adaptive_mode"] = mode
     payload["action"] = rebalance_action(live, history[-1])
     payload["unlocked_gaps"] = gaps

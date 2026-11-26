@@ -880,6 +880,51 @@ def test_alert_delivery_failure_end_to_end(tmp_path, monkeypatch):
     assert [(e["event"], e.get("resend")) for e in nxt["notify"]] == [("LOCKED", True)]
 
 
+def test_preview_notes_are_scoped_to_the_preview(dl_market, tmp_path):
+    """'2026-11: F2R_PREVIEW' belongs to the in-month preview only: the official block and the lock
+    are built from the published F2R, and the dashboard gets the note scoped to the Preview tab."""
+    dl = dl_market
+    ref = _core_wb(dl, dl["oct"], ["2026-10"])
+    p, h, _ = _run_at(dl, tmp_path, _utc(11, 13, 3, 0), dl["oct"], ref, px_until="2026-11-12")
+    assert h[-1]["signal_month"] == "2026-10" and h[-1]["sources"]["f2r"] == "F2R_PUBLISHED"
+    assert p["official"]["signal_month"] == "2026-10" and p["preview"]["signal_month"] == "2026-11"
+    assert p["preview"]["sources"]["f2r"] == "F2R_PREVIEW"
+    assert "2026-11: F2R_PREVIEW" in p["flags"]                                      # legacy list unchanged
+    assert p["flags_scoped"] == {"official": [], "preview": ["F2R_PREVIEW"], "run": []}
+    p2, _, _ = _run_at(dl, tmp_path / "noref", _utc(11, 13, 3, 0), dl["oct"], None, px_until="2026-11-12")
+    assert "REFERENCE_UNAVAILABLE" in p2["flags_scoped"]["run"]                       # run-level: both tabs
+    assert p2["flags_scoped"]["preview"] == ["F2R_PREVIEW"]
+
+
+def test_dashboard_flag_view_per_tab():
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node unavailable")
+    html = (H.ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+    js = html.split("// <flag-view>")[1].split("// </flag-view>")[0]
+    cases = {
+        "preview_note": {"flags": ["2026-11: F2R_PREVIEW"],
+                         "flags_scoped": {"official": [], "preview": ["F2R_PREVIEW"], "run": []}},
+        "run_warning": {"flags": ["REFERENCE_UNAVAILABLE", "2026-11: F2R_PREVIEW"],
+                        "flags_scoped": {"official": [], "preview": ["F2R_PREVIEW"], "run": ["REFERENCE_UNAVAILABLE"]}},
+        "official_note": {"flags": ["2026-10: UNRATE_CARRIED"],
+                          "flags_scoped": {"official": ["UNRATE_CARRIED"], "preview": [], "run": []}},
+        "old_data": {"flags": ["2026-11: F2R_PREVIEW", "REFERENCE_MODE"]},
+    }
+    script = js + "\nconst C = " + json.dumps(cases, ensure_ascii=False) + ";\n" + \
+        "const out = {}; for (const k in C) out[k] = {official: flagView(C[k], 'official'), preview: flagView(C[k], 'preview')};\n" + \
+        "console.log(JSON.stringify(out));"
+    r = subprocess.run([node, "-e", script], capture_output=True, text=True, check=True)
+    out = json.loads(r.stdout)
+    note = "F2R 공식 Top-4 미공개 → 원작자 Preview 순위로 추정"
+    assert out["preview_note"]["official"] == {"warn": [], "info": []}                  # no warning on Official
+    assert out["preview_note"]["preview"] == {"warn": [], "info": [note]}               # info on Preview
+    assert out["run_warning"]["official"]["warn"] == ["REFERENCE_UNAVAILABLE"]
+    assert out["run_warning"]["preview"] == {"warn": ["REFERENCE_UNAVAILABLE"], "info": [note]}
+    assert out["official_note"]["official"]["warn"] == ["실업률 최신 월 미발표 → 직전 값 사용"]
+    assert out["old_data"]["official"]["warn"] == ["2026-11: F2R_PREVIEW"]              # old JSON: as before
+
+
 def test_ops_audit_commit_provenance():
     sys.path.insert(0, str(H.ROOT / "tools"))
     import ops_audit as OA
@@ -1220,6 +1265,8 @@ def test_live_new_code_on_the_committed_lock(tmp_path):
     v = p["validation"]
     assert v["exact_matches"] == v["months_checked"] >= 116, v.get("mismatches")
     assert p["action"]["code"] in ("FOLLOW_OFFICIAL", "WAIT", "HALTED")
+    # an official target is locked only with the published F2R, so no F2R estimate note can be scoped to it
+    assert not [c for c in p["flags_scoped"]["official"] if c.startswith("F2R")], p["flags_scoped"]
     report = os.environ.get("PDS_TEST_REPORT_DIR")
     if report:
         out = Path(report)
@@ -1227,6 +1274,7 @@ def test_live_new_code_on_the_committed_lock(tmp_path):
         (out / "live_new_on_committed_lock.json").write_text(json.dumps(
             {"now_utc": now.isoformat(timespec="seconds"), "market_asof": p["market_asof"],
              "new_locks": len(h) - len(real), "action": p["action"], "flags": p["flags"],
+             "flags_scoped": p["flags_scoped"],
              "official": {k: p["official"][k] for k in ("signal_month", "holding_month", "state", "risk_budget")},
              "preview": None if not p["preview"] else
              {k: p["preview"].get(k) for k in ("signal_month", "state", "risk_budget", "status")},
