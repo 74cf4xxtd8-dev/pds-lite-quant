@@ -347,7 +347,7 @@ Settings → Environments → New environment `pds-manual-release`
 | 10일 실행 실패 | 실패 알림 | 10일 23:59:59 UTC(11일 08:59 KST) 전에 Run workflow로 다시 실행하면 정상 판정(자료가 갖춰졌으면 잠금)된다. 그 뒤에는 자동 잠금이 없고, 다음 예약 실행(금요일 또는 28일)에서 BLOCKED로 기록된다. 그 사이 보유 유지 |
 | 화면이 안 열림·"데이터를 불러오지 못했습니다" | Actions의 pages-build-deployment, 저장소 `docs/data` | 공식 목표는 저장소 `docs/data/portfolio_latest.json`과 `official_history.json`에 그대로 있다 |
 | 예약 실행이 멈춤 | Actions 탭에 최근 실행 없음, GitHub 메일 | 60일 무활동 등으로 꺼졌으면 Actions → update-portfolio → Enable workflow |
-| **잠금이 이상해 보임** | 화면, `official_history.json` | 매매하지 않는다 → PDS_HALT(7장) → 기록 보존 → 보고. 파이프라인은 잠금을 고치지 않는다. 잠금 수정은 명시 승인된 별도 커밋으로만(③ 6장) |
+| **잠금이 이상해 보임** | 화면, `official_history.json` | 매매하지 않는다 → PDS_HALT(7장) → 기록 보존 → 보고. 파이프라인은 잠금을 고치지 않는다. 되돌려야 하면 **12장 복구 절차**로만 한다(③ 6장) |
 
 ### 9.2 롤백 절차 (코드를 이전 버전으로 되돌릴 때)
 구버전(v1.0)은 `PDS_HALT`를 모르고, 보류로 비워 둔 달을 백필로 자동으로 채운다. 그대로 되돌리면 승인하지 않은 목표가 생길 수 있으므로 순서를 지킨다.
@@ -374,6 +374,7 @@ Settings → Environments → New environment `pds-manual-release`
 |---|---|
 | 월말 다음 날 아침 | ⏳ 대기 시작 확인 |
 | 확정 아침 | ✅ 확인 → 리밸런싱 |
+| 확정 당일 | 월간 외부 백업과 매니페스트 1줄(12.2절) |
 | 11일 아침 | 확정 안 됐으면 ⛔ 보류 → 보유 유지, 8장 검토 |
 | 11일 점심 이후 | Actions → ops-audit 최신 실행 → 작업 요약의 ✅/⚠️/❔ 확인 |
 | 아무 때나 | Settings → Applications에서 이 저장소에 쓰기 권한이 있는 앱 점검 |
@@ -412,3 +413,231 @@ README 설치 3단계의 "Workflow permissions: Read and write"는 이 체크리
 | 실행 요약(원작자 대조, action, DEFENSIVE 달) | Actions → 해당 실행 → Summary |
 | 권한 점검 결과 | Actions → ops-audit → Summary |
 | 과거 어느 시점의 데이터 | git 이력(`docs/data` 봇 커밋 `data: <시각>`) |
+| 잠금 파일 외부 백업과 매니페스트 | GitHub 밖 보관 위치(12.2절) |
+| 잠금 복구 기록 | `docs/data/lock_restores.json`, `official_events.json`의 `LOCK_RESTORED`(복구가 있었을 때만, 12.7절) |
+
+---
+
+## 12. 잠금 파일 백업과 복구
+
+`docs/data/official_history.json`(공식 잠금)은 이 시스템에서 다시 만들 수 없는 유일한 기록이다. 이 장은 매월 외부 백업과, 잠금 파일이 손상·변경됐을 때의 **복구 절차**를 정한다. 복구는 일반 변경과 다른 별도 절차이며, 일반 PR에는 적용하지 않는다.
+
+### 12.1 왜 별도 절차가 필요한가
+- 현재 코드로 처음부터 다시 계산해도 지금의 116개월과 같은 이력이 나오지 않는다(① 6.2절). **재계산은 복구가 아니다.**
+- 파이프라인의 추가 전용 검사는 **한 실행 안에서** 기존 잠금이 바뀌는 것만 막는다. 사람이 커밋으로 바꾼 파일은 다음 실행이 새 기준으로 읽는다 [코드].
+- **CI의 "잠금 바이트 불변" 검사는 "파이프라인 코드가 커밋된 파일을 바꾸지 않는가"를 본다. PR이 커밋된 잠금 파일 자체를 바꾸는 것은 막지 않는다.**
+  - 2026-11-26 임시 복사본에서 잠금 파일의 한 달 RB를 바꾸고 한 달을 지운 뒤 오프라인 테스트를 돌렸더니 전부 통과했다(PR #4 코드 기준 79 passed) [데이터].
+  - 실데이터 테스트는 원작자 Core 대조 개월 수가 116 이상인지와 Core 값만 보므로, RB·상태만 바뀐 경우는 잡지 못한다.
+  - 그래서 지금은 **PR 검토(사람)와 이 장의 절차가 잠금 파일을 지키는 장치**다. 자동 검사 추가는 12.10절 제안.
+- 원본은 git 이력뿐이다. 이력이 덮어써지거나 저장소를 잃으면 외부 백업만 남는다.
+
+### 12.2 월간 외부 백업
+
+**언제**: ✅ 공식 확정 또는 🔓 수동 해제 알림을 받은 날. 알림이 없었다면 매월 11일(마감 확인 뒤). 운영자 중지·복구 직후에도 1회.
+
+**무엇을**
+| 파일 | 백업 | 이유 |
+|---|---|---|
+| `docs/data/official_history.json` | **필수** | 공식 잠금. 다시 만들 수 없음 |
+| `docs/data/official_events.json` | 권장 | 감사 기록(추가 전용) |
+| `docs/data/manual_releases.json` | 권장 | 수동 해제 기록(추가 전용) |
+| `docs/data/reference_adaptive.json` | 권장 | 원작자 Adaptive 공개 시각 기록. 원작자가 값을 고치면 되찾을 수 없음 |
+| `portfolio_latest.json`, `run_status.json`, `unrate_cache.csv` | 불필요 | 다음 실행이 다시 만든다 |
+
+**어떻게**
+1. 데이터 커밋을 찾는다: GitHub → `docs/data/official_history.json` → History → 가장 위의 `data: …` 커밋 SHA.
+2. 그 커밋의 파일을 받는다.
+   - 휴대폰: `https://raw.githubusercontent.com/74cf4xxtd8-dev/pds-lite-quant/<커밋>/docs/data/official_history.json`을 열어 저장한다(다른 파일은 경로만 바꿈).
+   - PC: `git show <커밋>:docs/data/official_history.json > official_history_<마지막 신호월>_<커밋 7자리>.json`
+3. GitHub 밖(개인 클라우드, 외장 저장장치 등)에 보관한다. 지난달 파일도 지우지 않는다.
+4. SHA-256을 계산한다(PC): macOS `shasum -a 256 <파일>`, Linux `sha256sum <파일>`, Windows `certutil -hashfile <파일> SHA256`.
+5. 직전 백업과 비교한다(12.5절 점검 스크립트): **빠진 달·내용이 다른 달이 없어야 하고**, 직전 파일이 새 파일의 앞부분과 바이트 단위로 같아야 한다. 새로 있는 달은 이번에 잠긴 달뿐이어야 한다.
+6. 백업 매니페스트(외부에 두는 표)에 한 줄 추가한다.
+
+**백업 매니페스트 형식** (외부 보관, 한 줄 = 한 번의 백업)
+
+| 백업일(KST) | 계기 | 개월 수 | 첫 신호월 | 마지막 신호월 | SHA-256 | git blob | 데이터 커밋 | 보관 파일 | 직전 대비 |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-26 | 기준(초기) | 116 | 2017-03 | 2026-10 | `1750dd4adcc74ce5832193a8a87da73c1ab401d36b242dea3b4fe5a3510e709e` | `241dd18f8a453355d66fbbf7d42d624fa3aba667` | `88decb7` | official_history_2026-10_88decb7.json | – |
+
+첫 줄은 2026-11-26 main(`4c747f3`)의 파일로 계산한 실제 값이다 [데이터]. git blob은 `git hash-object <파일>` 값이며 GitHub API의 파일 SHA와 같다. 이 파일은 `88decb7`에서 생긴 뒤 바뀌지 않았다.
+
+### 12.3 복구가 필요한 상황
+| 신호 | 확인 |
+|---|---|
+| 실행 실패 로그에 `official lock is append-only`, `duplicate signal months`, `not in signal-month order`, JSON 오류 | `run_status.json` `log_tail`, 실행 로그 |
+| 화면 하단 원작자 Core 대조 개월 수가 매니페스트의 개월 수와 다르거나 불일치가 생김 | 화면, `validation` |
+| 잠금 파일의 SHA-256이 매니페스트의 마지막 값과 다르고, 그 사이 정상 잠금(✅/🔓) 기록이 없음 | 12.5절 스크립트 |
+| 잠금 파일을 바꾼 커밋의 작성자가 `github-actions[bot]`이 아님 | `git log --format='%h %an %ad %s' -- docs/data/official_history.json` |
+| 저장소 이력이 덮어써짐·삭제됨 | GitHub 화면, `ops-audit` |
+
+위 신호가 없는데 "결정이 마음에 들지 않아서" 잠금을 바꾸는 것은 복구가 아니다. 잠긴 결정은 바꾸지 않는다(③ 6장).
+
+### 12.4 복구 절차
+
+복구는 **복구 ID**(`RESTORE-YYYYMMDD-N`) 하나로 처음부터 끝까지 추적한다.
+
+| 단계 | 할 일 |
+|---|---|
+| R0 중지 | `PDS_HALT=1`, 7.3절 절차로 다른 실행 0건 확인. 매매하지 않는다. 필요하면 update-portfolio 워크플로도 끈다(Disable) |
+| R1 원인 기록 | 언제 무엇이 바뀌었는지(나쁜 커밋, 손상 내용, 발견 경로)를 적는다 |
+| R2 복구원 선택 | **경우 A(git 이력 있음)**: 이상이 생기기 직전의 **가장 최근 정상 버전**을 고른다. 그 버전을 쓴 커밋은 `github-actions[bot]`이어야 하고, 그 SHA-256이 매니페스트 어느 줄과 같아야 한다(매니페스트에 없으면 그 사실과 사유를 기록). **경우 B(git 이력 없음)**: 매니페스트의 마지막 줄에 해당하는 외부 백업 파일 |
+| R3 비교 | 복구 전 파일(현재 main)과 복구본을 12.5절 스크립트로 비교해 결과를 저장한다 |
+| R4 복구 브랜치 | `restore/<복구 ID>` 브랜치에서 경우 A: `git checkout <정상 커밋> -- docs/data/official_history.json`, 경우 B: 외부 백업 파일로 교체. 감사·해제 기록이 같이 손상됐으면 같은 방식으로 함께 복구 |
+| R5 복구 기록 | `docs/data/lock_restores.json`에 복구 기록 1건 추가, `docs/data/official_events.json` 끝에 `LOCK_RESTORED` 사건 1건 추가(12.7절) |
+| R6 검증 | 12.5절 V1~V8을 모두 통과하고 결과를 PR 본문과 복구 기록에 남긴다 |
+| R7 복구 PR·승인 | 12.6절 규칙의 Draft PR. CI 통과 + V1~V8 통과 + 소유자의 명시 승인 문구 → 병합 |
+| R8 재개 | `PDS_HALT` 삭제(워크플로를 껐으면 켬) → Run workflow를 `commit` 해제로 1회 실행 → 원작자 Core 대조 N/N(N = 복구본 개월 수), `new_locks` 예상대로, action 확인 → 정상 운영 |
+| R9 백업 | 복구된 파일로 외부 백업과 매니페스트 1줄(계기: "복구 후", 복구 ID) 추가 |
+
+복구본 선택 원칙: 이상이 생긴 뒤에 **정상적으로 잠긴 달**(✅/🔓 알림과 감사 기록이 있는 달)이 있다면, 그 달을 잃지 않는 버전을 고른다. 그런 버전이 없으면 그 달은 "복구 불가"로 기록하고 빈 달로 둔다. **재계산으로 채우지 않는다.**
+
+### 12.5 복구 검증 (V1~V8, 전부 통과해야 병합)
+
+| # | 검증 | 방법 | 통과 기준 |
+|---|---|---|---|
+| V1 | 복구원 커밋 | `git merge-base --is-ancestor <정상 커밋> origin/main` / `git log -1 --format=%an <정상 커밋> -- docs/data/official_history.json` | main 이력에 있고, 그 파일을 마지막으로 쓴 것이 `github-actions[bot]` (경우 B는 해당 없음, 기록에 사유) |
+| V2 | 복구본 = 복구원 | `git diff --quiet <정상 커밋> -- docs/data/official_history.json` (경우 B: `cmp <외부 파일> docs/data/official_history.json`) | 차이 없음(종료 코드 0) |
+| V3 | SHA-256 | 복구본, 외부 백업 파일, 매니페스트 해당 줄 | 세 값이 모두 같음 |
+| V4 | 개월 수·마지막 신호월 | 점검 스크립트 | 매니페스트 해당 줄과 같음 |
+| V5 | 구조 | 점검 스크립트 | JSON 정상, 신호월 정렬·중복 없음, 모든 달 core·adaptive 합 1 |
+| V6 | 전후 비교 | 점검 스크립트(복구 전 → 복구본) | 빠진 달·다른 달·새 달 목록이 R1 원인 기록과 맞고, 정상 잠금 달을 잃지 않음 |
+| V7 | CI | PR의 `tests` offline + live | 통과. 실데이터 원작자 Core 대조 N/N(N = 복구본 개월 수) |
+| V8 | 운영 중지 | CI live 작업의 권한 점검 표 `PDS_HALT (이 실행이 본 값)` | `'1'` 등 중지 값 |
+
+V7만으로는 복구가 맞다는 보장이 없다(12.1절). V1~V6은 사람이 실행하고 결과를 그대로 붙인다.
+
+**점검 스크립트** (PC에서 `lock_compare.py`로 저장, `python3 lock_compare.py <기준 파일> <대상 파일>`)
+
+```python
+import hashlib, json, sys
+
+def info(path):
+    b = open(path, "rb").read()
+    out = {"bytes": len(b), "sha256": hashlib.sha256(b).hexdigest()}
+    try:
+        h = json.loads(b)
+        sms = [d["signal_month"] for d in h]
+        out.update(months=len(h), first=sms[0], last=sms[-1],
+                   ordered_unique=sms == sorted(set(sms)),
+                   weights_ok=all(abs(sum(d[k].values()) - 1) < 1e-8 for d in h for k in ("core", "adaptive")))
+    except Exception as e:  # noqa: BLE001
+        h, out["error"] = None, f"{type(e).__name__}: {e}"[:120]
+    return b, h, out
+
+canon = lambda d: json.dumps(d, sort_keys=True, ensure_ascii=False)  # noqa: E731
+b0, h0, i0 = info(sys.argv[1])   # 기준: 직전 백업 또는 복구 전 파일
+b1, h1, i1 = info(sys.argv[2])   # 대상: 새 백업 또는 복구본
+print("기준:", i0)
+print("대상:", i1)
+if h0 is not None and h1 is not None:
+    a = {d["signal_month"]: canon(d) for d in h0}
+    b = {d["signal_month"]: canon(d) for d in h1}
+    print("대상에서 빠진 달:", sorted(set(a) - set(b)))
+    print("대상에 새로 있는 달:", sorted(set(b) - set(a)))
+    print("내용이 다른 달:", sorted(m for m in a if m in b and a[m] != b[m]))
+    print("기준이 대상의 앞부분과 바이트 일치:", b1 == b0 or b1.startswith(b0[:-2]))
+```
+
+월간 백업에서는 기준 = 직전 백업, 대상 = 새 백업이다. 정상이면 "빠진 달 []", "내용이 다른 달 []", "앞부분 일치 True", 새로 있는 달은 이번에 잠긴 달뿐이다. 이 스크립트는 2026-11-26에 현재 잠금 파일, 한 달이 추가된 파일, RB 변경·삭제가 섞인 파일, 잘린 파일로 시험했다 [데이터].
+
+### 12.6 복구 PR 규칙과 승인
+- 브랜치 `restore/<복구 ID>`, 제목 `[LOCK-RESTORE] <복구 ID>`, 라벨 `lock-restore`(처음 한 번 만든다), **Draft**로 연다.
+- **바꿀 수 있는 파일은 복구 대상 `docs/data` 파일, `docs/data/lock_restores.json`(1건 추가), `docs/data/official_events.json`(끝에 1건 추가)뿐이다.** 코드·워크플로·테스트·문서 변경을 같이 넣지 않는다.
+- PR 본문에 R1 원인, R2 복구원, R3 비교 결과(스크립트 출력 그대로), V1~V8 결과를 적는다.
+- 승인: 소유자가 PR에 다음 문구를 코멘트로 남긴 뒤 Draft 해제·병합한다.
+  > LOCK-RESTORE 승인: `<복구 ID>`, 복구본 SHA-256 `<64자>`, 개월 수 `<N>`, 마지막 신호월 `<YYYY-MM>`, V1~V8 통과 확인
+- 1인 저장소에서 이 승인은 수동 해제와 같은 **본인 재확인**이다. 기록의 `approval_type`도 `self-confirmation`으로 적는다. 별도 검토자를 두면 그 사람이 승인 코멘트를 남기고 `independent`로 적는다.
+- 병합은 `PDS_HALT`가 걸린 상태에서만 한다.
+
+### 12.7 감사 기록 (복구 전후 비교와 승인 근거)
+두 곳에 남긴다. 둘 다 복구 PR 안에서 추가한다.
+
+**① `docs/data/lock_restores.json`** (새 파일, 추가 전용 목록, 복구 1건 = 1항목)
+```json
+[
+ {
+  "restore_id": "RESTORE-20261220-1",
+  "declared_at_utc": "2026-12-20T01:00:00+00:00",
+  "incident": "원인 요약(R1)",
+  "detected_by": "실행 실패 로그 / 매니페스트 불일치 / …",
+  "halt_run_url": "PDS_HALT 확인 실행 URL",
+  "files": ["docs/data/official_history.json"],
+  "source": {"kind": "git", "commit": "<정상 커밋 SHA>", "commit_author": "github-actions[bot]",
+             "external_file": "official_history_2026-11_<커밋>.json", "manifest_row": "2026-12-03 | LOCKED | 117 | …"},
+  "before": {"sha256": "<복구 전>", "bytes": 0, "months": 0, "last": "YYYY-MM", "readable": true},
+  "after":  {"sha256": "<복구본>", "bytes": 0, "months": 0, "last": "YYYY-MM"},
+  "diff": {"removed": [], "added": [], "changed": []},
+  "checks": {"V1": "pass", "V2": "pass", "V3": "pass", "V4": "pass", "V5": "pass", "V6": "pass", "V7": "CI 실행 URL", "V8": "pass"},
+  "approval": {"approver": "<GitHub 계정>", "approval_type": "self-confirmation", "statement": "승인 코멘트 원문",
+               "pr": "PR URL"}
+ }
+]
+```
+
+**② `docs/data/official_events.json`** 끝에 사건 1건
+```json
+{"signal_month": "<복구본의 마지막 신호월>", "event": "LOCK_RESTORED", "at_utc": "<UTC>",
+ "detail": "<복구 ID>: official_history.json <- <정상 커밋 7자리> sha256 <앞 12자리>, months <전>-><후>, removed [...], changed [...], approved by <계정> (self-confirmation), <PR URL>"}
+```
+- `signal_month`와 `event` 키는 **반드시** 있어야 한다. 파이프라인이 모든 사건에서 이 두 키를 읽는다 [코드].
+- 2026-11-26에 이 형식의 사건과 `lock_restores.json`이 있는 상태로 파이프라인을 돌려 다음 달이 정상 잠기는 것을 확인했다(사건 보존, 그 뒤에 `LOCKED` 추가) [데이터].
+- 파이프라인은 `lock_restores.json`을 읽지 않는다. 기존 항목을 바꾸지 않고 추가만 한다(감사·해제 기록과 같은 원칙).
+- 복구 뒤 재개 실행(R8)의 URL과 결과는 매니페스트 "복구 후" 줄과 PR 코멘트에 남긴다.
+
+### 12.8 하지 말 것
+- 잠금 파일을 지우고 파이프라인을 다시 돌려 재생성하기(다른 이력이 만들어진다).
+- 파일을 직접 편집하거나 main에 바로 push하기.
+- 복구 PR에 다른 변경 섞기.
+- `PDS_HALT` 없이 복구 PR 병합하기(병합 전후 실행이 손상된 파일 위에서 새 달을 잠글 수 있다).
+- CI 통과만 보고 복구가 맞다고 판단하기(12.1절).
+
+### 12.9 일반 변경과 복구의 구분 (요약)
+| | 일반 PR | 복구 PR |
+|---|---|---|
+| 잠금·감사·해제 파일 | **바꾸지 않는다** | 복구 대상만 복구원과 바이트 동일하게 되돌림 + 복구 기록 추가 |
+| 운영 상태 | 정상 운영 중 가능 | `PDS_HALT` 중에만 |
+| 검증 | CI(파이프라인이 잠금을 보존하는지) | CI + V1~V8(사람) + 매니페스트·외부 백업 대조 |
+| 승인 | 소유자 승인 후 병합 | 정해진 승인 문구 + 감사 기록 2곳 |
+
+### 12.10 자동화 제안 (미구현, 각각 별도 PR과 승인 필요)
+1. **일반 PR의 잠금 파일 변경 차단(CI)**: PR의 `official_history.json`·`official_events.json`·`manual_releases.json`·`lock_restores.json`이 비교 기준 커밋과 바이트 단위로 같은지 검사한다. 다르면 실패하고 이 장을 안내한다. 지금 빠져 있는 "커밋 간 불변" 검사다.
+2. **복구 검증 모드(CI)**: 1번 검사가 변경을 발견했을 때 PR에 라벨 `lock-restore`가 있으면, 일반 검사 대신 더 엄격한 복구 검증을 한다. 우회가 아니다.
+   - `lock_restores.json`에 정확히 1건이 추가됐는지
+   - 그 기록의 before 해시 = 대상 브랜치 파일 해시, after 해시 = 복구본 해시 = 복구원 커밋 파일 해시
+   - 복구원 커밋이 main 이력에 있고 봇이 쓴 것인지
+   - 개월 수·마지막 신호월·전후 비교가 기록과 같은지
+   - `LOCK_RESTORED` 사건 1건만 추가됐는지, 허용 파일 외 변경이 없는지, `PDS_HALT`가 걸려 있는지
+   - 하나라도 어긋나면 실패. 검증 작업은 보호 환경(예: `pds-lock-restore`)의 검토자 승인을 받아 승인자를 기록한다.
+3. **확정 알림에 백업 체크리스트**(12.11절).
+4. 잠금 매니페스트(개월 수·마지막 신호월·SHA-256·데이터 커밋)를 `run_status.json`과 `ops-audit` 요약에 표시해, 외부 매니페스트와 매월 대조한다.
+
+### 12.11 제안: 공식 확정 알림에 백업 체크리스트 포함 (미구현)
+매월 한 번 오는 ✅·🔓 알림에 백업할 내용을 같이 보내면, 따로 기억하지 않아도 백업을 빠뜨리지 않는다. 예시:
+
+```
+✅ 2026-11 공식 확정 → 2026-12 보유. NORMAL RB 100%
+…(목표 상위 5종)…
+이 목표로만 리밸런싱하세요.
+
+📦 오늘 할 일: 월간 백업
+잠금 117개월 · 2017-03~2026-11
+SHA-256 af2aca56…(64자 전체)
+데이터 커밋 abc1234
+1) official_history.json (필수): https://raw.githubusercontent.com/74cf4xxtd8-dev/pds-lite-quant/abc1234/docs/data/official_history.json
+2) official_events.json · manual_releases.json · reference_adaptive.json (같은 커밋, 경로만 변경)
+3) 외부 보관 → 매니페스트 1줄 → 직전 백업과 점검 스크립트 대조
+```
+(SHA-256 값은 형식 예시다.)
+
+구현 방향:
+- `notify_message.py`가 `LOCKED`·`MANUAL_RELEASE` 사건일 때만 이 블록을 붙인다.
+- SHA-256과 개월 수는 커밋된 `docs/data/official_history.json`에서 계산한다.
+- 데이터 커밋 SHA는 워크플로 커밋 단계의 결과(`git rev-parse HEAD`)를 넘겨받는다.
+- 같은 내용을 `run_status.json`에도 남겨 Telegram이 없어도 확인할 수 있게 한다.
+
+주의:
+- 워크플로·도구 변경이라 롤백 검증 대상이다.
+- 알림이 길어지지만 Telegram 한도(코드에서 4,000자로 자름) 안이다.
+- 저장소가 공개라 링크 노출은 문제없다.
+- Telegram이 설정되지 않으면 이 알림도 오지 않는다. 그래서 4번(`run_status.json`·`ops-audit`)과 함께 둔다.
