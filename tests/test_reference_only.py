@@ -1,6 +1,7 @@
 """reference_only + fail-safe tests (offline; run: python -m pytest tests -q).
 
-Before/after comparisons load run_pipeline.py from the base ref (PDS_BASE_REF, default main)
+Before/after comparisons load run_pipeline.py from the base ref (PDS_BASE_REF, default the v1.0
+baseline commit 88decb7 = main before PR #1)
 and run both versions on identical inputs.  The live real-data comparison at the bottom needs
 network and runs only with PDS_LIVE_TEST=1 (see .github/workflows/tests.yml).
 """
@@ -42,7 +43,7 @@ def market():
 def base():
     b = H.load_base()
     if b is None:
-        pytest.skip("base ref not available (set PDS_BASE_REF or fetch main)")
+        pytest.skip("base ref not available (set PDS_BASE_REF or fetch the v1.0 baseline commit)")
     return b
 
 

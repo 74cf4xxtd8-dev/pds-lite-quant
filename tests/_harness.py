@@ -110,9 +110,14 @@ def default_adaptive_rows(official_2026_10: tuple | None = None) -> list[tuple]:
     return rows
 
 
+# The v1.0 pipeline as it ran before PR #1 (main 88decb7).  Before/after and rollback tests compare
+# against this fixed baseline; "main" stopped being v1.0 when PR #1 was merged.
+V10_BASELINE = "88decb746f5776209724e1c6aeef1be1b8910675"
+
+
 def load_base():
-    """The 'before' pipeline: run_pipeline.py at PDS_BASE_REF (default main, then origin/main)."""
-    refs = [os.environ["PDS_BASE_REF"]] if os.environ.get("PDS_BASE_REF") else ["main", "origin/main"]
+    """The 'before' pipeline: run_pipeline.py at PDS_BASE_REF, default the v1.0 baseline commit."""
+    refs = [os.environ["PDS_BASE_REF"]] if os.environ.get("PDS_BASE_REF") else [V10_BASELINE]
     for ref in refs:
         r = subprocess.run(["git", "-C", str(ROOT), "show", f"{ref}:run_pipeline.py"], capture_output=True, text=True)
         if r.returncode == 0 and "def run_engine" in r.stdout:

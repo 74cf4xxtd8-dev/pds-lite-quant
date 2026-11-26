@@ -25,7 +25,7 @@ jobs:
       - run: pip install -r requirements.txt pytest pyyaml
       - name: Offline tests (synthetic data, before/after vs origin/main, fail-safe, workflow logic)
         env:
-          PDS_BASE_REF: origin/main
+          PDS_BASE_REF: 88decb746f5776209724e1c6aeef1be1b8910675   # v1.0 baseline (main before PR #1)
           PDS_TEST_REPORT_DIR: test-report
         run: python -m pytest tests -q
       - uses: actions/upload-artifact@v4
@@ -64,7 +64,7 @@ jobs:
           PY
       - name: Live 116-month before/after on real Yahoo / BLS / F2R / workbook data
         env:
-          PDS_BASE_REF: origin/main
+          PDS_BASE_REF: 88decb746f5776209724e1c6aeef1be1b8910675   # v1.0 baseline (main before PR #1)
           PDS_LIVE_TEST: "1"
           PDS_TEST_REPORT_DIR: test-report
         run: python -m pytest tests/test_reference_only.py -q -rA -k test_live_   # exactly the real-data tests
