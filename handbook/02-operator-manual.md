@@ -251,7 +251,7 @@ USD·KRW 입력값은 그 휴대폰 브라우저에만 저장된다(localStorage
 3. 확인
    - Telegram에 "⛔ 운영자 중지(PDS_HALT) 확인: …"과 직전 실행·최근 72시간 잠금·다른 실행 0건이 온다.
    - 실행이 초록색(성공)이다. 'Telegram alert (state changes…)' 단계가 실행됐다.
-   - `docs/data/run_status.json`에 `"delivery": {"status": "sent"}`가 있다.
+   - 그 실행의 'Telegram alert' 단계 로그 마지막 줄에 `{"kind": "state", "status": "sent", …}`가 있다(아티팩트 `pds-lite-run-<ID>`의 `docs/data/run_status.json`에도 있음). **저장소의 `run_status.json`에는 성공 기록이 커밋되지 않는다.**
    - 대시보드에 ⛔ 운영자 중지 배너가 보인다.
 4. Variables에서 `PDS_HALT`를 **삭제**한다.
 5. 다시 Run workflow(기본값). `FOLLOW_OFFICIAL`로 끝나고 배너가 사라진다. 이 실행은 상태 변화가 없어 알림이 없다.
@@ -260,12 +260,12 @@ USD·KRW 입력값은 그 휴대폰 브라우저에만 저장된다(localStorage
 | 증상 | 원인과 조치 |
 |---|---|
 | Telegram 단계가 회색(skipped) | 시크릿 `TELEGRAM_TOKEN`이 비어 있음. 이름·값 확인. 이 경우 `delivery` 기록도 남지 않는다 |
-| Telegram 단계가 빨간색, 실행 실패 | `run_status.json` `delivery.error` 확인. 예: `HTTP 401` = 토큰 오류, `HTTP 400 … chat not found` = 채팅 ID 오류 또는 봇과 대화를 시작하지 않음. 고치면 다음 성공 실행이 "(재전송)"으로 보낸다 |
-| `delivery.status: skipped_no_telegram_secret` | 토큰은 있고 `TELEGRAM_CHAT_ID`가 비어 있음 |
+| Telegram 단계가 빨간색, 실행 실패 | `run_status.json` `delivery.error` 확인(실패 기록은 추가 커밋됨, 다음 실행 전까지). 예: `HTTP 401` = 토큰 오류, `HTTP 400 … chat not found` = 채팅 ID 오류 또는 봇과 대화를 시작하지 않음. 고치면 다음 성공 실행이 "(재전송)"으로 보낸다 |
+| 단계 로그·아티팩트에 `skipped_no_telegram_secret` | 토큰은 있고 `TELEGRAM_CHAT_ID`가 비어 있음(커밋되지 않음) |
 | 단계는 성공인데 메시지 없음 | 알릴 사건이 없었음(`notify` 빈 목록). 정상 |
 
 - Telegram이 안 와도 실패는 GitHub 실패 메일로 알 수 있다. 계정 Settings → Notifications → Actions에서 실패한 워크플로 메일을 켠다.
-- `run_status.json` `recent[].notified`는 알림 대상 목록이지 전달 증거가 아니다. 전달 여부는 `delivery`로 본다.
+- `run_status.json` `recent[].notified`는 알림 대상 목록이지 전달 증거가 아니다. 전달 여부는 그 실행의 Telegram 단계 로그나 아티팩트의 `delivery`로 본다.
 
 ---
 
@@ -406,7 +406,8 @@ README 설치 3단계의 "Workflow permissions: Read and write"는 이 체크리
 | 확정된 모든 달 | `docs/data/official_history.json` |
 | 대기·불일치·보류·확정·해제 이력 | `docs/data/official_events.json` |
 | 수동 해제 요청과 승인자 | `docs/data/manual_releases.json` |
-| 최근 60회 실행 결과, 알림 대상, 중지 보고, 전달 결과 | `docs/data/run_status.json`(`recent`, `notify`, `halt_report`, `delivery`) |
+| 최근 60회 실행 결과, 알림 대상, 중지 보고 | `docs/data/run_status.json`(`recent`, `notify`, `halt_report`) |
+| 알림 전달 결과 | 실패: `run_status.json` `delivery`(추가 커밋, 다음 실행 전까지). 성공·건너뜀: 그 실행의 Telegram 단계 로그와 아티팩트 |
 | 원작자 Adaptive 값과 공개·수정 이력 | `docs/data/reference_adaptive.json` |
 | 한 실행의 전체 기록(로그·결과·승인 정보) | Actions → 해당 실행 → Artifacts `pds-lite-run-<실행 ID>`(90일) |
 | 실행 요약(원작자 대조, action, DEFENSIVE 달) | Actions → 해당 실행 → Summary |

@@ -205,7 +205,7 @@
 | R1 | README 설치 3단계 | Workflow permissions: **Read and write** | 같은 README 체크리스트 4는 기본 **읽기 전용**을 권장. `update.yml`이 `run` 작업에 `contents: write`를 직접 선언 | 설정 혼동. 체크리스트(읽기 전용)를 따른다 |
 | R2 | README 롤백 5단계 | 예약 시각 "**매일** 22:40 UTC, 금요일 포함" | 매월 28~31일, 1~10일, 금요일 22:40 UTC만 | 재활성화 시각 판단 |
 | R3 | README 운영 원칙 "감사 기록" | `official_events.json`에 OPERATOR_HALT를 남긴다 | 중지 실행은 그 파일을 쓰지 않는다. `run_status.json`의 `notify`·`recent`에만 남는다 | 중지 이력 찾는 위치 |
-| R4 | README "실행 결과 기록·전달" 표 | Telegram 미설정 → `delivery: skipped_no_telegram_secret` 기록 | 토큰이 없으면 알림 단계가 건너뛰어져 `delivery`가 기록되지 않는다(토큰만 있고 채팅 ID가 없을 때만 기록) | 미설정 여부를 `delivery`로 판단할 수 없다 |
+| R4 | README "실행 결과 기록·전달" 표 | Telegram 미설정 → `run_status.json`·아티팩트의 `delivery: skipped_no_telegram_secret` 기록 | 토큰이 없으면 알림 단계가 건너뛰어져 `delivery`가 기록되지 않는다. `skipped_no_telegram_secret`은 토큰만 있고 채팅 ID가 없을 때 기록되며, 그것도 커밋 뒤에 쓰여 아티팩트에만 남는다(전달 성공 `sent`도 같음, 실패만 추가 커밋) | 미설정·전달 여부를 저장소 `run_status.json`으로 판단할 수 없다 |
 | R5 | README "실행 모드" 표의 pytest 줄 | "main 대비 전후 비교", "`PDS_LIVE_TEST=1`이면 실데이터 116개월 전후 비교" | PR #2 이후: 비교 기준은 PR 대상 커밋·분기점(참고 보고). 116개월 v1.0 전후 비교는 `v10_migration` 옵션. `PDS_LIVE_TEST=1`의 기본 실데이터 테스트는 커밋된 잠금 위 실행(필수)과 분기점 대비 회귀(참고) | 테스트 의미 오해 |
 | R6 | README 수동 해제 | "화면 분류 `RECONSTRUCTED`" | `record_class`는 `portfolio_latest.json` `history`에만 있고 대시보드에 표시되지 않는다 | 화면에서 확인 불가 |
 | R7 | README Fail-closed | "출력 5개 … 한꺼번에 기록", "어떤 파일도 쓰지 않는다" | 모든 검사 뒤 파일마다 임시 파일→교체로 차례로 쓴다. `unrate_cache.csv`는 수집 단계에서 먼저 갱신되고, 실패한 실행은 워크플로 커밋 단계가 되돌린다(로컬 실행에서는 남을 수 있음) | 거의 없음(저장소 기준으로는 fail-closed 유지) |

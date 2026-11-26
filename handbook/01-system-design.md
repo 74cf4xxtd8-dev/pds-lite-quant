@@ -257,7 +257,7 @@ GitHub Actions `ubuntu-latest`, Python 3.12. `requirements.txt`에 상한이 없
 #### `run_status.json`
 `ok`, `action`, `operator_halt`, `notify`(이번 실행에서 알릴 사건), `notify_pending`(전달 실패로 미뤄진 알림), `finished_utc`, `event`(트리거), `run_url`, `log_tail`(마지막 40줄), `recent[]`(최근 60회: 시각, 성공 여부, action, 사유, 신규 잠금 수, `notified`, 실행 URL), 중지 때 `halt_report`, 알림을 시도했으면 `delivery`.
 
-`recent[].notified`는 "알림 대상"을 적은 것이지 실제 전달 증거가 아니다. 전달 결과는 `delivery`에만 있다(7.4절).
+`recent[].notified`는 "알림 대상"을 적은 것이지 실제 전달 증거가 아니다. 전달 결과 `delivery`는 알림 단계가 커밋 **뒤에** 쓰므로, 저장소의 `run_status.json`에는 전달 실패(`failed`)일 때만 커밋되고(다음 실행이 파일을 다시 쓰면 사라짐) 성공(`sent`)·건너뜀 기록은 그 실행의 아티팩트와 단계 로그에만 남는다(7.5절).
 
 ### 4.4 시계: 신호월·보유월·Preview [코드: `split_clock`]
 - 마지막 일봉이 그 달 NYSE 마지막 거래일이고 그 봉이 확정(다음 날이거나 21:30 UTC 이후)이면 그 달이 끝난 것으로 본다. 끝난 가장 최근 달이 "잠글 수 있는 마지막 신호월"이고, 진행 중인 달이 Preview 대상이다.
@@ -469,6 +469,7 @@ flowchart TD
 - **커밋이 성공한 뒤에만** 보낸다. 저장되지 않은 잠금을 "확정"으로 알리지 않기 위해서다.
 - 실패 알림: 파이프라인 실패("새 목표 비중 없음, 직전 Official 유지") 또는 커밋 실패("결과가 저장되지 않음 + 이번 판단").
 - 전달 확인: Telegram 응답 `ok: true`를 확인하고 실패하면 5초 뒤 1회 재시도. 그래도 실패하면 `delivery.status = failed`, 상태 알림은 `notify_pending`으로 넘겨 다음 성공 실행이 "(재전송)"으로 다시 보낸다. 실패한 실행 사이에서도 보존된다.
+- `delivery` 기록 위치: `send_alert.py`는 커밋 단계 **뒤에** `run_status.json`을 고친다. 실패면 "Record alert delivery failure" 단계가 추가 커밋하지만, 성공(`sent`)·`skipped_no_telegram_secret`은 커밋되지 않아 그 실행의 아티팩트 `pds-lite-run-<ID>`(`docs/data/run_status.json`)와 단계 로그(JSON 한 줄)에만 있다. 다음 실행은 `delivery`를 이어 쓰지 않는다 [코드].
 - **Telegram 시크릿이 없으면 알림 단계 자체가 실행되지 않는다**(`env.TG_TOKEN != ''` 조건). 이때 `delivery` 기록도 남지 않고, 알림 대상 사건은 `notify_pending`으로 넘어가지 않는다. 사건 자체는 `official_events.json`과 `run_status.json`(`notify`, `recent[].notified`)에 남는다. `skipped_no_telegram_secret`은 토큰은 있는데 채팅 ID가 비었을 때만 기록된다.
 - 현재: Telegram 시크릿 미설정(2026-11-26 확인) → 알림이 전달되지 않는 상태 [데이터]. 지금 상태는 [미확인].
 
