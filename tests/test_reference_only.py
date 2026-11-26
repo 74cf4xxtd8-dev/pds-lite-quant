@@ -1,8 +1,11 @@
 """reference_only + fail-safe tests (offline; run: python -m pytest tests -q).
 
-Before/after comparisons load run_pipeline.py from the base ref (PDS_BASE_REF, default main)
-and run both versions on identical inputs.  The live real-data comparison at the bottom needs
-network and runs only with PDS_LIVE_TEST=1 (see .github/workflows/tests.yml).
+Regression checks for every PR (section 9) compare against the PR's own base: the merge-base with
+the target branch (PDS_PR_MERGE_BASE) and the target commit (PDS_PR_TARGET_SHA), both pinned by
+CI.  Core differences against the merge-base are reported, not enforced; the author's published
+Core (116/116) and the byte-identical committed lock are enforced.  Rollback tests run only if a
+pipeline path changed.  The v1.0 migration tests (PR #1 evidence, marker v10_migration) run only
+with PDS_V10_MIGRATION=1.  Real-data tests need network and PDS_LIVE_TEST=1.
 """
 from __future__ import annotations
 
@@ -11,7 +14,7 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -40,9 +43,10 @@ def market():
 
 @pytest.fixture(scope="module")
 def base():
+    """v1.0 pipeline (88decb7) - used only by the opt-in v1.0 migration tests (PR #1 evidence)."""
     b = H.load_base()
     if b is None:
-        pytest.skip("base ref not available (set PDS_BASE_REF or fetch main)")
+        pytest.skip("base ref not available (set PDS_BASE_REF or fetch the v1.0 baseline commit)")
     return b
 
 
@@ -62,7 +66,10 @@ def canon(x):
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. before/after: 116 months of Core and monthly target weights
+#    v1.0 migration evidence for PR #1 (marker v10_migration, opt-in via PDS_V10_MIGRATION=1);
+#    the general per-PR regression checks are in section 9
 # ─────────────────────────────────────────────────────────────────────────────
+@pytest.mark.v10_migration
 def test_116_months_core_identical_before_after(market, base, tmp_path):
     daily, un, months = market
     f2r = H.f2r_state(months, official="2026-10")
@@ -91,6 +98,7 @@ def test_116_months_core_identical_before_after(market, base, tmp_path):
         _write_weight_report(Path(report) / "synthetic_before_after.csv", h_old, h_new)
 
 
+@pytest.mark.v10_migration
 def test_diagnostic_mode_reproduces_base_exactly(market, base, tmp_path):
     """reference_then_proxy in the new code == the old default, except bookkeeping fields."""
     daily, un, months = market
@@ -219,6 +227,7 @@ def test_real_committed_lock_is_preserved(market, tmp_path):
     assert p["history"][-1]["record_class"] == "LIVE"
 
 
+@pytest.mark.v10_migration
 def test_rollback_base_code_reads_new_outputs(market, base, tmp_path):
     """After a git revert, the old pipeline must keep working on files written by the new one."""
     daily, un, months = market
@@ -880,6 +889,51 @@ def test_alert_delivery_failure_end_to_end(tmp_path, monkeypatch):
     assert [(e["event"], e.get("resend")) for e in nxt["notify"]] == [("LOCKED", True)]
 
 
+def test_preview_notes_are_scoped_to_the_preview(dl_market, tmp_path):
+    """'2026-11: F2R_PREVIEW' belongs to the in-month preview only: the official block and the lock
+    are built from the published F2R, and the dashboard gets the note scoped to the Preview tab."""
+    dl = dl_market
+    ref = _core_wb(dl, dl["oct"], ["2026-10"])
+    p, h, _ = _run_at(dl, tmp_path, _utc(11, 13, 3, 0), dl["oct"], ref, px_until="2026-11-12")
+    assert h[-1]["signal_month"] == "2026-10" and h[-1]["sources"]["f2r"] == "F2R_PUBLISHED"
+    assert p["official"]["signal_month"] == "2026-10" and p["preview"]["signal_month"] == "2026-11"
+    assert p["preview"]["sources"]["f2r"] == "F2R_PREVIEW"
+    assert "2026-11: F2R_PREVIEW" in p["flags"]                                      # legacy list unchanged
+    assert p["flags_scoped"] == {"official": [], "preview": ["F2R_PREVIEW"], "run": []}
+    p2, _, _ = _run_at(dl, tmp_path / "noref", _utc(11, 13, 3, 0), dl["oct"], None, px_until="2026-11-12")
+    assert "REFERENCE_UNAVAILABLE" in p2["flags_scoped"]["run"]                       # run-level: both tabs
+    assert p2["flags_scoped"]["preview"] == ["F2R_PREVIEW"]
+
+
+def test_dashboard_flag_view_per_tab():
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node unavailable")
+    html = (H.ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+    js = html.split("// <flag-view>")[1].split("// </flag-view>")[0]
+    cases = {
+        "preview_note": {"flags": ["2026-11: F2R_PREVIEW"],
+                         "flags_scoped": {"official": [], "preview": ["F2R_PREVIEW"], "run": []}},
+        "run_warning": {"flags": ["REFERENCE_UNAVAILABLE", "2026-11: F2R_PREVIEW"],
+                        "flags_scoped": {"official": [], "preview": ["F2R_PREVIEW"], "run": ["REFERENCE_UNAVAILABLE"]}},
+        "official_note": {"flags": ["2026-10: UNRATE_CARRIED"],
+                          "flags_scoped": {"official": ["UNRATE_CARRIED"], "preview": [], "run": []}},
+        "old_data": {"flags": ["2026-11: F2R_PREVIEW", "REFERENCE_MODE"]},
+    }
+    script = js + "\nconst C = " + json.dumps(cases, ensure_ascii=False) + ";\n" + \
+        "const out = {}; for (const k in C) out[k] = {official: flagView(C[k], 'official'), preview: flagView(C[k], 'preview')};\n" + \
+        "console.log(JSON.stringify(out));"
+    r = subprocess.run([node, "-e", script], capture_output=True, text=True, check=True)
+    out = json.loads(r.stdout)
+    note = "F2R 공식 Top-4 미공개 → 원작자 Preview 순위로 추정"
+    assert out["preview_note"]["official"] == {"warn": [], "info": []}                  # no warning on Official
+    assert out["preview_note"]["preview"] == {"warn": [], "info": [note]}               # info on Preview
+    assert out["run_warning"]["official"]["warn"] == ["REFERENCE_UNAVAILABLE"]
+    assert out["run_warning"]["preview"] == {"warn": ["REFERENCE_UNAVAILABLE"], "info": [note]}
+    assert out["official_note"]["official"]["warn"] == ["실업률 최신 월 미발표 → 직전 값 사용"]
+    assert out["old_data"]["official"]["warn"] == ["2026-11: F2R_PREVIEW"]              # old JSON: as before
+
+
 def test_ops_audit_commit_provenance():
     sys.path.insert(0, str(H.ROOT / "tools"))
     import ops_audit as OA
@@ -962,6 +1016,7 @@ def test_run_status_keeps_a_rolling_log_and_ignores_stale_payloads(tmp_path):
     assert RUNSTATUS.this_runs_result(f, datetime(2026, 12, 3, 23, 0, tzinfo=timezone.utc)) is None
 
 
+@pytest.mark.v10_migration
 def test_rollback_dry_run_flags_a_gap_fill(dl_market, base, tmp_path):
     """The 1.0 code would back-fill a BLOCKED month: the dry run must say 'manual review'."""
     dl = dl_market
@@ -980,6 +1035,7 @@ def test_rollback_dry_run_flags_a_gap_fill(dl_market, base, tmp_path):
     assert {f.name: f.read_bytes() for f in data.glob("*.json")} == snap             # dry run wrote nothing
 
 
+@pytest.mark.v10_migration
 def test_rollback_dry_run_clean_case(market, base, tmp_path):
     daily, un, months = market
     f2r = H.f2r_state(months, official="2026-10")
@@ -1007,6 +1063,7 @@ def test_month_lock_requires_the_authors_core(market, tmp_path):
     assert h[-1]["signal_month"] == "2026-10"
 
 
+@pytest.mark.v10_migration
 def test_rollback_base_code_after_a_blocked_month(dl_market, base, tmp_path):
     """Files written by the new code after a BLOCKED month (gap + events file) stay readable by the
     old code; it keeps every new lock byte-for-byte (it would back-fill the gap month itself)."""
@@ -1155,9 +1212,218 @@ def test_workflow_defaults_and_schedule():
     live_cmd = next(x["run"] for x in tw["jobs"]["live"]["steps"] if "python -m pytest" in x.get("run", ""))
     assert "-k test_live_" in live_cmd             # the live job runs exactly the real-data tests
     assert sorted(n for n in dir(sys.modules[__name__]) if n.startswith("test_live_")) == [
-        "test_live_116_months_before_after", "test_live_new_code_on_the_committed_lock"]
+        "test_live_116_months_before_after", "test_live_new_code_on_the_committed_lock",
+        "test_live_regression_vs_pr_merge_base"]
+    # the comparison base is pinned once per run and handed to both test jobs
+    outs = tw["jobs"]["baseline"]["outputs"]
+    assert set(outs) == {"target_sha", "merge_base", "compare_sha", "pipeline_changed", "v10"}
+    pin = next(x for x in tw["jobs"]["baseline"]["steps"] if x.get("id") == "b")
+    assert "pull_request.base.sha" in pin["env"]["PR_BASE_SHA"] and "merge-base" in pin["run"]
+    assert "GITHUB_STEP_SUMMARY" in pin["run"]
+    for job in ("offline", "live"):
+        j = tw["jobs"][job]
+        assert "baseline" in (j["needs"] if isinstance(j["needs"], list) else [j["needs"]])
+        assert j["env"]["PDS_PR_TARGET_SHA"] == "${{ needs.baseline.outputs.target_sha }}"
+        assert j["env"]["PDS_PR_COMPARE_SHA"] == "${{ needs.baseline.outputs.compare_sha }}"
+        assert "needs.baseline.outputs.v10" in j["env"]["PDS_V10_MIGRATION"]
+        assert all("PDS_BASE_REF" not in (x.get("env") or {}) for x in j["steps"])    # no moving 'main' base
+    rbk = next(x for x in tw["jobs"]["live"]["steps"] if x.get("name", "").startswith("Rollback dry run"))
+    assert "pipeline_changed == 'true'" in rbk["if"] and "$PDS_PR_TARGET_SHA" in rbk["run"]
+    assert "labeled" in tw[True]["pull_request"]["types"]
+    assert tw[True]["workflow_dispatch"]["inputs"]["v10_migration"]["default"] is False
     rb = yaml.safe_load((H.ROOT / ".github" / "workflows" / "rollback-check.yml").read_text(encoding="utf-8"))
     assert rb["permissions"] == {"contents": "read"} and list(rb[True]) == ["workflow_dispatch"]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. per-PR regression: against the PR's own merge-base / target commit (pinned by CI)
+# ─────────────────────────────────────────────────────────────────────────────
+@pytest.fixture(scope="module")
+def pr_merge_base():
+    """The PR's comparison base code (pinned by CI: target commit for pull_request runs, merge-base
+    for branch pushes)."""
+    sha = H.pr_compare_sha()
+    mod = H.load_ref(sha, "run_pipeline_pr_base")
+    if mod is None:
+        pytest.skip("PR comparison base not available (set PDS_PR_COMPARE_SHA or fetch the target branch)")
+    return mod
+
+
+@pytest.fixture(scope="module")
+def pr_target():
+    sha = H.pr_target_sha()
+    if sha is None:
+        pytest.skip("PR target commit not available (set PDS_PR_TARGET_SHA or fetch main)")
+    if not H.pipeline_changed_since(sha):
+        pytest.skip(f"no pipeline path changed vs the PR target {sha[:7]}: a rollback cannot change anything")
+    mod = H.load_ref(sha, "run_pipeline_pr_target")
+    if mod is None:
+        pytest.skip(f"run_pipeline.py not readable at {sha[:7]}")
+    return mod
+
+
+def _workbook_fingerprint(ref) -> dict | None:
+    """Identifies the author's published data a run used, so a change there can be reviewed."""
+    if not ref:
+        return None
+    import hashlib
+    core = ref.get("Core Portfolio")
+    adap = ref.get("Adaptive Portfolio")
+    def h(df):
+        return hashlib.sha256(df.to_csv(index=False).encode()).hexdigest()[:16] if df is not None else None
+    return {"core_rows": None if core is None else int(len(core)), "core_sha256_16": h(core),
+            "adaptive_rows": None if adap is None else int(len(adap)), "adaptive_sha256_16": h(adap)}
+
+
+def _num_leaves(x, p=""):
+    if isinstance(x, dict):
+        for k, v in x.items():
+            yield from _num_leaves(v, f"{p}.{k}")
+    elif isinstance(x, list):
+        for i, v in enumerate(x):
+            yield from _num_leaves(v, f"{p}[{i}]")
+    elif isinstance(x, (int, float)) and not isinstance(x, bool):
+        yield p, float(x)
+
+
+def regression_report(title: str, base_sha: str, p_b, h_b, p_n, h_n, extra: dict | None = None) -> dict:
+    """Differences between the PR's base code and this branch on identical inputs (information)."""
+    b = {d["signal_month"]: d for d in h_b}
+    n = {d["signal_month"]: d for d in h_n}
+    common = sorted(set(b) & set(n))
+    core_d = {m: max(abs(b[m]["core"][t] - n[m]["core"][t]) for t in n[m]["core"]) for m in common}
+    adap_d = {m: max(abs(b[m]["adaptive"][t] - n[m]["adaptive"][t]) for t in n[m]["adaptive"]) for m in common}
+    ob, on = dict(_num_leaves(p_b["official"])), dict(_num_leaves(p_n["official"]))
+    rep = {"title": title, "compared_with": base_sha, "merge_base": H.pr_merge_base_sha(), "target": H.pr_target_sha(),
+           "months_base": len(b), "months_branch": len(n), "months_only_base": sorted(set(b) - set(n)),
+           "months_only_branch": sorted(set(n) - set(b)),
+           "lock_entries_identical": sum(canon(b[m]) == canon(n[m]) for m in common),
+           "lock_entries_compared": len(common),
+           "core_max_abs_diff": max(core_d.values(), default=0.0),
+           "months_with_core_diff": [m for m, v in core_d.items() if v > 1e-12],
+           "adaptive_max_abs_diff": max(adap_d.values(), default=0.0),
+           "months_with_adaptive_diff": [m for m, v in adap_d.items() if v > 1e-12],
+           "official_month": [p_b["official"]["signal_month"], p_n["official"]["signal_month"]],
+           "official_numeric_max_abs_diff": max((abs(ob[k] - on[k]) for k in set(ob) & set(on)), default=0.0),
+           "payload_keys_added": sorted(set(p_n) - set(p_b)), "payload_keys_removed": sorted(set(p_b) - set(p_n)),
+           "flags_added": sorted(set(p_n.get("flags", [])) - set(p_b.get("flags", []))),
+           "flags_removed": sorted(set(p_b.get("flags", [])) - set(p_n.get("flags", [])))}
+    rep.update(extra or {})
+    out = os.environ.get("PDS_TEST_REPORT_DIR")
+    if out:
+        d = Path(out)
+        d.mkdir(parents=True, exist_ok=True)
+        slug = title.split()[0].lower()
+        (d / f"regression_{slug}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+        md = [f"### PR 분기점 대비 회귀 보고 ({title}) — 참고 정보, 실패 조건 아님",
+              f"- 비교 기준 코드 `{(base_sha or '')[:7]}` · merge-base `{(H.pr_merge_base_sha() or '')[:7]}` · "
+              f"대상 브랜치 커밋 `{(rep['target'] or '')[:7]}`",
+              f"- 잠금 항목 동일: {rep['lock_entries_identical']}/{rep['lock_entries_compared']}"
+              f" (기준에만 {rep['months_only_base'] or '없음'}, 브랜치에만 {rep['months_only_branch'] or '없음'})",
+              f"- Core 최대 차이 {rep['core_max_abs_diff']:.3g}, 차이 난 달 {rep['months_with_core_diff'] or '없음'}",
+              f"- Adaptive 최대 차이 {rep['adaptive_max_abs_diff']:.3g}, 차이 난 달 {rep['months_with_adaptive_diff'] or '없음'}",
+              f"- 공식 목표 {rep['official_month'][0]} → {rep['official_month'][1]}, 수치 최대 차이 "
+              f"{rep['official_numeric_max_abs_diff']:.3g}",
+              f"- 화면 JSON 키 추가 {rep['payload_keys_added'] or '없음'}, 삭제 {rep['payload_keys_removed'] or '없음'}",
+              f"- flags 추가 {rep['flags_added'] or '없음'}, 삭제 {rep['flags_removed'] or '없음'}"]
+        md += [f"- {k}: {v}" for k, v in (extra or {}).items()]
+        (d / f"regression_{slug}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    return rep
+
+
+def test_regression_vs_pr_merge_base_offline(market, pr_merge_base, tmp_path):
+    """Information for the reviewer, never a failure: same synthetic inputs through the PR's
+    merge-base code and this branch."""
+    daily, un, months = market
+    f2r = H.f2r_state(months, official="2026-10")
+    ref = wbc(daily, un, f2r)
+    p_b, h_b, _ = H.run(pr_merge_base, "reference_only", NOV1, tmp_path / "base", daily, un, f2r, ref)
+    p_n, h_n, _ = H.run(NEW, "reference_only", NOV1, tmp_path / "branch", daily, un, f2r, ref)
+    rep = regression_report("offline (synthetic)", pr_merge_base.__base_ref__, p_b, h_b, p_n, h_n,
+                            {"pipeline_changed": H.pipeline_changed_since(pr_merge_base.__base_ref__)})
+    assert rep["lock_entries_compared"] > 0                                         # both sides ran
+
+
+def test_committed_lock_bytes_unchanged_when_nothing_new(tmp_path):
+    """Mandatory: a run with nothing new to lock rewrites the committed lock byte-for-byte."""
+    path = H.ROOT / "docs" / "data" / "official_history.json"
+    committed = path.read_bytes()
+    real = json.loads(committed.decode("utf-8"))
+    last = real[-1]["signal_month"]
+    daily, un = H.synthetic_market(end=str((pd.Period(last, "M")).end_time.date()))
+    months = sorted(set(daily.index.to_period("M")))
+    f2r = H.f2r_state(months, official=last)
+    now = pd.Period(last, "M").end_time.tz_localize("UTC").to_pydatetime() + timedelta(days=2)
+    p, h, _ = H.run(NEW, "reference_only", now, tmp_path, daily, un, f2r, wbc(daily, un, f2r, months=(last,)),
+                    lock_init=real)
+    assert len(h) == len(real) and NEW.LOCK_JSON.read_bytes() == committed
+    assert p["validation"]["new_official_locks"] == 0
+
+
+def test_rollback_compare_detects_every_change():
+    """Default-coverage unit test of the rollback dry-run's detector (the gap-fill scenario itself
+    needs the v1.0 code and is part of the opt-in migration tests)."""
+    e = lambda m, x=0: {"signal_month": m, "state": "NORMAL", "risk_budget": 1.0, "x": x}  # noqa: E731
+    before = [e("2026-08"), e("2026-09"), e("2026-11")]                               # 2026-10 skipped
+    same = ROLLBACK.compare(before, before + [e("2026-12")])
+    assert same["appended"] == ["2026-12"] and same["needs_review"] is False
+    gap = ROLLBACK.compare(before, before + [e("2026-10")])
+    assert gap["gap_fills"] == ["2026-10"] and gap["needs_review"] is True
+    chg = ROLLBACK.compare(before, [e("2026-08"), e("2026-09", 1), e("2026-11")])
+    assert chg["changed"] == ["2026-09"] and chg["needs_review"] is True
+    rem = ROLLBACK.compare(before, before[:2])
+    assert rem["removed"] == ["2026-11"] and rem["needs_review"] is True
+
+
+def test_rollback_to_the_pr_target_keeps_every_lock(dl_market, pr_target, tmp_path):
+    """If this PR is reverted, the target branch's code takes over this branch's files: it must
+    read them, keep every locked month and not fill a month left unlocked (BLOCKED)."""
+    dl = dl_market
+    _start_with_october_pending(dl, tmp_path)
+    _run_at(dl, tmp_path, _utc(11, 10), dl["sep"], wb(official=None))                # October BLOCKED
+    ref = _core_wb(dl, dl["nov"], ["2026-10", "2026-11"])
+    _, h_new, _ = _run_at(dl, tmp_path, _utc(12, 2), dl["nov"], ref)                   # November locked
+    data = tmp_path / "docs" / "data"
+    snap = {f.name: f.read_bytes() for f in data.glob("*.json")}
+    H.feed(pr_target, dl["daily"].loc[:"2026-12-02"], dl["un"], dl["nov"], ref)
+    pr_target.ADAPTIVE_MODE = "reference_only"
+    res = ROLLBACK.check(pr_target, data, _utc(12, 2, 23, 0))
+    assert res["changed"] == [] and res["removed"] == [] and res["gap_fills"] == [], res
+    assert res["needs_review"] is False
+    assert {f.name: f.read_bytes() for f in data.glob("*.json")} == snap             # dry run wrote nothing
+    out = os.environ.get("PDS_TEST_REPORT_DIR")
+    if out:
+        Path(out).mkdir(parents=True, exist_ok=True)
+        (Path(out) / "rollback_offline.md").write_text(
+            ROLLBACK.report(res, pr_target.__base_ref__[:7], _utc(12, 2, 23, 0)) + "\n", encoding="utf-8")
+
+
+@pytest.mark.skipif(os.environ.get("PDS_LIVE_TEST") != "1", reason="set PDS_LIVE_TEST=1 (network)")
+def test_live_regression_vs_pr_merge_base(pr_merge_base, tmp_path):
+    """Real data, information only: the PR's merge-base code and this branch, (a) reconstructing
+    all months from scratch and (b) running on the committed lock."""
+    assert NEW.fetch_prices.__module__ == "run_pipeline"
+    _fetch_into_tmp(tmp_path)
+    daily = NEW.fetch_prices()
+    un, _ = NEW.fetch_unrate()
+    f2r = NEW.fetch_f2r_state()
+    ref = NEW.fetch_reference_workbook()
+    now = datetime.now(timezone.utc)
+    real = json.loads((H.ROOT / "docs" / "data" / "official_history.json").read_text(encoding="utf-8"))
+    p_b, h_b, _ = H.run(pr_merge_base, "reference_only", now, tmp_path / "b0", daily, un, f2r, ref)
+    p_n, h_n, _ = H.run(NEW, "reference_only", now, tmp_path / "n0", daily, un, f2r, ref)
+    q_b, k_b, _ = H.run(pr_merge_base, "reference_only", now, tmp_path / "b1", daily, un, f2r, ref, lock_init=real)
+    q_n, k_n, _ = H.run(NEW, "reference_only", now, tmp_path / "n1", daily, un, f2r, ref, lock_init=real)
+    rep = regression_report(
+        "live (real data, rebuilt from scratch)", pr_merge_base.__base_ref__, p_b, h_b, p_n, h_n,
+        {"on_committed_lock: lock entries identical": f"{sum(canon(a) == canon(b) for a, b in zip(k_b, k_n))}/"
+                                                       f"{max(len(k_b), len(k_n))}",
+         "on_committed_lock: official numeric max diff":
+             max((abs(x - y) for k, x in dict(_num_leaves(q_b['official'])).items()
+                  for k2, y in dict(_num_leaves(q_n['official'])).items() if k == k2), default=0.0),
+         "author workbook": _workbook_fingerprint(ref),
+         "pipeline_changed": H.pipeline_changed_since(pr_merge_base.__base_ref__)})
+    assert rep["lock_entries_compared"] > 0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1172,6 +1438,7 @@ def _fetch_into_tmp(tmp_path: Path):
         shutil.copy2(cache, out / "unrate_cache.csv")
 
 
+@pytest.mark.v10_migration
 @pytest.mark.skipif(os.environ.get("PDS_LIVE_TEST") != "1", reason="set PDS_LIVE_TEST=1 (network)")
 def test_live_116_months_before_after(base, tmp_path):
     assert NEW.fetch_prices.__module__ == "run_pipeline"   # the real fetchers, not a test stub
@@ -1217,9 +1484,17 @@ def test_live_new_code_on_the_committed_lock(tmp_path):
     p, h, files = H.run(NEW, "reference_only", now, tmp_path, daily, un, f2r, ref, lock_init=real)
     for a, b in zip(real, h):
         assert canon(a) == canon(b), a["signal_month"]                    # committed lock untouched
+    committed = (H.ROOT / "docs" / "data" / "official_history.json").read_bytes()
+    written = NEW.LOCK_JSON.read_bytes()
+    if len(h) == len(real):
+        assert written == committed                                        # byte-identical file
+    else:
+        assert written.startswith(committed[:-2])                          # existing entries' bytes kept
     v = p["validation"]
     assert v["exact_matches"] == v["months_checked"] >= 116, v.get("mismatches")
     assert p["action"]["code"] in ("FOLLOW_OFFICIAL", "WAIT", "HALTED")
+    # an official target is locked only with the published F2R, so no F2R estimate note can be scoped to it
+    assert not [c for c in p["flags_scoped"]["official"] if c.startswith("F2R")], p["flags_scoped"]
     report = os.environ.get("PDS_TEST_REPORT_DIR")
     if report:
         out = Path(report)
@@ -1227,6 +1502,9 @@ def test_live_new_code_on_the_committed_lock(tmp_path):
         (out / "live_new_on_committed_lock.json").write_text(json.dumps(
             {"now_utc": now.isoformat(timespec="seconds"), "market_asof": p["market_asof"],
              "new_locks": len(h) - len(real), "action": p["action"], "flags": p["flags"],
+             "flags_scoped": p["flags_scoped"],
+             "lock_bytes_identical": written == committed,
+             "author_workbook": _workbook_fingerprint(ref),
              "official": {k: p["official"][k] for k in ("signal_month", "holding_month", "state", "risk_budget")},
              "preview": None if not p["preview"] else
              {k: p["preview"].get(k) for k in ("signal_month", "state", "risk_budget", "status")},

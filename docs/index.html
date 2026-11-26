@@ -78,6 +78,7 @@
     <div class="bar mt-3" id="stBar" aria-hidden="true"></div>
     <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs" id="stLegend"></div>
     <div id="flags" class="mt-3 hidden text-xs rounded-lg px-3 py-2 badge-def"></div>
+    <div id="notes" class="mt-2 hidden text-xs rounded-lg px-3 py-2 muted" style="background:var(--line)"></div>
   </section>
 
   <!-- official / preview -->
@@ -175,6 +176,25 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const COL = () => ({"Equity":css("--series-1"),"Fixed Income":css("--series-2"),"Real Assets / Other":css("--series-3"),"Cash":css("--series-4")});
 const pct = (x,d=1) => x==null ? "–" : (100*x).toFixed(d)+"%";
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// <flag-view>
+// Which notes belong on which card.  A preview is an estimate by definition: its input notes
+// (e.g. the author's F2R Top-4 not published yet) are shown on the Preview tab as information.
+// Run-level items stay warnings on both tabs; an input note on the official target is unusual and
+// stays a warning there.  Older data without flags_scoped keeps the previous behaviour.
+const FLAG_KO = {
+  F2R_PREVIEW: "F2R 공식 Top-4 미공개 → 원작자 Preview 순위로 추정",
+  F2R_PROXY_MOMENTUM: "F2R 공개값 없음 → 자체 모멘텀 순위로 대체 추정",
+  ADAPTIVE_PROXY: "Adaptive 자체 대체 규칙(진단용)",
+  UNRATE_CARRIED: "실업률 최신 월 미발표 → 직전 값 사용",
+};
+function flagView(data, which){
+  const sc = data && data.flags_scoped;
+  if(!sc) return {warn: ((data && data.flags) || []).filter(f=>f!=="REFERENCE_MODE"), info: []};
+  const own = (sc[which] || []).map(c => FLAG_KO[c] || c);
+  const run = (sc.run || []).filter(f=>f!=="REFERENCE_MODE");
+  return which === "preview" ? {warn: run, info: own} : {warn: run.concat(own), info: []};
+}
+// </flag-view>
 let D=null, S=null, view="official", basis="adaptive", range=36, acChart=null, rbChart=null;
 
 async function load(){
@@ -218,10 +238,13 @@ function renderStatus(){
      .map(k=>`<span style="width:${100*ac[k]}%;background:${C[k]}" title="${CLASS_KO[k]} ${pct(ac[k])}"></span>`).join("");
   document.getElementById("stLegend").innerHTML = CLASSES.map(k=>
      `<span class="inline-flex items-center gap-1"><i class="sw" style="background:${C[k]}"></i>${CLASS_KO[k]} <b class="num">${pct(ac[k])}</b></span>`).join("");
-  const fl = document.getElementById("flags");
-  const flags = (D.flags||[]).filter(f=>f!=="REFERENCE_MODE");
-  fl.classList.toggle("hidden", !flags.length);
-  fl.innerHTML = flags.length ? "⚠ 확인 필요: " + flags.map(esc).join(" · ") : "";
+  const fl = document.getElementById("flags"), nt = document.getElementById("notes");
+  const fv = flagView(D, view);
+  fl.classList.toggle("hidden", !fv.warn.length);
+  fl.innerHTML = fv.warn.length ? "⚠ 확인 필요: " + fv.warn.map(esc).join(" · ") : "";
+  nt.classList.toggle("hidden", !fv.info.length);
+  nt.innerHTML = fv.info.length ? "ℹ 추정 근거: " + fv.info.map(esc).join(" · ")
+    + ". 월중 추정이라 정상이며, 공식값이 공개·검증된 뒤에만 공식 목표로 확정됩니다." : "";
 }
 
 function renderUS(){

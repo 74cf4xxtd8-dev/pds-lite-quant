@@ -2,32 +2,101 @@ name: tests
 
 # Read-only CI for feature branches and pull requests.  It never writes to the repository and
 # does not share the update-portfolio concurrency group, so production runs are unaffected.
+#
+# Every run is checked against the PR's own base, pinned once in the `baseline` job (a main that
+# moves during the run cannot change it).  Required: all fail-safe / lock / author-Core tests.
+# Information only: Core and target differences against the base (job summary).  Rollback checks
+# run only when a pipeline path changed.  The v1.0 migration tests (PR #1 evidence) run only when
+# asked: PR label "v10-migration" or "Run workflow" with v10_migration.
 on:
   push:
     branches-ignore: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      v10_migration:
+        description: "v1.0 전환 검증 테스트(PR #1 근거)도 실행"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
-  offline:
+  baseline:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    outputs:
+      target_sha: ${{ steps.b.outputs.target_sha }}
+      merge_base: ${{ steps.b.outputs.merge_base }}
+      compare_sha: ${{ steps.b.outputs.compare_sha }}
+      pipeline_changed: ${{ steps.b.outputs.pipeline_changed }}
+      v10: ${{ steps.b.outputs.v10 }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0                 # tests load run_pipeline.py from origin/main as the 'before' side
+          fetch-depth: 0
+      - name: Pin the comparison base for this run
+        id: b
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          V10_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.v10_migration }}
+          V10_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'v10-migration') }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ] && [ -n "$PR_BASE_SHA" ]; then
+            target="$PR_BASE_SHA"; head="$PR_HEAD_SHA"; src="pull_request.base.sha"
+          else
+            target=$(git rev-parse "origin/${DEFAULT_BRANCH:-main}"); head=$(git rev-parse HEAD)
+            src="origin/${DEFAULT_BRANCH:-main} at $(date -u +%FT%TZ)"
+          fi
+          mb=$(git merge-base "$target" "$head")
+          # pull_request runs test the PR merged into the target -> compare with the target;
+          # branch pushes test the branch head -> compare with the point it branched off
+          if [ "$EVENT" = "pull_request" ]; then compare="$target"; else compare="$mb"; fi
+          if git diff --quiet "$compare" HEAD -- run_pipeline.py requirements.txt tools .github/workflows/update.yml; then
+            changed=false; else changed=true; fi
+          v10=false; if [ "$V10_INPUT" = "true" ] || [ "$V10_LABEL" = "true" ]; then v10=true; fi
+          { echo "target_sha=$target"; echo "merge_base=$mb"; echo "compare_sha=$compare"
+            echo "pipeline_changed=$changed"; echo "v10=$v10"; } >> "$GITHUB_OUTPUT"
+          { echo "### 비교 기준 (이 실행 동안 고정)"
+            echo "- 대상 브랜치 커밋: \`$target\` ($src)"
+            echo "- merge-base (PR 분기점): \`$mb\`"
+            echo "- 비교 기준 코드: \`$compare\` · 테스트 대상: \`$(git rev-parse HEAD)\` (PR head \`$head\`)"
+            echo "- 파이프라인 경로 변경: $changed (false면 롤백 테스트·롤백 점검 생략)"
+            echo "- v1.0 전환 검증 테스트(PR #1 근거): $v10"; } >> "$GITHUB_STEP_SUMMARY"
+
+  offline:
+    needs: baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PDS_PR_TARGET_SHA: ${{ needs.baseline.outputs.target_sha }}
+      PDS_PR_MERGE_BASE: ${{ needs.baseline.outputs.merge_base }}
+      PDS_PR_COMPARE_SHA: ${{ needs.baseline.outputs.compare_sha }}
+      PDS_V10_MIGRATION: ${{ needs.baseline.outputs.v10 == 'true' && '1' || '' }}
+      PDS_TEST_REPORT_DIR: test-report
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                 # the pinned base commits must be readable
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt pytest pyyaml
-      - name: Offline tests (synthetic data, before/after vs origin/main, fail-safe, workflow logic)
-        env:
-          PDS_BASE_REF: origin/main
-          PDS_TEST_REPORT_DIR: test-report
-        run: python -m pytest tests -q
+      - name: Offline tests (required checks; regression vs the pinned base is reported, not enforced)
+        run: python -m pytest tests -q -rs
+      - name: Print the regression report (job summary)
+        if: always()
+        run: |
+          for f in test-report/regression_offline.md test-report/rollback_offline.md; do
+            [ -f "$f" ] && cat "$f" | tee -a "$GITHUB_STEP_SUMMARY"
+          done; true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -36,12 +105,18 @@ jobs:
           if-no-files-found: ignore
 
   live:
-    needs: offline
+    needs: [baseline, offline]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
-    timeout-minutes: 20
+    timeout-minutes: 25
+    env:
+      PDS_PR_TARGET_SHA: ${{ needs.baseline.outputs.target_sha }}
+      PDS_PR_MERGE_BASE: ${{ needs.baseline.outputs.merge_base }}
+      PDS_PR_COMPARE_SHA: ${{ needs.baseline.outputs.compare_sha }}
+      PDS_V10_MIGRATION: ${{ needs.baseline.outputs.v10 == 'true' && '1' || '' }}
+      PDS_TEST_REPORT_DIR: test-report
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,15 +137,13 @@ jobs:
               print(f"## {name}: {df.shape}; columns {list(df.columns)[:8]}")
               print(df.dtypes.head(6).to_string()); print(df.head(3).to_string()); print(df.tail(2).to_string())
           PY
-      - name: Live 116-month before/after on real Yahoo / BLS / F2R / workbook data
+      - name: Real-data tests (committed lock + author Core required; regression vs base reported)
         env:
-          PDS_BASE_REF: origin/main
           PDS_LIVE_TEST: "1"
-          PDS_TEST_REPORT_DIR: test-report
         run: python -m pytest tests/test_reference_only.py -q -rA -k test_live_   # exactly the real-data tests
-      - name: Rollback dry run on real data (main's code vs the committed lock)
-        if: always()
-        run: python tools/rollback_check.py --ref origin/main --report test-report/rollback_check.md
+      - name: Rollback dry run on real data (this PR reverted -> the pinned target commit's code)
+        if: always() && needs.baseline.outputs.pipeline_changed == 'true'
+        run: python tools/rollback_check.py --ref "$PDS_PR_TARGET_SHA" --report test-report/rollback_check.md
       - name: Operations permission audit (read-only)
         if: always()
         env:
@@ -81,27 +154,23 @@ jobs:
         if: always()
         run: |
           python - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, pathlib, pandas as pd
+          import json, os, pathlib, pandas as pd
           r = pathlib.Path("test-report")
-          c = r / "live_before_after.csv"
-          if c.exists():
-              d = pd.read_csv(c)
-              print(f"### live 116-month before/after: {len(d)} months, {d.signal_month.min()}..{d.signal_month.max()}")
-              print(f"- Core max |old-new| over all months: {d.core_max_abs_diff.max():.3g}; months with any Core diff: {(d.core_max_abs_diff > 0).sum()}")
-              ch = d[d.adaptive_max_abs_diff > 1e-12]
-              print(f"- months whose Adaptive target changes (old default -> reference_only): {len(ch)}")
-              for _, x in ch.iterrows():
-                  print(f"  - {x.signal_month}: {x.before_state} {x.before_rb:.4f} ({x.before_source}) -> {x.after_state} {x.after_rb:.4f} ({x.after_source}), one-way {x.adaptive_one_way_diff:.2%}")
-          oa = r / "ops_audit.md"
-          if oa.exists():
-              print(oa.read_text(encoding="utf-8"))
-          rb = r / "rollback_check.md"
-          if rb.exists():
-              print(rb.read_text(encoding="utf-8"))
+          print(f"### 비교 기준: 대상 `{os.environ.get('PDS_PR_TARGET_SHA','')[:7]}` · merge-base "
+                f"`{os.environ.get('PDS_PR_MERGE_BASE','')[:7]}` · 비교 코드 `{os.environ.get('PDS_PR_COMPARE_SHA','')[:7]}`")
+          for name in ("regression_live.md", "rollback_check.md", "ops_audit.md"):
+              f = r / name
+              if f.exists():
+                  print(f.read_text(encoding="utf-8"))
           j = r / "live_new_on_committed_lock.json"
           if j.exists():
               print("### new code on the committed lock (today, real data)")
               print("```json"); print(j.read_text(encoding="utf-8")); print("```")
+          c = r / "live_before_after.csv"                       # only with the v1.0 migration option
+          if c.exists():
+              d = pd.read_csv(c)
+              print(f"### v1.0 migration (PR #1 evidence): {len(d)} months, Core max |v1.0-new| "
+                    f"{d.core_max_abs_diff.max():.3g}, Adaptive changes {(d.adaptive_max_abs_diff > 1e-12).sum()}")
           PY
       - uses: actions/upload-artifact@v4
         if: always()
