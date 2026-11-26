@@ -67,7 +67,7 @@ jobs:
           PDS_BASE_REF: origin/main
           PDS_LIVE_TEST: "1"
           PDS_TEST_REPORT_DIR: test-report
-        run: python -m pytest tests/test_reference_only.py -q -rA -k live
+        run: python -m pytest tests/test_reference_only.py -q -rA -k test_live_   # exactly the real-data tests
       - name: Rollback dry run on real data (main's code vs the committed lock)
         if: always()
         run: python tools/rollback_check.py --ref origin/main --report test-report/rollback_check.md

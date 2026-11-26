@@ -1151,6 +1151,11 @@ def test_workflow_defaults_and_schedule():
     for job in wf["jobs"].values():                      # no workflow input is pasted into a shell script
         for st in job["steps"]:
             assert "github.event.inputs" not in st.get("run", ""), st.get("name")
+    tw = yaml.safe_load((H.ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8"))
+    live_cmd = next(x["run"] for x in tw["jobs"]["live"]["steps"] if "python -m pytest" in x.get("run", ""))
+    assert "-k test_live_" in live_cmd             # the live job runs exactly the real-data tests
+    assert sorted(n for n in dir(sys.modules[__name__]) if n.startswith("test_live_")) == [
+        "test_live_116_months_before_after", "test_live_new_code_on_the_committed_lock"]
     rb = yaml.safe_load((H.ROOT / ".github" / "workflows" / "rollback-check.yml").read_text(encoding="utf-8"))
     assert rb["permissions"] == {"contents": "read"} and list(rb[True]) == ["workflow_dispatch"]
 
