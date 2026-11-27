@@ -172,7 +172,26 @@ def report(rows) -> str:
 RESTORE_ENVIRONMENT = "pds-lock-restore"
 
 
-def restore_environment_rows(env) -> list[tuple[str, bool | None, str]]:
+def deployment_branch_row(name, pol, policies) -> tuple[str, bool | None, str]:
+    """data-guard runs restore-gate on pull_request_target, i.e. on main: the intended rule is
+    'Selected branches and tags' with exactly the branch main (no other branch's workflow can
+    request this environment's approval).  policies = GET .../deployment-branch-policies."""
+    item = f"환경 {name}: 배포 브랜치 = main만"
+    if not pol:
+        return (item, False, "제한 없음 → 모든 브랜치의 워크플로가 이 환경 승인을 요청할 수 있음. Selected branches → main 권장")
+    if pol.get("protected_branches"):
+        return (item, False, "보호 브랜치만 → main에 보호 규칙이 없으면 복구 승인 자체가 불가. Selected branches → main 권장")
+    if not (isinstance(policies, dict) and isinstance(policies.get("branch_policies"), list)):
+        return (item, None, f"지정 브랜치 방식, 목록 조회 불가 {policies}")
+    got = sorted((b.get("name"), b.get("type", "branch")) for b in policies["branch_policies"])
+    shown = ", ".join(f"{n}({t})" for n, t in got) or "(비어 있음)"
+    if got == [("main", "branch")]:
+        return (item, True, f"지정 브랜치: {shown}")
+    return (item, False, f"지정 브랜치: {shown} → main 하나만 두는 것이 의도" if got else
+            "지정 브랜치 목록이 비어 있음 → 어떤 실행도 승인을 요청할 수 없음(복구 불가)")
+
+
+def restore_environment_rows(env, branch_policies=None) -> list[tuple[str, bool | None, str]]:
     """The approval gate of lock restore PRs (data-guard.yml restore-gate; tools/lock_guard.py requires
     required reviewers and admin bypass off, otherwise every restore PR fails)."""
     name = RESTORE_ENVIRONMENT
@@ -183,9 +202,7 @@ def restore_environment_rows(env) -> list[tuple[str, bool | None, str]]:
     psr = any(r.get("prevent_self_review") for r in rv)
     pol = env.get("deployment_branch_policy")
     return [(f"환경 {name}: 필수 검토자", bool(reviewers), f"{reviewers}"),
-            (f"환경 {name}: 배포 브랜치", None,
-             f"{pol} (data-guard는 pull_request_target이라 main 기준으로 실행 → main만 허용해도 동작)" if pol else
-             "제한 없음 → main만 허용 권장(다른 워크플로가 이 환경 승인을 요청하지 못하게)"),
+            deployment_branch_row(name, pol, branch_policies),
             (f"환경 {name}: 관리자 우회 끔", env.get("can_admins_bypass") is False,
              f"can_admins_bypass={env.get('can_admins_bypass')}"),
             (f"환경 {name}: 승인 형태", None,
@@ -230,7 +247,8 @@ def main(argv=None) -> int:
                     workflow_permissions(ROOT / ".github" / "workflows"), os.environ.get("PDS_HALT_SEEN", ""))
     prov = fetch_provenance(repo)
     rows += main_commit_provenance(*prov) if prov else [("main 커밋 출처", None, "조회 불가")]
-    rows += restore_environment_rows(api(f"/repos/{repo}/environments/{RESTORE_ENVIRONMENT}"))
+    rows += restore_environment_rows(api(f"/repos/{repo}/environments/{RESTORE_ENVIRONMENT}"),
+                                     api(f"/repos/{repo}/environments/{RESTORE_ENVIRONMENT}/deployment-branch-policies"))
     rows += data_guard_rows(api(f"/repos/{repo}/actions/workflows/{DATA_GUARD}/runs?per_page=6"))
     text = report(rows)
     print(text)

@@ -472,6 +472,24 @@ def test_ops_audit_reports_data_guard_runs():
     assert ok[0][1] is None and "#12 pull_request_target success" in ok[0][2]
     blocked = OA.data_guard_rows([{"event": "pull_request_target", "conclusion": "startup_failure"}])
     assert blocked[0][1] is False and "이벤트 정책" in blocked[0][2]
-    rows = OA.restore_environment_rows({"name": LG.ENVIRONMENT, "can_admins_bypass": False,
-                                        "deployment_branch_policy": None, "protection_rules": []})
-    assert any("배포 브랜치" in i and "main만 허용 권장" in d for i, _, d in rows)
+
+
+CUSTOM = {"protected_branches": False, "custom_branch_policies": True}
+
+
+@pytest.mark.parametrize("pol, policies, ok, text", [
+    (CUSTOM, {"total_count": 1, "branch_policies": [{"id": 1, "name": "main", "type": "branch"}]}, True, "main(branch)"),
+    (None, None, False, "제한 없음"),
+    ({"protected_branches": True, "custom_branch_policies": False}, None, False, "보호 브랜치만"),
+    (CUSTOM, {"total_count": 2, "branch_policies": [{"name": "main"}, {"name": "restore/*"}]}, False, "restore/*(branch)"),
+    (CUSTOM, {"total_count": 1, "branch_policies": [{"name": "main", "type": "tag"}]}, False, "main(tag)"),
+    (CUSTOM, {"total_count": 1, "branch_policies": [{"name": "mai*", "type": "branch"}]}, False, "mai*"),
+    (CUSTOM, {"total_count": 0, "branch_policies": []}, False, "비어 있음"),
+    (CUSTOM, {"_http_error": 403}, None, "조회 불가"),
+])
+def test_ops_audit_restore_environment_branch_rule(pol, policies, ok, text):
+    import ops_audit as OA
+    env = {"name": LG.ENVIRONMENT, "can_admins_bypass": False, "deployment_branch_policy": pol,
+           "protection_rules": [{"type": "required_reviewers", "reviewers": [{"reviewer": {"login": "owner"}}]}]}
+    row = [r for r in OA.restore_environment_rows(env, policies) if "배포 브랜치" in r[0]]
+    assert len(row) == 1 and row[0][1] is ok and text in row[0][2], row
