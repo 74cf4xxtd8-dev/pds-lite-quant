@@ -339,3 +339,21 @@ def test_ops_audit_flags_human_data_commits():
     assert row[0] is False and "bbbbbbb" in row[1] and "ccccccc" not in row[1]
     clean = {i: ok for i, ok, _ in OA.main_commit_provenance(commits[:1] + commits[2:], files, pulls)}
     assert clean[f"main 최근 {OA.PROVENANCE_DAYS}일: 사람 커밋의 docs/data 변경은 잠금 복구 PR뿐"] is True
+
+
+def test_ops_audit_checks_the_restore_environment():
+    import ops_audit as OA
+    assert OA.RESTORE_ENVIRONMENT == LG.ENVIRONMENT
+    missing = OA.restore_environment_rows({"_http_error": 404})
+    assert missing[0][1] is False and "항상 실패" in missing[0][2]
+    env = {"name": LG.ENVIRONMENT, "can_admins_bypass": False,
+           "protection_rules": [{"type": "required_reviewers", "prevent_self_review": False,
+                                 "reviewers": [{"reviewer": {"login": "owner"}}]}]}
+    rows = {i: (ok, d) for i, ok, d in OA.restore_environment_rows(env)}
+    assert rows[f"환경 {LG.ENVIRONMENT}: 필수 검토자"][0] is True
+    assert rows[f"환경 {LG.ENVIRONMENT}: 관리자 우회 끔"][0] is True
+    assert "본인 재확인" in rows[f"환경 {LG.ENVIRONMENT}: 승인 형태"][1]
+    bypass = {i: ok for i, ok, _ in OA.restore_environment_rows(dict(env, can_admins_bypass=True))}
+    assert bypass[f"환경 {LG.ENVIRONMENT}: 관리자 우회 끔"] is False
+    empty = {i: ok for i, ok, _ in OA.restore_environment_rows(dict(env, protection_rules=[]))}
+    assert empty[f"환경 {LG.ENVIRONMENT}: 필수 검토자"] is False

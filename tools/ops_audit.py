@@ -169,6 +169,27 @@ def report(rows) -> str:
     return "\n".join(lines)
 
 
+RESTORE_ENVIRONMENT = "pds-lock-restore"
+
+
+def restore_environment_rows(env) -> list[tuple[str, bool | None, str]]:
+    """The approval gate of lock restore PRs (tests.yml restore-gate; tools/lock_guard.py requires
+    required reviewers and admin bypass off, otherwise every restore PR fails)."""
+    name = RESTORE_ENVIRONMENT
+    if not (isinstance(env, dict) and env.get("name")):
+        return [(f"환경 {name} 존재", False, "없음 → 잠금 복구 PR은 항상 실패(일반 PR에는 영향 없음)")]
+    rv = [r for r in env.get("protection_rules") or [] if r.get("type") == "required_reviewers"]
+    reviewers = [(x.get("reviewer") or {}).get("login") for r in rv for x in r.get("reviewers") or []]
+    psr = any(r.get("prevent_self_review") for r in rv)
+    return [(f"환경 {name}: 필수 검토자", bool(reviewers), f"{reviewers}"),
+            (f"환경 {name}: 관리자 우회 끔", env.get("can_admins_bypass") is False,
+             f"can_admins_bypass={env.get('can_admins_bypass')}"),
+            (f"환경 {name}: 승인 형태", None,
+             "독립 승인(prevent self-review 켬)" if psr and len(reviewers) > 1 else
+             "본인 재확인(요청자=승인자 가능) — 독립 승인 아님" if not psr else
+             "prevent self-review 켬, 검토자 1명 → 그 검토자가 연 복구 PR은 아무도 승인 못 함")]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--report")
@@ -179,6 +200,7 @@ def main(argv=None) -> int:
                     workflow_permissions(ROOT / ".github" / "workflows"), os.environ.get("PDS_HALT_SEEN", ""))
     prov = fetch_provenance(repo)
     rows += main_commit_provenance(*prov) if prov else [("main 커밋 출처", None, "조회 불가")]
+    rows += restore_environment_rows(api(f"/repos/{repo}/environments/{RESTORE_ENVIRONMENT}"))
     text = report(rows)
     print(text)
     if args.report:
