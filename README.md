@@ -2,6 +2,9 @@
 
 GitHub Actions(연산) → `docs/data/portfolio_latest.json` → GitHub Pages(`docs/index.html`).
 
+> 운영 문서: [handbook/](handbook/README.md) — ① 시스템 분석·설계서, ② 사용자·운영자 매뉴얼, ③ 변경 이력 및 운영 정책서.
+> 이 README와 실제 구현이 다른 곳은 handbook ③ 7장(차이 목록)에 정리돼 있습니다.
+
 ## 설치 (10분)
 1. 이 폴더로 **public** 저장소를 만든다 (무료 Pages는 public 저장소에서만 가능. JSON에는 비중만 있고 계좌 금액은 없음).
 2. Settings → Pages → Source: *Deploy from a branch*, Branch `main`, Folder `/docs`.
