@@ -78,11 +78,26 @@ def main_commit_provenance(commits: list[dict], files: dict[str, list[str]],
             direct.append(f"{sha[:7]} {who}: {msg}")
     n_bot = sum(1 for c in commits if ((c.get("author") or {}).get("login")
                                        or (c.get("commit", {}).get("author") or {}).get("name")) == BOT)
+    # docs/data is bot-only; a person's commit there is acceptable only as part of a lock restore PR
+    # (branch restore/<id>, verified by tools/lock_guard.py).  Catches a PR that switched the CI check off.
+    human_data, restores = [], []
+    for c in commits:
+        sha = c["sha"]
+        who = (c.get("author") or {}).get("login") or (c.get("commit", {}).get("author") or {}).get("name")
+        data = [f for f in files.get(sha, []) if f.startswith("docs/data/")]
+        if who == BOT or not data:
+            continue
+        refs = [(p.get("head") or {}).get("ref", "") for p in pulls.get(sha, []) if p.get("merged_at")]
+        (restores if any(r.startswith("restore/RESTORE-") for r in refs) else human_data).append(
+            f"{sha[:7]} {who} {data[:3]}" + (f" (PR {refs[0]})" if refs else ""))
+    rows_data = [(f"main 최근 {PROVENANCE_DAYS}일: 사람 커밋의 docs/data 변경은 잠금 복구 PR뿐", not human_data,
+                  "; ".join(human_data[:6]) if human_data else
+                  (f"잠금 복구 PR 경유 {len(restores)}건: " + "; ".join(restores[:4])) if restores else "없음")]
     return [(f"main 최근 {PROVENANCE_DAYS}일: 봇 커밋은 docs/data만 변경", not bot_bad,
              "; ".join(bot_bad) if bot_bad else f"봇 커밋 {n_bot}건 모두 docs/data"),
             (f"main 최근 {PROVENANCE_DAYS}일: 봇 외 변경은 모두 PR 병합 경유", not direct,
              "; ".join(direct[:8]) + (f" 외 {len(direct) - 8}건" if len(direct) > 8 else "") if direct
-             else f"봇 외 커밋 {len(commits) - n_bot}건 모두 PR 경유")]
+             else f"봇 외 커밋 {len(commits) - n_bot}건 모두 PR 경유")] + rows_data
 
 
 def fetch_provenance(repo: str):
@@ -94,10 +109,9 @@ def fetch_provenance(repo: str):
     files, pulls = {}, {}
     for c in commits:
         who = (c.get("author") or {}).get("login") or (c.get("commit", {}).get("author") or {}).get("name")
-        if who == BOT:
-            d = api(f"/repos/{repo}/commits/{c['sha']}")
-            files[c["sha"]] = [f["filename"] for f in d.get("files", [])] if isinstance(d, dict) else []
-        else:
+        d = api(f"/repos/{repo}/commits/{c['sha']}")
+        files[c["sha"]] = [f["filename"] for f in d.get("files", [])] if isinstance(d, dict) else []
+        if who != BOT:
             pr = api(f"/repos/{repo}/commits/{c['sha']}/pulls")
             pulls[c["sha"]] = pr if isinstance(pr, list) else []
     return commits, files, pulls
@@ -155,6 +169,27 @@ def report(rows) -> str:
     return "\n".join(lines)
 
 
+RESTORE_ENVIRONMENT = "pds-lock-restore"
+
+
+def restore_environment_rows(env) -> list[tuple[str, bool | None, str]]:
+    """The approval gate of lock restore PRs (tests.yml restore-gate; tools/lock_guard.py requires
+    required reviewers and admin bypass off, otherwise every restore PR fails)."""
+    name = RESTORE_ENVIRONMENT
+    if not (isinstance(env, dict) and env.get("name")):
+        return [(f"환경 {name} 존재", False, "없음 → 잠금 복구 PR은 항상 실패(일반 PR에는 영향 없음)")]
+    rv = [r for r in env.get("protection_rules") or [] if r.get("type") == "required_reviewers"]
+    reviewers = [(x.get("reviewer") or {}).get("login") for r in rv for x in r.get("reviewers") or []]
+    psr = any(r.get("prevent_self_review") for r in rv)
+    return [(f"환경 {name}: 필수 검토자", bool(reviewers), f"{reviewers}"),
+            (f"환경 {name}: 관리자 우회 끔", env.get("can_admins_bypass") is False,
+             f"can_admins_bypass={env.get('can_admins_bypass')}"),
+            (f"환경 {name}: 승인 형태", None,
+             "독립 승인(prevent self-review 켬)" if psr and len(reviewers) > 1 else
+             "본인 재확인(요청자=승인자 가능) — 독립 승인 아님" if not psr else
+             "prevent self-review 켬, 검토자 1명 → 그 검토자가 연 복구 PR은 아무도 승인 못 함")]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--report")
@@ -165,6 +200,7 @@ def main(argv=None) -> int:
                     workflow_permissions(ROOT / ".github" / "workflows"), os.environ.get("PDS_HALT_SEEN", ""))
     prov = fetch_provenance(repo)
     rows += main_commit_provenance(*prov) if prov else [("main 커밋 출처", None, "조회 불가")]
+    rows += restore_environment_rows(api(f"/repos/{repo}/environments/{RESTORE_ENVIRONMENT}"))
     text = report(rows)
     print(text)
     if args.report:
