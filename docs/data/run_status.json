@@ -10,9 +10,9 @@
  "operator_halt": false,
  "notify": [],
  "notify_pending": [],
- "finished_utc": "2026-11-26T11:50:41Z",
+ "finished_utc": "2026-11-27T08:29:01Z",
  "event": "push",
- "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45813957432",
+ "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45965808996",
  "log_tail": [
   "[warn] UNRATE via FRED failed: GET failed: https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE: The read operation timed out",
   "[data] prices 2015-01-02..2026-11-25, UNRATE via BLS (last 2026-10)",
@@ -47,6 +47,35 @@
    "new_locks": 0,
    "notified": [],
    "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45813957432"
+  },
+  {
+   "at_utc": "2026-11-27T08:29:01+00:00",
+   "ok": true,
+   "event": "push",
+   "action": "FOLLOW_OFFICIAL",
+   "month": "2026-10",
+   "reason": null,
+   "operator_halt": false,
+   "new_locks": 0,
+   "notified": [],
+   "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45965808996"
   }
- ]
+ ],
+ "lock_manifest": {
+  "file": "docs/data/official_history.json",
+  "sha256": "1750dd4adcc74ce5832193a8a87da73c1ab401d36b242dea3b4fe5a3510e709e",
+  "git_blob": "241dd18f8a453355d66fbbf7d42d624fa3aba667",
+  "bytes": 202627,
+  "readable": true,
+  "months": 116,
+  "first": "2017-03",
+  "last": "2026-10",
+  "last_locked_at_utc": "2026-11-25T15:58:18+00:00",
+  "last_origin": "LIVE",
+  "changed_this_run": false,
+  "backup_due": false,
+  "download_commit": "cc53155feb2d9a6617f8a1f3402693f648d20d19",
+  "backup_rule": "외부 매니페스트 마지막 줄의 SHA-256이 이 값과 다르면 백업이 필요하다(handbook ② 12.2)",
+  "backup_note": "backup_due·changed_this_run은 '이번 실행이 새 잠금을 저장했다'는 뜻일 뿐 외부 백업 완료가 아니다. 시스템은 외부 백업을 볼 수 없으므로 완료 여부는 매니페스트와 SHA-256을 비교해 운영자가 확인한다"
+ }
 }
