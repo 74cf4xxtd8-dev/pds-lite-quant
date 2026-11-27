@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lock_manifest  # noqa: E402
 import notify_message  # noqa: E402
 
 STATUS = Path("docs/data/run_status.json")
@@ -73,11 +74,19 @@ def main(argv=None) -> int:
     ap.add_argument("--pages", default="")
     ap.add_argument("--run-url", default=os.environ.get("RUN_URL", ""))
     ap.add_argument("--what", choices=["pipeline", "commit"], default="pipeline")
+    ap.add_argument("--lock", default=str(lock_manifest.LOCK))
     args = ap.parse_args(argv)
     path = Path(args.status)
     status = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     if args.kind == "state":
-        text = notify_message.message(notify_message.payload_from_status(status), args.pages)
+        payload = notify_message.payload_from_status(status)
+        backup = ""
+        if any(e.get("event") in lock_manifest.NEW_LOCK_EVENTS for e in payload.get("notify") or []):
+            # a new lock was saved (this run, or an earlier run whose alert is resent): the checklist
+            # names the commit that holds it - after the commit step HEAD is that data commit
+            backup = lock_manifest.checklist(lock_manifest.manifest(Path(args.lock)),
+                                             os.environ.get("GITHUB_REPOSITORY"), lock_manifest.head_commit())
+        text = notify_message.message(payload, args.pages, backup)
     else:
         text = failure_text(status, args.what, args.run_url)
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
