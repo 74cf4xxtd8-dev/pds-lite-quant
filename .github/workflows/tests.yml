@@ -8,8 +8,10 @@ name: tests
 # Information only: Core and target differences against the base (job summary).  Rollback checks
 # run only when a pipeline path changed.  The v1.0 migration tests (PR #1 evidence) run only when
 # asked: PR label "v10-migration" or "Run workflow" with v10_migration.
-# lock-guard: a PR may not change docs/data (bot-only); a lock restore passes only its own, stricter
-# checks plus the pds-lock-restore environment approval (tools/lock_guard.py, handbook manual 12).
+# The operational-data guard that decides is data-guard.yml (pull_request_target: main's workflow and
+# main's tools/lock_guard.py, so a PR cannot edit or remove the check it is judged by).  lock-guard
+# below is only a fallback signal from the PR's own workflow (e.g. if pull_request_target is blocked
+# by an Actions event policy); restore PRs and their approval are handled by data-guard alone.
 on:
   push:
     branches-ignore: [main]
@@ -72,36 +74,24 @@ jobs:
             echo "- 파이프라인 경로 변경: $changed (false면 롤백 테스트·롤백 점검 생략)"
             echo "- v1.0 전환 검증 테스트(PR #1 근거): $v10"; } >> "$GITHUB_STEP_SUMMARY"
 
-  # Operational records (docs/data) are written by the update-portfolio bot only.  A PR that changes
-  # them fails here; the one exception is a lock restore (handbook manual chapter 12), which must
-  # pass tools/lock_guard.py's stricter restore checks and a protected-environment approval.
-  restore-gate:
+  # Fallback only (see the header): docs/data is bot-only, a normal PR that changes it fails here too.
+  # Restore PRs (branch restore/..., label lock-restore) are judged by data-guard.yml alone, which
+  # also holds the pds-lock-restore approval gate; one approval per restore run.
+  lock-guard:
     needs: baseline
     if: >-
-      github.event_name == 'pull_request' &&
-      (startsWith(github.head_ref, 'restore/') || contains(github.event.pull_request.labels.*.name, 'lock-restore'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment: pds-lock-restore     # required reviewer = the explicit restore approval (recorded by GitHub)
-    permissions: {}
-    steps:
-      - run: echo "lock restore approved for this run; tools/lock_guard.py verifies it"
-
-  lock-guard:
-    needs: [baseline, restore-gate]
-    if: ${{ !cancelled() && needs.baseline.result == 'success' }}
+      needs.baseline.result == 'success' && !(github.event_name == 'pull_request' &&
+      (startsWith(github.head_ref, 'restore/') || contains(github.event.pull_request.labels.*.name, 'lock-restore')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: read                 # read this run's environment approval (restore PRs only)
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Operational data unchanged (normal PR) / verified restore (restore PR)
+      - name: Operational data unchanged (fallback; the deciding check is data-guard)
         env:
-          GH_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ needs.baseline.outputs.target_sha }}
           MERGE_BASE: ${{ needs.baseline.outputs.merge_base }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
