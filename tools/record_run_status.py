@@ -130,7 +130,7 @@ def main() -> None:
             f.write(f"action={(out['action'] or {}).get('code', 'NONE')}\n")
             f.write(f"notify={'true' if out['notify'] else 'false'}\n")
             f.write(f"halt={'true' if out['operator_halt'] else 'false'}\n")
-            f.write(f"backup_due={'true' if out['lock_manifest'].get('changed_this_run') else 'false'}\n")
+            f.write(f"backup_due={'true' if out['lock_manifest'].get('backup_due') else 'false'}\n")
 
 
 if __name__ == "__main__":

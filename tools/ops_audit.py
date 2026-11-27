@@ -11,6 +11,7 @@ Report only: exit code is always 0.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -152,18 +153,29 @@ def evaluate(collab, main_branch, main_rules, env, wf_perms, halt_seen) -> list[
     return rows
 
 
-def lock_backup_rows(m: dict, last_commit: dict | None, repo: str) -> list[tuple[str, bool | None, str]]:
-    """The same lock manifest the alerts and run_status.json show, for the monthly backup check."""
+def lock_backup_rows(m: dict, last_commit: dict | None, repo: str,
+                     fetch=None) -> list[tuple[str, bool | None, str]]:
+    """The same lock manifest the alerts and run_status.json show, for the monthly backup check,
+    and whether the download link the alert gives really returns these bytes."""
     rows = [("잠금 매니페스트(main)", None if m.get("readable") else False, lock_manifest.line(m))]
     if last_commit and last_commit.get("sha"):
         sha = last_commit["sha"]
-        rows.append(("잠금 마지막 변경 커밋", None,
-                     f"{sha} ({last_commit.get('date')}) · "
-                     f"{lock_manifest.raw_url(repo, sha, 'docs/data/official_history.json')}"))
+        url = lock_manifest.raw_url(repo, sha, "docs/data/official_history.json")
+        rows.append(("잠금 마지막 변경 커밋", None, f"{sha} ({last_commit.get('date')}) · {url}"))
+        try:
+            got = hashlib.sha256((fetch or _download)(url)).hexdigest()
+            rows.append(("내려받기 링크 SHA-256 = 매니페스트", got == m.get("sha256"), f"링크 {got} / 매니페스트 {m.get('sha256')}"))
+        except Exception as e:  # noqa: BLE001
+            rows.append(("내려받기 링크 SHA-256 = 매니페스트", None, f"내려받기 실패: {type(e).__name__}"))
     else:
         rows.append(("잠금 마지막 변경 커밋", None, "조회 불가 → official_history.json History에서 확인"))
-    rows.append(("월간 외부 백업", None, lock_manifest.RULE))
+    rows.append(("월간 외부 백업", None, f"{lock_manifest.RULE}. {lock_manifest.NOT_DONE}"))
     return rows
+
+
+def _download(url: str) -> bytes:
+    with urllib.request.urlopen(url, timeout=30) as r:
+        return r.read()
 
 
 def fetch_last_lock_commit(repo: str) -> dict | None:

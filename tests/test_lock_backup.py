@@ -175,7 +175,8 @@ def test_run_status_records_the_manifest_every_run(tmp_path, monkeypatch):
     locked = [{"signal_month": "2026-11", "event": "LOCKED", "detail": "x"}]
     st, outputs = run_status_main(tmp_path, monkeypatch, locked)
     lm = st["lock_manifest"]
-    assert lm["changed_this_run"] is True and lm["download_commit"] is None       # new commit: summary/alert
+    assert lm["changed_this_run"] is True and lm["backup_due"] is True and lm["download_commit"] is None
+    assert "백업 완료가 아니다" in lm["backup_note"]                                # due, never "done"
     assert lm["months"] == 3 and lm["last"] == "2026-11" and len(lm["sha256"]) == 64 and "SHA-256" in lm["backup_rule"]
     assert "backup_due=true" in outputs
     # the next run: nothing new, the same facts, and a commit known to hold this exact file
@@ -198,6 +199,7 @@ def test_manifest_present_but_no_new_backup_due(tmp_path, monkeypatch, kind):
         st, outputs = run_status_main(tmp_path, monkeypatch, [])
         assert st["notify"][0]["resend"] is True
     assert st["lock_manifest"]["readable"] and st["lock_manifest"]["changed_this_run"] is False
+    assert st["lock_manifest"]["backup_due"] is False
     assert "backup_due=false" in outputs
 
 
@@ -217,9 +219,16 @@ def test_ops_audit_shows_the_same_manifest(tmp_path):
     import ops_audit as OA
     p = tmp_path / "l.json"; p.write_bytes(lock_bytes())
     m = LM.manifest(p)
-    rows = OA.lock_backup_rows(m, {"sha": COMMIT, "date": "2026-12-02T22:41:10Z"}, REPO)
+    rows = OA.lock_backup_rows(m, {"sha": COMMIT, "date": "2026-12-02T22:41:10Z"}, REPO, fetch=lambda u: p.read_bytes())
     text = OA.report(rows)
     assert m["sha256"] in text and COMMIT in text and "raw.githubusercontent.com" in text and LM.RULE in text
+    assert ("내려받기 링크 SHA-256 = 매니페스트", True) in [(i, ok) for i, ok, _ in rows]
+    wrong = OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, fetch=lambda u: b"other bytes")
+    assert ("내려받기 링크 SHA-256 = 매니페스트", False) in [(i, ok) for i, ok, _ in wrong]
+    def offline(u):
+        raise OSError("no network")
+    unreachable = OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, fetch=offline)
+    assert ("내려받기 링크 SHA-256 = 매니페스트", None) in [(i, ok) for i, ok, _ in unreachable]
     bad = tmp_path / "b.json"; bad.write_bytes(b"{")
     assert OA.lock_backup_rows(LM.manifest(bad), None, REPO)[0][1] is False
     assert "조회 불가" in OA.report(OA.lock_backup_rows(m, None, REPO))
@@ -237,3 +246,49 @@ def test_workflow_wiring():
     assert "github.event" not in step["run"]
     src = (H.ROOT / "tools" / "record_run_status.py").read_text(encoding="utf-8")
     assert "backup_due=" in src and "lock_manifest.status_record" in src
+
+
+# ---------------------------------------------------------------- exceptions (final checks)
+def test_commit_failure_alert_has_no_checklist(tmp_path, monkeypatch, alert_env):
+    """The lock was not saved: the failure alert must not ask for a backup of it."""
+    st = workdir(tmp_path, [{"signal_month": "2026-11", "event": "LOCKED", "detail": "x"}])
+    monkeypatch.chdir(tmp_path)
+    srv, seen = server([(200, {"ok": True})])
+    monkeypatch.setenv("TELEGRAM_API", f"http://127.0.0.1:{srv.server_port}")
+    try:
+        assert SA.main(["failure", "--status", str(st), "--what", "commit", "--run-url", "u"]) == 0
+    finally:
+        srv.shutdown()
+    assert "커밋 실패" in seen[0] and "저장되지 않았습니다" in seen[0] and "📦" not in seen[0]
+
+
+@pytest.mark.parametrize("lock", [b"[{", b"", b"{}", b"[]"])
+def test_damaged_lock_never_gets_a_download_link(tmp_path, monkeypatch, alert_env, lock):
+    code, seen, rec = send(tmp_path, monkeypatch, [{"signal_month": "2026-11", "event": "LOCKED", "detail": "x"}],
+                           lock=lock)
+    assert code == 0 and "📦" in seen[0] and "읽을 수 없음" in seen[0] and "raw.githubusercontent" not in seen[0]
+    st, outputs = run_status_main(tmp_path / "rs", monkeypatch, [{"signal_month": "2026-11", "event": "LOCKED"}], lock=lock)
+    assert st["lock_manifest"]["readable"] is False and st["lock_manifest"]["backup_due"] is False
+    assert "backup_due=false" in outputs
+
+
+def test_missing_lock_file(tmp_path):
+    m = LM.manifest(tmp_path / "none.json")
+    assert m["readable"] is False and m["error"] == "missing"
+    assert "raw.githubusercontent" not in LM.checklist(m, REPO, COMMIT)
+
+
+def test_resend_after_a_newer_lock_names_the_current_file(tmp_path, monkeypatch, alert_env):
+    """An undelivered 2026-11 alert resent after 2026-12 was locked: the checklist describes the
+    file as it is now (it contains 2026-11 too), so the backup taken from it is complete."""
+    newer = lock_bytes(("2026-10", "2026-11", "2026-12"))
+    pending = [{"signal_month": "2026-11", "event": "LOCKED", "detail": "x", "resend": True}]
+    code, seen, rec = send(tmp_path, monkeypatch, pending, lock=newer)
+    assert code == 0 and seen[0].startswith("[PDS-Lite]\n(재전송") and "2026-10~2026-12" in seen[0]
+    assert hashlib.sha256(newer).hexdigest() in seen[0]
+
+
+def test_no_repository_or_commit_gives_instructions_not_a_broken_link(tmp_path, monkeypatch):
+    p = tmp_path / "l.json"; p.write_bytes(lock_bytes())
+    t = LM.checklist(LM.manifest(p), None, None)
+    assert "확인 불가" in t and "raw.githubusercontent" not in t and LM.manifest(p)["sha256"] in t

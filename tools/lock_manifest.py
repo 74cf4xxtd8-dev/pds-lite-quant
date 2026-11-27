@@ -10,6 +10,8 @@ manifest (handbook manual 12.2).  This module computes that line - months, range
 * the monthly ops-audit report.
 
 Backup needed  <=>  the SHA-256 on the last line of the external manifest differs from this one.
+The system cannot see the external backup: changed_this_run / backup_due only say that this run
+SAVED a new lock (a backup is now due), never that a backup was made.
 
     python tools/lock_manifest.py [--summary] [--due]        # print the manifest / checklist
 """
@@ -28,6 +30,8 @@ BACKUP_FILES = (("docs/data/official_history.json", "필수"), ("docs/data/offic
                 ("docs/data/manual_releases.json", "권장"), ("docs/data/reference_adaptive.json", "권장"))
 NEW_LOCK_EVENTS = ("LOCKED", "MANUAL_RELEASE")
 RULE = "외부 매니페스트 마지막 줄의 SHA-256이 이 값과 다르면 백업이 필요하다(handbook ② 12.2)"
+NOT_DONE = ("backup_due·changed_this_run은 '이번 실행이 새 잠금을 저장했다'는 뜻일 뿐 외부 백업 완료가 아니다. "
+            "시스템은 외부 백업을 볼 수 없으므로 완료 여부는 매니페스트와 SHA-256을 비교해 운영자가 확인한다")
 
 
 def git_blob(b: bytes) -> str:
@@ -79,7 +83,8 @@ def checklist(m: dict, repo_slug: str | None, commit: str | None) -> str:
          f"1) {BACKUP_FILES[0][1]} official_history.json: {link}",
          "2) " + BACKUP_FILES[1][1] + " " + " · ".join(Path(p).name for p, _ in BACKUP_FILES[1:])
          + " (같은 커밋, 경로만 바꿈)",
-         "3) 외부 보관 → 매니페스트 1줄(개월 수·마지막 신호월·SHA-256·커밋) → 직전 백업과 점검 스크립트 대조(② 12.2)"]
+         "3) 외부 보관 → 매니페스트 1줄(개월 수·마지막 신호월·SHA-256·커밋) → 직전 백업과 점검 스크립트 대조(② 12.2)",
+         "※ 이 알림은 백업 완료를 확인하지 않습니다. 완료 여부는 매니페스트로 직접 확인하세요."]
     return "\n".join(s)
 
 
@@ -88,10 +93,12 @@ def status_record(path: Path, notify: list[dict], checkout_commit: str | None) -
     m = manifest(path)
     changed = any(e.get("event") in NEW_LOCK_EVENTS for e in notify or [] if not e.get("resend"))
     m["changed_this_run"] = changed
+    m["backup_due"] = changed and bool(m.get("readable"))     # a new lock was saved: back it up (not "done")
     # a commit that is known to hold exactly this file: the checkout, unless this run is about to
     # commit a new version (then the job summary and the alert carry the new commit)
     m["download_commit"] = None if changed else checkout_commit
     m["backup_rule"] = RULE
+    m["backup_note"] = NOT_DONE
     return m
 
 
@@ -109,6 +116,7 @@ def main(argv=None) -> int:
         print(f"- {line(m)}")
         print(f"- 데이터 커밋 `{commit}`" if commit else "- 데이터 커밋: 확인 불가")
         print(f"- {RULE}")
+        print(f"- {NOT_DONE}")
         if due:
             print("\n```\n" + checklist(m, slug, commit) + "\n```")
     else:
