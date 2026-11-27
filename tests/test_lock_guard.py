@@ -309,18 +309,34 @@ def test_this_branch_does_not_change_operational_data():
 
 
 def test_ci_wiring():
+    """The deciding guard is data-guard.yml (main's workflow and checker; tests/test_data_guard.py).
+    tests.yml keeps a fallback for normal PRs only, judged by the target's copy of the checker."""
+    dg = yaml.safe_load((H.ROOT / ".github" / "workflows" / "data-guard.yml").read_text(encoding="utf-8"))
+    assert list(dg.get("on", dg.get(True))) == ["pull_request_target"]
+    assert dg["jobs"]["restore-gate"]["environment"] == LG.ENVIRONMENT
     tw = yaml.safe_load((H.ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8"))
-    gate, guard = tw["jobs"]["restore-gate"], tw["jobs"]["lock-guard"]
-    assert gate["environment"] == LG.ENVIRONMENT and gate["permissions"] == {}
-    assert "pull_request" in gate["if"] and "restore/" in gate["if"] and LG.LABEL in gate["if"]
-    assert guard["permissions"] == {"contents": "read", "actions": "read"}
-    assert set(guard["needs"]) == {"baseline", "restore-gate"} and "!cancelled()" in guard["if"]
+    guard = tw["jobs"]["lock-guard"]
+    assert "restore-gate" not in tw["jobs"] and guard["permissions"] == {"contents": "read"}
+    assert guard["needs"] == "baseline" and "restore/" in guard["if"] and LG.LABEL in guard["if"]
     step = guard["steps"][-1]
     assert 'git show "$TARGET_SHA:tools/lock_guard.py"' in step["run"]          # judged by the target's copy
     assert '--base "$MERGE_BASE" --head "$HEAD_SHA"' in step["run"]             # the PR's own changes only
     assert step["env"]["HEAD_SHA"] == "${{ github.event.pull_request.head.sha || github.sha }}"
     assert step["env"]["PDS_HALT_SEEN"] == "${{ vars.PDS_HALT || '' }}"
     assert "github.event" not in step["run"]                                    # inputs via env only
+
+
+@pytest.mark.parametrize("case", ["valid", "no label", "no approval", "admins may bypass", "environment missing",
+                                  "approver not admin", "approval comment without id"])
+def test_pull_request_target_runs_are_pr_runs(repo, case):
+    """data-guard.yml calls the checker with --event pull_request_target: label and approval are
+    required exactly as on pull_request runs."""
+    head = make_restore(repo)
+    spec = {} if case == "valid" else BREAKS[case].get("run", {})
+    res = restore_ok(repo, head, event="pull_request_target", **spec)
+    assert res["ok"] is (case == "valid"), (case, failed(res))
+    if case == "valid":
+        assert not any(i == "환경 승인" and ok is None for i, ok, _ in res["rows"])   # approval was checked, not deferred
 
 
 def test_ops_audit_flags_human_data_commits():

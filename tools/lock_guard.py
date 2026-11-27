@@ -18,8 +18,9 @@ restore/<RESTORE-YYYYMMDD-N> (and, on pull_request runs, the label lock-restore)
   script computes, and its external backup SHA-256 equals the restored lock;
 * exactly one LOCK_RESTORED event naming the restore id is appended;
 * PDS_HALT is set (operations stopped);
-* on pull_request runs: the protected environment pds-lock-restore has required reviewers and this
-  run carries its approval by the record's approver (admin) with the restore id in the comment.
+* on PR runs (pull_request_target from .github/workflows/data-guard.yml, or pull_request): the
+  protected environment pds-lock-restore has required reviewers and this run carries its approval
+  by the record's approver (admin) with the restore id in the comment.
 A label or a record alone never passes anything: every fact in the record is recomputed from git.
 
     python tools/lock_guard.py --base <merge-base> --head <PR head> --event pull_request \
@@ -45,6 +46,7 @@ BOT = "github-actions[bot]"
 LABEL = "lock-restore"
 ENVIRONMENT = "pds-lock-restore"
 ID_RE = re.compile(r"^RESTORE-\d{8}-\d+$")
+PR_EVENTS = ("pull_request", "pull_request_target")   # data-guard.yml runs on pull_request_target
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 HALT_OFF = ("", "0", "false", "no", "off")
 RECORD_KEYS = ("restore_id", "incident", "detected_by", "files", "source", "before", "after",
@@ -167,7 +169,7 @@ def _restore(repo, base, head, changed, rows, *, event, head_ref, label, halt_se
 
     # R2 request markers
     row("복구 요청 표시: 브랜치 restore/<복구 ID>", head_ref == f"restore/{rid}", f"브랜치 {head_ref!r}")
-    if event == "pull_request":
+    if event in PR_EVENTS:
         row(f"복구 요청 표시: PR 라벨 {LABEL}", bool(label), "")
 
     # R3 nothing but the restore
@@ -250,12 +252,12 @@ def _restore(repo, base, head, changed, rows, *, event, head_ref, label, halt_se
     # R7 operations stopped
     row("운영자 중지(PDS_HALT) 중", (halt_seen or "").strip().lower() not in HALT_OFF, f"PDS_HALT={halt_seen!r}")
 
-    # R8 explicit approval (pull_request runs; GitHub's own approval record, not the PR's text)
+    # R8 explicit approval (PR runs; GitHub's own approval record, not the PR's text)
     appr = rec.get("approval") or {}
     who = appr.get("approver")
     row("기록의 승인 근거(승인자·사유에 복구 ID)", bool(who) and rid in str(appr.get("statement", "")),
         f"승인자 {who!r}")
-    if event == "pull_request":
+    if event in PR_EVENTS:
         reviewers = (environment or {}).get("required_reviewers") or []
         row(f"보호 환경 {ENVIRONMENT}: 필수 검토자·관리자 우회 끔",
             bool(reviewers) and (environment or {}).get("can_admins_bypass") is False,
@@ -331,7 +333,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     label = a.label.strip().lower() == "true"
     env = approvals = perm = None
-    if a.event == "pull_request" and (a.head_ref.startswith("restore/") or label) and os.environ.get("GH_TOKEN"):
+    if a.event in PR_EVENTS and (a.head_ref.startswith("restore/") or label) and os.environ.get("GH_TOKEN"):
         recs = load(show(a.repo, a.head, RESTORES))
         rec = recs[-1] if isinstance(recs, list) and recs and isinstance(recs[-1], dict) else {}
         env, approvals, perm = github_approval_facts(os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_RUN_ID"],

@@ -173,7 +173,7 @@ RESTORE_ENVIRONMENT = "pds-lock-restore"
 
 
 def restore_environment_rows(env) -> list[tuple[str, bool | None, str]]:
-    """The approval gate of lock restore PRs (tests.yml restore-gate; tools/lock_guard.py requires
+    """The approval gate of lock restore PRs (data-guard.yml restore-gate; tools/lock_guard.py requires
     required reviewers and admin bypass off, otherwise every restore PR fails)."""
     name = RESTORE_ENVIRONMENT
     if not (isinstance(env, dict) and env.get("name")):
@@ -181,13 +181,43 @@ def restore_environment_rows(env) -> list[tuple[str, bool | None, str]]:
     rv = [r for r in env.get("protection_rules") or [] if r.get("type") == "required_reviewers"]
     reviewers = [(x.get("reviewer") or {}).get("login") for r in rv for x in r.get("reviewers") or []]
     psr = any(r.get("prevent_self_review") for r in rv)
+    pol = env.get("deployment_branch_policy")
     return [(f"환경 {name}: 필수 검토자", bool(reviewers), f"{reviewers}"),
+            (f"환경 {name}: 배포 브랜치", None,
+             f"{pol} (data-guard는 pull_request_target이라 main 기준으로 실행 → main만 허용해도 동작)" if pol else
+             "제한 없음 → main만 허용 권장(다른 워크플로가 이 환경 승인을 요청하지 못하게)"),
             (f"환경 {name}: 관리자 우회 끔", env.get("can_admins_bypass") is False,
              f"can_admins_bypass={env.get('can_admins_bypass')}"),
             (f"환경 {name}: 승인 형태", None,
              "독립 승인(prevent self-review 켬)" if psr and len(reviewers) > 1 else
              "본인 재확인(요청자=승인자 가능) — 독립 승인 아님" if not psr else
              "prevent self-review 켬, 검토자 1명 → 그 검토자가 연 복구 PR은 아무도 승인 못 함")]
+
+
+DATA_GUARD = "data-guard.yml"
+
+
+def data_guard_rows(runs) -> list[tuple[str, bool | None, str]]:
+    """Evidence that the main-based PR guard really runs: its recent runs (pull_request_target only).
+    A run GitHub refused to start (startup_failure) is what a blocking Actions event policy looks like."""
+    item = "data-guard(main 기준 PR 검사) 최근 실행"
+    if isinstance(runs, dict) and "_http_error" in runs:
+        return [(item, False if runs["_http_error"] == 404 else None,
+                 "main에 data-guard.yml 없음 → PR 검사가 main 기준으로 돌지 않는다" if runs["_http_error"] == 404
+                 else f"조회 불가 {runs}")]
+    runs = (runs or {}).get("workflow_runs") if isinstance(runs, dict) else runs
+    if not runs:
+        return [(item, None, "실행 기록 없음 → PR을 열면 실행된다")]
+    def pr(r):
+        return ",".join(f"#{x.get('number')}" for x in r.get("pull_requests") or []) or "PR ?"
+    shown = [f"{pr(r)} {r.get('event')} {r.get('conclusion') or r.get('status')} ({(r.get('created_at') or '')[:10]})"
+             for r in runs[:6]]
+    blocked = [r for r in runs[:6] if r.get("conclusion") == "startup_failure"]
+    other = [r for r in runs[:6] if r.get("event") != "pull_request_target"]
+    ok = False if (blocked or other) else None
+    hint = (" → 시작 거부(startup_failure): Actions 이벤트 정책이 pull_request_target을 막는지 확인(README)"
+            if blocked else "") + (" → pull_request_target 외 이벤트 실행" if other else "")
+    return [(item, ok, "; ".join(shown) + hint)]
 
 
 def main(argv=None) -> int:
@@ -201,6 +231,7 @@ def main(argv=None) -> int:
     prov = fetch_provenance(repo)
     rows += main_commit_provenance(*prov) if prov else [("main 커밋 출처", None, "조회 불가")]
     rows += restore_environment_rows(api(f"/repos/{repo}/environments/{RESTORE_ENVIRONMENT}"))
+    rows += data_guard_rows(api(f"/repos/{repo}/actions/workflows/{DATA_GUARD}/runs?per_page=6"))
     text = report(rows)
     print(text)
     if args.report:
