@@ -21,8 +21,13 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import socket
 import subprocess
 import sys
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 LOCK = Path("docs/data/official_history.json")
@@ -59,8 +64,72 @@ def head_commit(repo: str = ".") -> str | None:
     return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
 
 
+def raw_base() -> str:
+    return os.environ.get("PDS_RAW_BASE", "https://raw.githubusercontent.com").rstrip("/")
+
+
 def raw_url(repo_slug: str, commit: str, path: str) -> str:
-    return f"https://raw.githubusercontent.com/{repo_slug}/{commit}/{path}"
+    return f"{raw_base()}/{repo_slug}/{commit}/{path}"
+
+
+def _valid_link(url) -> bool:
+    """Only a raw link of this kind: <raw base>/<owner>/<repo>/<40-hex commit>/docs/data/<file>.json"""
+    if not isinstance(url, str) or not url.startswith(raw_base() + "/"):
+        return False
+    return re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[0-9a-f]{40}/docs/data/[A-Za-z0-9_.-]+\.json",
+                        url[len(raw_base()) + 1:]) is not None and ".." not in url
+
+
+def _get(url: str, timeout: float) -> bytes:
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        return r.read()
+
+
+# result -> ok: True = the link returns exactly the reference bytes; False = it definitely does not
+# (wrong, empty, missing, malformed link); None = could not check now (server error, timeout, network)
+LINK_RESULTS = {"match": True, "mismatch": False, "empty": False, "not_found": False, "bad_url": False,
+                "bad_reference": False, "http_error": None, "timeout": None, "network": None}
+
+
+def verify_link(url, expected_sha256, *, getter=None, timeout: float = 20, tries: int = 1, wait: float = 0) -> dict:
+    """Download the link and compare the SHA-256 of the actual response bytes with the reference
+    file's.  Never raises; see LINK_RESULTS."""
+    out = {"url": url, "expected_sha256": expected_sha256, "sha256": None, "bytes": None, "result": None, "detail": ""}
+    if not (isinstance(expected_sha256, str) and re.fullmatch(r"[0-9a-f]{64}", expected_sha256)):
+        out.update(result="bad_reference", detail="기준 파일 SHA-256이 없거나 형식이 아님")
+    elif not _valid_link(url):
+        out.update(result="bad_url", detail="raw 링크 형식(<owner>/<repo>/<40자 커밋>/docs/data/<파일>.json)이 아님")
+    else:
+        for attempt in range(max(1, tries)):
+            try:
+                body = (getter or _get)(url, timeout)
+            except urllib.error.HTTPError as e:
+                out.update(result="not_found" if e.code == 404 else "http_error", detail=f"HTTP {e.code}")
+            except (TimeoutError, socket.timeout):
+                out.update(result="timeout", detail=f"{timeout}s 안에 응답 없음")
+            except urllib.error.URLError as e:
+                timed_out = isinstance(e.reason, (TimeoutError, socket.timeout))
+                out.update(result="timeout" if timed_out else "network", detail=f"{e.reason}"[:120])
+            except (ValueError, OSError) as e:
+                out.update(result="network", detail=f"{type(e).__name__}: {e}"[:120])
+            else:
+                got = hashlib.sha256(body).hexdigest()
+                out.update(sha256=got, bytes=len(body))
+                out.update(result="empty" if not body else "match" if got == expected_sha256 else "mismatch",
+                           detail="" if body else "빈 응답")
+            if LINK_RESULTS[out["result"]] is not None:        # a definite answer: no retry
+                break
+            if attempt + 1 < tries:
+                time.sleep(wait)
+    out["ok"] = LINK_RESULTS[out["result"]]
+    return out
+
+
+def link_line(v: dict) -> str:
+    mark = {True: "✅", False: "❌", None: "❔"}[v["ok"]]
+    return (f"{mark} 내려받기 링크 확인: {v['result']}" + (f" ({v['detail']})" if v["detail"] else "")
+            + (f" · 응답 {v['bytes']}바이트 SHA-256 {v['sha256']}" if v["sha256"] else "")
+            + f" · 기준 {v['expected_sha256']}")
 
 
 def line(m: dict) -> str:
@@ -107,6 +176,8 @@ def main(argv=None) -> int:
     ap.add_argument("--lock", default=str(LOCK))
     ap.add_argument("--summary", action="store_true", help="markdown for the Actions job summary")
     ap.add_argument("--due", default="false", help="true: this run saved a new lock -> full checklist")
+    ap.add_argument("--verify-link", action="store_true",
+                    help="with --due true: download the checklist's link and compare SHA-256 (never fails the run)")
     a = ap.parse_args(argv)
     m = manifest(Path(a.lock))
     commit, slug = head_commit(), os.environ.get("GITHUB_REPOSITORY")
@@ -119,6 +190,9 @@ def main(argv=None) -> int:
         print(f"- {NOT_DONE}")
         if due:
             print("\n```\n" + checklist(m, slug, commit) + "\n```")
+            if a.verify_link and m.get("readable") and slug and commit:
+                v = verify_link(raw_url(slug, commit, str(LOCK)), m["sha256"], tries=3, wait=10)
+                print(f"- {link_line(v)}")
     else:
         print(checklist(m, slug, commit) if due else line(m))
     return 0

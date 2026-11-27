@@ -188,7 +188,7 @@ jobs:
         if: always() && steps.commit.outcome == 'success'
         env:
           DUE: ${{ steps.status.outputs.backup_due }}
-        run: python tools/lock_manifest.py --summary --due "$DUE" >> "$GITHUB_STEP_SUMMARY" || true
+        run: python tools/lock_manifest.py --summary --due "$DUE" --verify-link >> "$GITHUB_STEP_SUMMARY" || true
 
       # Optional phone alert. Add repo secrets TELEGRAM_TOKEN and TELEGRAM_CHAT_ID to enable.
       # State changes only (waiting started, Core mismatch, locked, day-10 block, manual release,

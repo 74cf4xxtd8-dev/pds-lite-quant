@@ -154,7 +154,7 @@ def evaluate(collab, main_branch, main_rules, env, wf_perms, halt_seen) -> list[
 
 
 def lock_backup_rows(m: dict, last_commit: dict | None, repo: str,
-                     fetch=None) -> list[tuple[str, bool | None, str]]:
+                     fetch=None, tries: int = 2, wait: float = 5) -> list[tuple[str, bool | None, str]]:
     """The same lock manifest the alerts and run_status.json show, for the monthly backup check,
     and whether the download link the alert gives really returns these bytes."""
     rows = [("잠금 매니페스트(main)", None if m.get("readable") else False, lock_manifest.line(m))]
@@ -162,20 +162,12 @@ def lock_backup_rows(m: dict, last_commit: dict | None, repo: str,
         sha = last_commit["sha"]
         url = lock_manifest.raw_url(repo, sha, "docs/data/official_history.json")
         rows.append(("잠금 마지막 변경 커밋", None, f"{sha} ({last_commit.get('date')}) · {url}"))
-        try:
-            got = hashlib.sha256((fetch or _download)(url)).hexdigest()
-            rows.append(("내려받기 링크 SHA-256 = 매니페스트", got == m.get("sha256"), f"링크 {got} / 매니페스트 {m.get('sha256')}"))
-        except Exception as e:  # noqa: BLE001
-            rows.append(("내려받기 링크 SHA-256 = 매니페스트", None, f"내려받기 실패: {type(e).__name__}"))
+        v = lock_manifest.verify_link(url, m.get("sha256"), getter=fetch, tries=tries, wait=wait)
+        rows.append(("내려받기 링크 SHA-256 = 매니페스트", v["ok"], lock_manifest.link_line(v)))
     else:
         rows.append(("잠금 마지막 변경 커밋", None, "조회 불가 → official_history.json History에서 확인"))
     rows.append(("월간 외부 백업", None, f"{lock_manifest.RULE}. {lock_manifest.NOT_DONE}"))
     return rows
-
-
-def _download(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=30) as r:
-        return r.read()
 
 
 def fetch_last_lock_commit(repo: str) -> dict | None:

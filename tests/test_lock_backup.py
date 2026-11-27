@@ -219,15 +219,15 @@ def test_ops_audit_shows_the_same_manifest(tmp_path):
     import ops_audit as OA
     p = tmp_path / "l.json"; p.write_bytes(lock_bytes())
     m = LM.manifest(p)
-    rows = OA.lock_backup_rows(m, {"sha": COMMIT, "date": "2026-12-02T22:41:10Z"}, REPO, fetch=lambda u: p.read_bytes())
+    rows = OA.lock_backup_rows(m, {"sha": COMMIT, "date": "2026-12-02T22:41:10Z"}, REPO, fetch=lambda u, t: p.read_bytes())
     text = OA.report(rows)
     assert m["sha256"] in text and COMMIT in text and "raw.githubusercontent.com" in text and LM.RULE in text
     assert ("내려받기 링크 SHA-256 = 매니페스트", True) in [(i, ok) for i, ok, _ in rows]
-    wrong = OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, fetch=lambda u: b"other bytes")
+    wrong = OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, fetch=lambda u, t: b"other bytes")
     assert ("내려받기 링크 SHA-256 = 매니페스트", False) in [(i, ok) for i, ok, _ in wrong]
-    def offline(u):
+    def offline(u, t):
         raise OSError("no network")
-    unreachable = OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, fetch=offline)
+    unreachable = OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, fetch=offline, wait=0)
     assert ("내려받기 링크 SHA-256 = 매니페스트", None) in [(i, ok) for i, ok, _ in unreachable]
     bad = tmp_path / "b.json"; bad.write_bytes(b"{")
     assert OA.lock_backup_rows(LM.manifest(bad), None, REPO)[0][1] is False
@@ -292,3 +292,186 @@ def test_no_repository_or_commit_gives_instructions_not_a_broken_link(tmp_path, 
     p = tmp_path / "l.json"; p.write_bytes(lock_bytes())
     t = LM.checklist(LM.manifest(p), None, None)
     assert "확인 불가" in t and "raw.githubusercontent" not in t and LM.manifest(p)["sha256"] in t
+
+
+# ---------------------------------------------------------------- download link = reference bytes
+@pytest.fixture()
+def raw_host(monkeypatch):
+    """A local stand-in for raw.githubusercontent.com. Each path answers as configured:
+    bytes -> 200 with that body, int -> that HTTP status, ("slow", s) -> body after s seconds."""
+    routes, hits = {}, []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            hits.append(self.path)
+            r = routes.get(self.path, 404)
+            if isinstance(r, tuple):
+                import time
+                time.sleep(r[1]); r = r[2]
+            if isinstance(r, int):
+                self.send_response(r); self.end_headers(); return
+            self.send_response(200); self.send_header("Content-Length", str(len(r))); self.end_headers()
+            try:
+                self.wfile.write(r)
+            except OSError:
+                pass
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    srv.daemon_threads = True
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_port}"
+    monkeypatch.setenv("PDS_RAW_BASE", base)
+    yield base, routes, hits
+    srv.shutdown()
+
+
+LOCK_PATH = "docs/data/official_history.json"
+
+
+def link_for(routes, reply, commit=COMMIT):
+    url = LM.raw_url(REPO, commit, LOCK_PATH)
+    routes["/" + url.split("/", 3)[3]] = reply
+    return url
+
+
+@pytest.mark.parametrize("reply, result, ok", [
+    ("same", "match", True),                    # the actual response bytes hash to the reference
+    (b"[]", "mismatch", False),                 # 200, but different bytes
+    ("one-byte-off", "mismatch", False),        # 200, one byte changed
+    ("truncated", "mismatch", False),           # 200, cut short
+    (b"", "empty", False),                      # 200 with an empty body
+    (404, "not_found", False),                  # wrong commit / wrong path
+    (500, "http_error", None),                  # server error: unknown, not a verdict
+    (503, "http_error", None),
+    (403, "http_error", None),
+])
+def test_link_response_bytes_vs_reference_sha256(raw_host, reply, result, ok):
+    base, routes, hits = raw_host
+    ref = lock_bytes()
+    body = {"same": ref, "one-byte-off": ref[:-1] + b"X", "truncated": ref[: len(ref) // 2]}.get(reply, reply)
+    url = link_for(routes, body)
+    v = LM.verify_link(url, hashlib.sha256(ref).hexdigest(), timeout=5)
+    assert (v["result"], v["ok"]) == (result, ok), v
+    assert hits == ["/" + url.split("/", 3)[3]]                      # really requested, once
+    if isinstance(body, bytes):
+        assert v["bytes"] == len(body) and v["sha256"] == hashlib.sha256(body).hexdigest()
+    else:
+        assert v["sha256"] is None
+    assert {True: "✅", False: "❌", None: "❔"}[ok] in LM.link_line(v)
+
+
+def test_link_timeout_is_unknown_and_retried(raw_host):
+    base, routes, hits = raw_host
+    ref = lock_bytes()
+    url = link_for(routes, ("slow", 2, ref))
+    v = LM.verify_link(url, hashlib.sha256(ref).hexdigest(), timeout=0.3, tries=2, wait=0)
+    assert (v["result"], v["ok"]) == ("timeout", None) and len(hits) == 2
+
+
+def test_link_server_error_then_success_counts_as_match(raw_host):
+    base, routes, hits = raw_host
+    ref = lock_bytes()
+    url = LM.raw_url(REPO, COMMIT, LOCK_PATH)
+    answers = iter([500, ref])
+    def getter(u, t):
+        a = next(answers)
+        if isinstance(a, int):
+            import urllib.error
+            raise urllib.error.HTTPError(u, a, "x", {}, None)
+        return a
+    v = LM.verify_link(url, hashlib.sha256(ref).hexdigest(), getter=getter, tries=3, wait=0)
+    assert v["result"] == "match" and v["ok"] is True
+
+
+def test_definite_answers_are_not_retried(raw_host):
+    base, routes, hits = raw_host
+    url = link_for(routes, 404)
+    v = LM.verify_link(url, "0" * 64, tries=3, wait=0)
+    assert v["result"] == "not_found" and len(hits) == 1
+
+
+def test_network_failure_is_unknown(monkeypatch):
+    import socket
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]; s.close()   # nothing listens
+    monkeypatch.setenv("PDS_RAW_BASE", f"http://127.0.0.1:{port}")
+    v = LM.verify_link(LM.raw_url(REPO, COMMIT, LOCK_PATH), "0" * 64, timeout=2)
+    assert (v["result"], v["ok"]) == ("network", None)
+
+
+@pytest.mark.parametrize("url", [
+    None, 123, "",
+    "https://example.com/owner/pds-lite-quant/" + COMMIT + "/docs/data/official_history.json",     # other host
+    "http://raw.githubusercontent.com/owner/pds-lite-quant/" + COMMIT + "/docs/data/official_history.json",  # http
+    "https://raw.githubusercontent.com.evil.io/owner/pds-lite-quant/" + COMMIT + "/docs/data/official_history.json",
+    "https://raw.githubusercontent.com/owner/pds-lite-quant/main/docs/data/official_history.json",  # branch, not commit
+    "https://raw.githubusercontent.com/owner/pds-lite-quant/c0ffee/docs/data/official_history.json",  # short sha
+    "https://raw.githubusercontent.com/owner/pds-lite-quant/" + COMMIT + "/docs/data/../../README.md",
+    "https://raw.githubusercontent.com/owner/pds-lite-quant/" + COMMIT + "/tools/lock_manifest.py",
+    "https://raw.githubusercontent.com/owner/pds-lite-quant/" + COMMIT + "/docs/data/official_history.json?x=1",
+    "https://raw.githubusercontent.com/" + COMMIT + "/docs/data/official_history.json",               # no repo
+    "file:///etc/passwd",
+])
+def test_bad_url_is_rejected_without_a_request(url, monkeypatch):
+    monkeypatch.delenv("PDS_RAW_BASE", raising=False)
+    called = []
+    v = LM.verify_link(url, "0" * 64, getter=lambda u, t: called.append(u) or b"x")
+    assert (v["result"], v["ok"]) == ("bad_url", False) and called == []
+
+
+def test_the_real_link_form_is_accepted(monkeypatch):
+    monkeypatch.delenv("PDS_RAW_BASE", raising=False)
+    url = LM.raw_url("74cf4xxtd8-dev/pds-lite-quant", "88decb746f5776209724e1c6aeef1be1b8910675", LOCK_PATH)
+    assert url == ("https://raw.githubusercontent.com/74cf4xxtd8-dev/pds-lite-quant/"
+                   "88decb746f5776209724e1c6aeef1be1b8910675/docs/data/official_history.json")
+    v = LM.verify_link(url, "1750dd4adcc74ce5832193a8a87da73c1ab401d36b242dea3b4fe5a3510e709e",
+                       getter=lambda u, t: REAL_LOCK.read_bytes())
+    assert v["result"] == "match"              # the committed lock under the real link form
+
+
+@pytest.mark.parametrize("expected", [None, "", "abc", "Z" * 64, 5])
+def test_missing_or_malformed_reference_never_passes(expected):
+    v = LM.verify_link(LM.raw_url(REPO, COMMIT, LOCK_PATH), expected, getter=lambda u, t: b"x")
+    assert (v["result"], v["ok"]) == ("bad_reference", False)
+
+
+def test_summary_cli_reports_the_link_check_and_never_fails_the_run(tmp_path, raw_host):
+    base, routes, hits = raw_host
+    p = tmp_path / "l.json"; p.write_bytes(lock_bytes())
+    env = dict(os.environ, DATA_COMMIT=COMMIT, GITHUB_REPOSITORY=REPO, PDS_RAW_BASE=base)
+    cmd = [sys.executable, str(H.ROOT / "tools" / "lock_manifest.py"), "--lock", str(p), "--summary", "--due"]
+    link_for(routes, lock_bytes())
+    ok = subprocess.run(cmd + ["true", "--verify-link"], capture_output=True, text=True, env=env)
+    assert ok.returncode == 0 and "✅ 내려받기 링크 확인: match" in ok.stdout
+    link_for(routes, b"tampered")
+    bad = subprocess.run(cmd + ["true", "--verify-link"], capture_output=True, text=True, env=env)
+    assert bad.returncode == 0 and "❌ 내려받기 링크 확인: mismatch" in bad.stdout
+    link_for(routes, 404)
+    gone = subprocess.run(cmd + ["true", "--verify-link"], capture_output=True, text=True, env=env)
+    assert gone.returncode == 0 and "❌ 내려받기 링크 확인: not_found" in gone.stdout
+    n = len(hits)
+    quiet = subprocess.run(cmd + ["false", "--verify-link"], capture_output=True, text=True, env=env)
+    assert quiet.returncode == 0 and "내려받기 링크 확인" not in quiet.stdout and len(hits) == n   # not due: no request
+
+
+def test_ops_audit_link_row_uses_the_real_download(tmp_path, raw_host):
+    import ops_audit as OA
+    base, routes, hits = raw_host
+    p = tmp_path / "l.json"; p.write_bytes(lock_bytes())
+    m = LM.manifest(p)
+    def row(rows):
+        return [(ok, d) for i, ok, d in rows if i == "내려받기 링크 SHA-256 = 매니페스트"][0]
+    link_for(routes, lock_bytes())
+    assert row(OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, wait=0))[0] is True
+    link_for(routes, b"")
+    assert row(OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, wait=0))[0] is False
+    link_for(routes, 502)
+    ok, detail = row(OA.lock_backup_rows(m, {"sha": COMMIT}, REPO, wait=0))
+    assert ok is None and "HTTP 502" in detail
+
+
+def test_update_workflow_verifies_the_link():
+    wf = yaml.safe_load((H.ROOT / ".github" / "workflows" / "update.yml").read_text(encoding="utf-8"))
+    step = [s for s in wf["jobs"]["run"]["steps"] if s.get("name") == "Backup checklist (job summary)"][0]
+    assert "--verify-link" in step["run"] and step["run"].rstrip().endswith("|| true")
