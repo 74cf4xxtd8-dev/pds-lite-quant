@@ -2,8 +2,8 @@
  "schema": "pds-lite/1",
  "engine": "pds-lite-1.1.0",
  "mode": "engine",
- "generated_at_utc": "2026-11-26T11:50:41+00:00",
- "generated_at_kst": "2026-11-26 20:50 KST",
+ "generated_at_utc": "2026-11-27T08:29:01+00:00",
+ "generated_at_kst": "2026-11-27 17:29 KST",
  "market_asof": "2026-11-25",
  "flags": [
   "2026-11: F2R_PREVIEW"

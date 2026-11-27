@@ -59,13 +59,15 @@ def _line(e: dict, payload: dict) -> str:
     return f"ℹ️ {sm} {kind}: {detail}"
 
 
-def message(payload: dict | None, pages_url: str = "") -> str:
+def message(payload: dict | None, pages_url: str = "", backup: str = "") -> str:
+    """backup: the monthly backup checklist (lock_manifest.checklist), appended when the events
+    include a new lock (LOCKED / MANUAL_RELEASE) - send_alert.py decides and computes it."""
     events = (payload or {}).get("notify") or []
     if not events:
         return ""
     body = "\n\n".join(("(재전송: 이전 실행에서 전달 실패) " if e.get("resend") else "") + _line(e, payload)
                        for e in events)
-    return f"[PDS-Lite]\n{body}" + (f"\n{pages_url}" if pages_url else "")
+    return f"[PDS-Lite]\n{body}" + (f"\n\n{backup}" if backup else "") + (f"\n{pages_url}" if pages_url else "")
 
 
 def payload_from_status(status: dict, latest: Path = Path("docs/data/portfolio_latest.json")) -> dict:
