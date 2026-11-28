@@ -2,9 +2,9 @@
  "schema": "pds-lite/1",
  "engine": "pds-lite-1.1.0",
  "mode": "engine",
- "generated_at_utc": "2026-11-27T08:29:01+00:00",
- "generated_at_kst": "2026-11-27 17:29 KST",
- "market_asof": "2026-11-25",
+ "generated_at_utc": "2026-11-28T04:13:23+00:00",
+ "generated_at_kst": "2026-11-28 13:13 KST",
+ "market_asof": "2026-11-27",
  "flags": [
   "2026-11: F2R_PREVIEW"
  ],
@@ -502,7 +502,7 @@
    "adaptive": "CORE_DEFAULT_PREVIEW",
    "adaptive_mode": "reference_only",
    "unrate_carried": false,
-   "asof": "2026-11-25",
+   "asof": "2026-11-27",
    "reference_seen": {
     "status": "PREVIEW",
     "state": "NORMAL",
@@ -512,9 +512,9 @@
    "proxy": {
     "state": "NORMAL",
     "rb": 1.0,
-    "sigma": 0.070402,
+    "sigma": 0.075242,
     "vol_budget": 1.0,
-    "trend12_excess": 0.022756
+    "trend12_excess": 0.038999
    },
    "sleeves": {
     "HAA": {
@@ -529,9 +529,10 @@
      "BIL": 0.833333
     },
     "FAA": {
+     "VGK": 0.166667,
      "DBC": 0.166667,
      "VNQ": 0.166667,
-     "BIL": 0.666667
+     "BIL": 0.5
     },
     "LAA": {
      "QQQ": 0.25,
@@ -543,15 +544,15 @@
     }
    }
   },
-  "turnover_one_way": 0.38250000000000006,
-  "est_cost": 0.0007650000000000002,
+  "turnover_one_way": 0.35625000000000007,
+  "est_cost": 0.0007125000000000001,
   "us": [
    {
     "ticker": "BIL",
     "name": "T-Bill 1-3M",
-    "core": 0.55125,
-    "adaptive": 0.55125,
-    "delta": 0.3825,
+    "core": 0.525,
+    "adaptive": 0.525,
+    "delta": 0.35625,
     "class": "Cash"
    },
    {
@@ -611,6 +612,14 @@
     "class": "Equity"
    },
    {
+    "ticker": "VGK",
+    "name": "FTSE Europe",
+    "core": 0.02625,
+    "adaptive": 0.02625,
+    "delta": 0.0,
+    "class": "Equity"
+   },
+   {
     "ticker": "IWM",
     "name": "Russell 2000",
     "core": 0.025,
@@ -632,14 +641,6 @@
     "core": 0.0,
     "adaptive": 0.0,
     "delta": -0.0375,
-    "class": "Equity"
-   },
-   {
-    "ticker": "VGK",
-    "name": "FTSE Europe",
-    "core": 0.0,
-    "adaptive": 0.0,
-    "delta": -0.02625,
     "class": "Equity"
    },
    {
@@ -669,16 +670,16 @@
   ],
   "asset_class": {
    "core": {
-    "Equity": 0.21250000000000002,
+    "Equity": 0.23875000000000002,
     "Fixed Income": 0.05625,
     "Real Assets / Other": 0.18,
-    "Cash": 0.55125
+    "Cash": 0.525
    },
    "adaptive": {
-    "Equity": 0.21250000000000002,
+    "Equity": 0.23875000000000002,
     "Fixed Income": 0.05625,
     "Real Assets / Other": 0.18,
-    "Cash": 0.55125
+    "Cash": 0.525
    }
   },
   "irp": {
@@ -688,7 +689,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.55125,
+      "weight": 0.525,
       "from": [
        "BIL"
       ],
@@ -761,6 +762,16 @@
       "notes": []
      },
      {
+      "code": "195930",
+      "name": "TIGER 유로스탁스50(합성 H)",
+      "class": "RISK",
+      "weight": 0.02625,
+      "from": [
+       "VGK"
+      ],
+      "notes": []
+     },
+     {
       "code": "195980",
       "name": "PLUS 신흥국MSCI(합성 H)",
       "class": "RISK",
@@ -771,8 +782,8 @@
       "notes": []
      }
     ],
-    "risk_before_cap": 0.3925,
-    "risk_after_cap": 0.3925,
+    "risk_before_cap": 0.41875,
+    "risk_after_cap": 0.41875,
     "moved_to_safe": 0.0,
     "cap": 0.7,
     "cap_target": 0.6799999999999999
@@ -783,7 +794,7 @@
       "code": "329750",
       "name": "TIGER 미국달러단기채권액티브",
       "class": "SAFE",
-      "weight": 0.55125,
+      "weight": 0.525,
       "from": [
        "BIL"
       ],
@@ -856,6 +867,16 @@
       "notes": []
      },
      {
+      "code": "195930",
+      "name": "TIGER 유로스탁스50(합성 H)",
+      "class": "RISK",
+      "weight": 0.02625,
+      "from": [
+       "VGK"
+      ],
+      "notes": []
+     },
+     {
       "code": "195980",
       "name": "PLUS 신흥국MSCI(합성 H)",
       "class": "RISK",
@@ -866,8 +887,8 @@
       "notes": []
      }
     ],
-    "risk_before_cap": 0.3925,
-    "risk_after_cap": 0.3925,
+    "risk_before_cap": 0.41875,
+    "risk_after_cap": 0.41875,
     "moved_to_safe": 0.0,
     "cap": 0.7,
     "cap_target": 0.6799999999999999

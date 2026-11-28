@@ -10,12 +10,12 @@
  "operator_halt": false,
  "notify": [],
  "notify_pending": [],
- "finished_utc": "2026-11-27T08:29:01Z",
- "event": "push",
- "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45965808996",
+ "finished_utc": "2026-11-28T04:13:23Z",
+ "event": "schedule",
+ "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/46106401824",
  "log_tail": [
   "[warn] UNRATE via FRED failed: GET failed: https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE: The read operation timed out",
-  "[data] prices 2015-01-02..2026-11-25, UNRATE via BLS (last 2026-10)",
+  "[data] prices 2015-01-02..2026-11-27, UNRATE via BLS (last 2026-10)",
   "[diag] FAA canonical_v016: 77/116 exact",
   "[diag] FAA legacy_v011: 116/116 exact",
   "[diag] FAA peer_rank: 84/116 exact",
@@ -59,6 +59,18 @@
    "new_locks": 0,
    "notified": [],
    "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/45965808996"
+  },
+  {
+   "at_utc": "2026-11-28T04:13:23+00:00",
+   "ok": true,
+   "event": "schedule",
+   "action": "FOLLOW_OFFICIAL",
+   "month": "2026-10",
+   "reason": null,
+   "operator_halt": false,
+   "new_locks": 0,
+   "notified": [],
+   "run_url": "https://github.com/74cf4xxtd8-dev/pds-lite-quant/actions/runs/46106401824"
   }
  ],
  "lock_manifest": {
@@ -74,7 +86,7 @@
   "last_origin": "LIVE",
   "changed_this_run": false,
   "backup_due": false,
-  "download_commit": "cc53155feb2d9a6617f8a1f3402693f648d20d19",
+  "download_commit": "5da9d236d4baa1fddca8fb9a69b2d7bb9ae5f262",
   "backup_rule": "외부 매니페스트 마지막 줄의 SHA-256이 이 값과 다르면 백업이 필요하다(handbook ② 12.2)",
   "backup_note": "backup_due·changed_this_run은 '이번 실행이 새 잠금을 저장했다'는 뜻일 뿐 외부 백업 완료가 아니다. 시스템은 외부 백업을 볼 수 없으므로 완료 여부는 매니페스트와 SHA-256을 비교해 운영자가 확인한다"
  }
